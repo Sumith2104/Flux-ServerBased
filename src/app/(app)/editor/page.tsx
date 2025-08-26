@@ -48,7 +48,7 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
                                     isActive={table.table_id === tableId}
                                 >
                                     <Link href={`/editor?tableId=${table.table_id}&tableName=${table.table_name}`}>
-                                        <TableIcon />
+                                        <TableIcon className="h-4 w-4" />
                                         <span>{table.table_name}</span>
                                     </Link>
                                 </SidebarMenuButton>
@@ -59,7 +59,7 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
                  <div className="p-2 border-t">
                     <Button asChild className="w-full" disabled={!projectId}>
                         <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
-                            <Plus className="mr-2" />
+                            <Plus className="mr-2 h-4 w-4" />
                             New Table
                         </Link>
                     </Button>
@@ -68,6 +68,12 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
             <div className="flex-1 flex flex-col">
                 <div className="flex justify-between items-center p-4 md:p-6 border-b">
                     <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
+                    {tableId && (
+                         <Button>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Row
+                        </Button>
+                    )}
                 </div>
                 <div className="p-4 md:p-6 flex-1 overflow-auto">
                     <div className="rounded-lg border">
