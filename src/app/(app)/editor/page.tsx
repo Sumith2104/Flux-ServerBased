@@ -1,10 +1,12 @@
 
+
 import { Table as ShadcnTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Plus, Table2 } from "lucide-react"
+import { Plus, Table2, TableIcon } from "lucide-react"
 import Link from "next/link"
-import { getColumnsForTable, getTableData, Column } from "@/lib/data"
+import { getColumnsForTable, getTableData, Column, getTablesForProject, Table } from "@/lib/data"
 import { cookies } from "next/headers"
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
 
 export default async function EditorPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
     const tableId = searchParams.tableId as string;
@@ -15,11 +17,15 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
 
     let columns: Column[] = [];
     let data: Record<string, string>[] = [];
+    let tables: Table[] = [];
 
-    if (projectId && tableId && tableName) {
+    if (projectId) {
         try {
-            columns = await getColumnsForTable(projectId, tableId);
-            data = await getTableData(projectId, tableName);
+            tables = await getTablesForProject(projectId);
+            if (tableId && tableName) {
+                columns = await getColumnsForTable(projectId, tableId);
+                data = await getTableData(projectId, tableName);
+            }
         } catch (error) {
             console.error("Failed to load table data:", error);
             // Handle error state, maybe show a toast or message
@@ -28,67 +34,95 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
 
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
-                 <Button asChild disabled={!projectId}>
-                    <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Table
-                    </Link>
-                </Button>
-            </div>
-            <div className="rounded-lg border">
-                <ShadcnTable>
-                    <TableHeader>
-                        <TableRow>
-                            {columns.length > 0 ? (
-                                <>
-                                    {columns.map(col => <TableHead key={col.column_id}>{col.column_name}</TableHead>)}
-                                    <TableHead className="w-[100px] text-right">Actions</TableHead>
-                                </>
-                            ) : (
-                                <TableHead>ID</TableHead>
-                            )}
-                           
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {tableId && data.length > 0 ? (
-                             data.map((row, rowIndex) => (
-                                <TableRow key={rowIndex}>
-                                    {columns.map(col => (
-                                        <TableCell key={col.column_id}>{row[col.column_name]}</TableCell>
-                                    ))}
-                                    <TableCell className="text-right">
-                                        {/* Action buttons can go here */}
-                                    </TableCell>
+        <SidebarProvider>
+            <Sidebar>
+                 <SidebarHeader>
+                    <h2 className="text-lg font-semibold">Tables</h2>
+                </SidebarHeader>
+                <SidebarContent>
+                    <SidebarMenu>
+                         {tables.map((table) => (
+                            <SidebarMenuItem key={table.table_id}>
+                                <SidebarMenuButton 
+                                    asChild
+                                    isActive={table.table_id === tableId}
+                                >
+                                    <Link href={`/editor?tableId=${table.table_id}&tableName=${table.table_name}`}>
+                                        <TableIcon />
+                                        <span>{table.table_name}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                         ))}
+                    </SidebarMenu>
+                </SidebarContent>
+                 <div className="p-2 border-t">
+                    <Button asChild className="w-full" disabled={!projectId}>
+                        <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
+                            <Plus className="mr-2" />
+                            New Table
+                        </Link>
+                    </Button>
+                </div>
+            </Sidebar>
+            <div className="flex-1 flex flex-col">
+                <div className="flex justify-between items-center p-4 md:p-6 border-b">
+                    <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
+                </div>
+                <div className="p-4 md:p-6 flex-1 overflow-auto">
+                    <div className="rounded-lg border">
+                        <ShadcnTable>
+                            <TableHeader>
+                                <TableRow>
+                                    {columns.length > 0 ? (
+                                        <>
+                                            {columns.map(col => <TableHead key={col.column_id}>{col.column_name}</TableHead>)}
+                                            <TableHead className="w-[100px] text-right">Actions</TableHead>
+                                        </>
+                                    ) : (
+                                        <TableHead>ID</TableHead>
+                                    )}
+                                
                                 </TableRow>
-                            ))
-                        ) : tableId && columns.length > 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={columns.length + 1} className="h-48 text-center text-muted-foreground">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <Table2 className="h-12 w-12 mb-4" />
-                                        <p className="text-lg font-medium">This table is empty</p>
-                                        <p>Add some data to get started.</p>
-                                     </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                             <TableRow>
-                                <TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <Table2 className="h-12 w-12 mb-4" />
-                                        <p className="text-lg font-medium">No table selected</p>
-                                        <p>Select a table from the dashboard to start editing.</p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </ShadcnTable>
+                            </TableHeader>
+                            <TableBody>
+                                {tableId && data.length > 0 ? (
+                                    data.map((row, rowIndex) => (
+                                        <TableRow key={rowIndex}>
+                                            {columns.map(col => (
+                                                <TableCell key={col.column_id}>{row[col.column_name]}</TableCell>
+                                            ))}
+                                            <TableCell className="text-right">
+                                                {/* Action buttons can go here */}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : tableId && columns.length > 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={columns.length + 1} className="h-48 text-center text-muted-foreground">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <Table2 className="h-12 w-12 mb-4" />
+                                                <p className="text-lg font-medium">This table is empty</p>
+                                                <p>Add some data to get started.</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <Table2 className="h-12 w-12 mb-4" />
+                                                <p className="text-lg font-medium">No table selected</p>
+                                                <p>Select a table from the sidebar to start editing.</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </ShadcnTable>
+                    </div>
+                </div>
             </div>
-        </div>
+        </SidebarProvider>
     )
 }
