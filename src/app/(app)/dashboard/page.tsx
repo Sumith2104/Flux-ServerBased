@@ -12,6 +12,7 @@ export default async function DashboardPage() {
         projects = await getProjectsForCurrentUser();
     } catch (error) {
         console.error("Failed to fetch projects:", error);
+        // We can render an error state here if needed
     }
 
     return (
@@ -51,7 +52,11 @@ export default async function DashboardPage() {
                                 <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
                             </CardHeader>
                             <CardContent className="flex-grow pt-0 flex flex-col justify-between">
-                                <p className="text-sm text-muted-foreground">Created: {new Date(project.created_at).toLocaleDateString()}</p>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">
+                                        Created: {new Date(project.created_at).toLocaleDateString()}
+                                    </p>
+                                </div>
                                 <Badge variant="secondary" className="mt-4 w-fit">Project</Badge>
                             </CardContent>
                         </Card>
