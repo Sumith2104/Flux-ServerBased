@@ -1,25 +1,43 @@
 'use server';
 import { cookies } from 'next/headers';
+import fs from 'fs/promises';
+import path from 'path';
 
 // This is a mock authentication service.
 // In a real application, this would involve session management, database lookups, etc.
 
-const MOCK_USER_ID = '123e4567-e89b-12d3-a456-426614174000';
-
 /**
- * Retrieves the current user's ID. In this mock implementation,
- * it returns a hardcoded UUID.
+ * Retrieves the current user's ID from the session cookie.
  */
 export async function getCurrentUserId(): Promise<string | null> {
-    // In a real app, you would verify a session cookie or JWT here.
     const session = cookies().get('session');
-    // For now, we'll just return the mock user ID if any "session" exists.
     if (session) {
-      return MOCK_USER_ID;
+      return session.value;
     }
-    // Simulate no user logged in
     return null; 
 }
+
+
+async function findUserById(userId: string) {
+    const usersCsvPath = path.join(process.cwd(), 'src', 'database', 'users.csv');
+    try {
+        const data = await fs.readFile(usersCsvPath, 'utf8');
+        const rows = data.trim().split('\n');
+        const header = rows[0].split(',');
+        const users = rows.slice(1).map(row => {
+            const values = row.split(',');
+            return header.reduce((obj, nextKey, index) => {
+                obj[nextKey.trim()] = values[index].trim();
+                return obj;
+            }, {} as Record<string, string>);
+        });
+        return users.find(u => u.id === userId);
+    } catch (error) {
+        console.error("Failed to read or parse users.csv", error);
+        return null;
+    }
+}
+
 
 /**
  * Simulates a user login by setting a session cookie.

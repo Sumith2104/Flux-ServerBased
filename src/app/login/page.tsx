@@ -3,18 +3,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { login } from '@/lib/auth';
+import { loginAction } from '@/app/actions';
 import { redirect } from 'next/navigation';
 
 export default function LoginPage() {
   
-  async function loginAction(formData: FormData) {
+  async function handleLogin(formData: FormData) {
     'use server';
-    // In a real app, you'd validate the email and password.
-    // For this mock, we just need to set the session.
-    const MOCK_USER_ID = '123e4567-e89b-12d3-a456-426614174000';
-    await login(MOCK_USER_ID);
-    redirect('/dashboard');
+    const result = await loginAction(formData);
+    if (result.success) {
+      redirect('/dashboard');
+    } else {
+      // In a real app, you'd show the error to the user
+      console.error(result.error);
+      redirect('/login?error=' + result.error);
+    }
   }
 
   return (
@@ -25,7 +28,7 @@ export default function LoginPage() {
           <CardDescription>Enter your email below to login to your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={loginAction} className="grid gap-4">
+          <form action={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -34,7 +37,6 @@ export default function LoginPage() {
                 name="email"
                 placeholder="m@example.com"
                 required
-                defaultValue="user@example.com"
               />
             </div>
             <div className="grid gap-2">
@@ -49,7 +51,6 @@ export default function LoginPage() {
                 name="password"
                 type="password" 
                 required 
-                defaultValue="password"
               />
             </div>
             <Button type="submit" className="w-full">

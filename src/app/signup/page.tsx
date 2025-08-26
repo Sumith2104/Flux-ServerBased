@@ -17,7 +17,7 @@ export default function SignupPage() {
         } else {
             // In a real app, you'd show the error to the user
             console.error(result.error);
-            redirect('/signup?error=' + result.error);
+            redirect('/signup?error=' + encodeURIComponent(result.error || ''));
         }
     }
 

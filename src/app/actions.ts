@@ -5,6 +5,56 @@ import fs from 'fs/promises';
 import path from 'path';
 import {login} from '@/lib/auth';
 
+function parseCsv(data: string) {
+  if (!data) return [];
+  const rows = data.trim().split('\n');
+  if (rows.length < 2) return [];
+  const header = rows[0].split(',');
+  return rows.slice(1).map(row => {
+      const values = row.split(',');
+      return header.reduce((obj, nextKey, index) => {
+          obj[nextKey.trim()] = values[index]?.trim().replace(/^"|"$/g, '');
+          return obj;
+      }, {} as Record<string, string>);
+  });
+}
+
+export async function loginAction(formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+
+  if (!email || !password) {
+    return { error: 'Email and password are required.' };
+  }
+  
+  const dbPath = path.join(process.cwd(), 'src', 'database');
+  const usersCsvPath = path.join(dbPath, 'users.csv');
+  
+  let usersData;
+  try {
+    usersData = await fs.readFile(usersCsvPath, 'utf8');
+  } catch(e) {
+    return { error: 'Invalid email or password.' };
+  }
+
+  const users = parseCsv(usersData);
+  const user = users.find(u => u.email === email);
+  
+  if (!user) {
+    return { error: 'Invalid email or password.' };
+  }
+
+  // NOTE: In a real app, passwords should be hashed.
+  // This is a direct comparison for demonstration purposes.
+  if (user.password !== password) {
+    return { error: 'Invalid email or password.' };
+  }
+  
+  await login(user.id);
+  
+  return { success: true, userId: user.id };
+}
+
 export async function signupAction(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string; // In a real app, hash and salt this!
@@ -16,7 +66,7 @@ export async function signupAction(formData: FormData) {
   try {
     const userId = uuidv4();
     const createdAt = new Date().toISOString();
-    const newUserCsvRow = `\n${userId},${email},${createdAt}`;
+    const newUserCsvRow = `\n${userId},${email},${password},${createdAt}`;
 
     const dbPath = path.join(process.cwd(), 'src', 'database');
     const usersCsvPath = path.join(dbPath, 'users.csv');
@@ -30,7 +80,7 @@ export async function signupAction(formData: FormData) {
       await fs.appendFile(usersCsvPath, newUserCsvRow, 'utf8');
     } catch (error) {
       // If file doesn't exist, create it with header
-      const header = 'id,email,created_at';
+      const header = 'id,email,password,created_at';
       await fs.writeFile(usersCsvPath, header + newUserCsvRow, 'utf8');
     }
 
