@@ -5,14 +5,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import {getCurrentUserId} from '@/lib/auth';
 
-function sanitizeForUrl(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // Allow spaces and hyphens
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/(^-|-$)/g, '');
-}
-
 export async function createProjectAction(formData: FormData) {
   const projectName = formData.get('projectName') as string;
   const userId = await getCurrentUserId();
@@ -22,7 +14,7 @@ export async function createProjectAction(formData: FormData) {
   }
 
   try {
-    const projectId = sanitizeForUrl(projectName);
+    const projectId = uuidv4();
     const createdAt = new Date().toISOString();
     
     const userFolderPath = path.join(process.cwd(), 'src', 'database', userId);
