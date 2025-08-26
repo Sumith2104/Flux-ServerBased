@@ -1,3 +1,4 @@
+
 'use server';
 
 import fs from 'fs/promises';
@@ -7,15 +8,17 @@ import { getCurrentUserId } from '@/lib/auth';
 const DB_PATH = path.join(process.cwd(), 'src', 'database');
 
 // Helper to parse CSV data
-function parseCsv(data: string) {
+function parseCsv(data: string): Record<string, string>[] {
     if (!data) return [];
-    const rows = data.trim().split('\n');
-    if (rows.length === 0 || (rows.length === 1 && rows[0] === '')) return [];
-    const header = rows[0].split(',');
+    const rows = data.trim().split('\n').filter(row => row.trim() !== '');
+    if (rows.length < 2) return [];
+
+    const header = rows[0].split(',').map(h => h.trim());
+    
     return rows.slice(1).map(row => {
         const values = row.split(',');
         return header.reduce((obj, nextKey, index) => {
-            obj[nextKey.trim()] = values[index]?.trim().replace(/^"|"$/g, '') || '';
+            obj[nextKey] = values[index]?.trim().replace(/^"|"$/g, '') || '';
             return obj;
         }, {} as Record<string, string>);
     });
@@ -48,7 +51,8 @@ export interface Project {
 export async function getProjectsForCurrentUser(): Promise<Project[]> {
     const userId = await getCurrentUserId();
     if (!userId) {
-        throw new Error("User not authenticated");
+        // Return empty array instead of throwing error to avoid breaking the UI for non-authed states
+        return [];
     }
     const projectsCsvPath = path.join(DB_PATH, userId, 'projects.csv');
     const projects = await readCsvFile(projectsCsvPath);
