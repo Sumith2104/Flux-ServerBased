@@ -1,15 +1,26 @@
+
+'use client';
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Table2 } from "lucide-react"
+import { Plus, Table2 } from "lucide-react"
+import Link from "next/link"
+import { useSelectedProject } from "@/hooks/use-selected-project";
 
 export default function EditorPage() {
+    const { getSelectedProject } = useSelectedProject();
+    const selectedProject = getSelectedProject();
+    const projectId = selectedProject?.project_id;
+
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Table Editor</h1>
-                <Button disabled>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Row
+                <Button asChild disabled={!projectId}>
+                    <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Table
+                    </Link>
                 </Button>
             </div>
             <div className="rounded-lg border">
