@@ -8,14 +8,12 @@ import {
     BrainCircuit, 
     Code, 
     Folder, 
-    Settings as SettingsIcon 
+    Settings as SettingsIcon,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+    TooltipProvider
 } from "lucide-react"
-
-import { 
-    SidebarMenu, 
-    SidebarMenuItem, 
-    SidebarMenuButton 
-} from "@/components/ui/sidebar"
 
 const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -30,21 +28,25 @@ export function Nav() {
     const pathname = usePathname()
     
     return (
-        <SidebarMenu>
+        <TooltipProvider>
             {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                        asChild
-                        isActive={pathname.startsWith(item.href)}
-                        tooltip={item.label}
-                    >
-                        <Link href={item.href}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.label}</span>
+                <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                         <Link
+                            href={item.href}
+                            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
+                                pathname.startsWith(item.href)
+                                ? "bg-accent text-accent-foreground"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                            <item.icon className="h-5 w-5" />
+                            <span className="sr-only">{item.label}</span>
                         </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
             ))}
-        </SidebarMenu>
+        </TooltipProvider>
     )
 }
