@@ -5,6 +5,15 @@ import fs from 'fs/promises';
 import path from 'path';
 import {getCurrentUserId} from '@/lib/auth';
 
+async function fileExists(filePath: string): Promise<boolean> {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export async function createProjectAction(formData: FormData) {
   const projectName = formData.get('projectName') as string;
   const userId = await getCurrentUserId();
@@ -21,17 +30,21 @@ export async function createProjectAction(formData: FormData) {
     const projectFolderPath = path.join(userFolderPath, projectId);
     const projectsCsvPath = path.join(userFolderPath, 'projects.csv');
     
-    // 1. Create the project's folder
+    // 1. Create the user and project folders
     await fs.mkdir(projectFolderPath, {recursive: true});
 
     // 2. Append project to projects.csv
-    const newProjectCsvRow = `\n${projectId},${userId},"${projectName}",${createdAt}`;
-    try {
-      await fs.appendFile(projectsCsvPath, newProjectCsvRow, 'utf8');
-    } catch (error) {
-      // If file doesn't exist, create it with header
-      const header = 'project_id,user_id,display_name,created_at';
-      await fs.writeFile(projectsCsvPath, header + newProjectCsvRow, 'utf8');
+    const header = 'project_id,user_id,display_name,created_at';
+    const newProjectCsvRow = `${projectId},${userId},"${projectName}",${createdAt}`;
+
+    const projectsFileExists = await fileExists(projectsCsvPath);
+    
+    if (projectsFileExists) {
+        // Append to existing file
+        await fs.appendFile(projectsCsvPath, `\n${newProjectCsvRow}`, 'utf8');
+    } else {
+        // Create new file with header
+        await fs.writeFile(projectsCsvPath, `${header}\n${newProjectCsvRow}`, 'utf8');
     }
 
     return {success: true, projectId};
