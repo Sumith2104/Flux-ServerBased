@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { loginAction } from '@/app/actions';
 import { redirect } from 'next/navigation';
+import { SubmitButton } from '@/components/submit-button';
 
 export default function LoginPage() {
   
@@ -53,9 +54,9 @@ export default function LoginPage() {
                 required 
               />
             </div>
-            <Button type="submit" className="w-full">
+            <SubmitButton className="w-full">
               Login
-            </Button>
+            </SubmitButton>
             <Button variant="outline" className="w-full" asChild>
               <Link href="#">Login with Google</Link>
             </Button>

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signupAction } from '../actions';
 import { redirect } from 'next/navigation';
+import { SubmitButton } from '@/components/submit-button';
 
 
 export default function SignupPage() {
@@ -44,9 +45,9 @@ export default function SignupPage() {
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" name="password" type="password" required/>
             </div>
-            <Button type="submit" className="w-full">
+            <SubmitButton type="submit" className="w-full">
                 Create an account
-            </Button>
+            </SubmitButton>
             </form>
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
