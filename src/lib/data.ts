@@ -10,15 +10,17 @@ const DB_PATH = path.join(process.cwd(), 'src', 'database');
 function parseCsv(data: string) {
     if (!data) return [];
     const rows = data.trim().split('\n');
+    if (rows.length === 0 || (rows.length === 1 && rows[0] === '')) return [];
     const header = rows[0].split(',');
     return rows.slice(1).map(row => {
         const values = row.split(',');
         return header.reduce((obj, nextKey, index) => {
-            obj[nextKey.trim()] = values[index].trim().replace(/^"|"$/g, '');
+            obj[nextKey.trim()] = values[index]?.trim().replace(/^"|"$/g, '') || '';
             return obj;
         }, {} as Record<string, string>);
     });
 }
+
 
 // Helper to read a CSV file
 async function readCsvFile(filePath: string) {
@@ -51,6 +53,14 @@ export async function getProjectsForCurrentUser(): Promise<Project[]> {
     const projectsCsvPath = path.join(DB_PATH, userId, 'projects.csv');
     const projects = await readCsvFile(projectsCsvPath);
     return projects as unknown as Project[];
+}
+
+export async function getProjectById(projectId: string): Promise<Project | null> {
+    const userId = await getCurrentUserId();
+    if (!userId) return null;
+    
+    const projects = await getProjectsForCurrentUser();
+    return projects.find(p => p.project_id === projectId) || null;
 }
 
 // --- Table Data ---

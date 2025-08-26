@@ -12,7 +12,6 @@ export default async function DashboardPage() {
         projects = await getProjectsForCurrentUser();
     } catch (error) {
         console.error("Failed to fetch projects:", error);
-        // Handle case where user is not logged in or projects file doesn't exist
     }
 
     return (
@@ -45,7 +44,7 @@ export default async function DashboardPage() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {projects.map((project) => (
-                    <Link href={`/dashboard/project/${project.project_id}`} key={project.project_id} className="group">
+                    <Link href={`/dashboard?projectId=${project.project_id}`} key={project.project_id} className="group">
                         <Card className="flex flex-col h-full">
                            <CardHeader className="flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base font-medium">{project.display_name}</CardTitle>

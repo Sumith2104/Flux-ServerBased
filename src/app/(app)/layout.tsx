@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getCurrentUserId, login, logout, findUserById } from "@/lib/auth";
+import { getProjectById } from "@/lib/data";
 import { redirect } from "next/navigation";
 
 async function loginAction() {
@@ -26,8 +27,13 @@ async function logoutAction() {
     redirect('/login');
 }
 
-
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ 
+    children,
+    searchParams
+}: { 
+    children: React.ReactNode,
+    searchParams?: { [key: string]: string | string[] | undefined };
+}) {
     const userId = await getCurrentUserId();
     const user = userId ? await findUserById(userId) : null;
     const orgName = user ? `${user.email.split('@')[0]}'s Org` : "My Org";
@@ -37,6 +43,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         return redirect('/login');
     }
 
+    const projectId = searchParams?.projectId as string;
+    const project = projectId ? await getProjectById(projectId) : null;
+    const headerTitle = project ? `${orgName} / ${project.display_name}` : orgName;
+
+
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
             <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
@@ -45,8 +56,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                         <AvatarImage src="https://picsum.photos/32" data-ai-hint="logo" />
                         <AvatarFallback>{avatarFallback}</AvatarFallback>
                     </Avatar>
-                    <h1 className="text-lg font-semibold">{orgName}</h1>
-                    <Badge variant="outline">Free</Badge>
+                    <h1 className="text-lg font-semibold">{headerTitle}</h1>
+                    {project && <Badge variant="outline">Free</Badge>}
                 </div>
                 <div className="flex-1"></div>
                  {userId ? (
@@ -70,7 +81,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="flex flex-1">
                 <aside className="hidden w-14 flex-col border-r bg-background sm:flex">
                     <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-                       <Nav />
+                       <Nav projectId={projectId} />
                     </nav>
                 </aside>
                 <main className="flex-1 overflow-auto p-4 md:p-8">

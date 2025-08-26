@@ -23,36 +23,45 @@ const navItems = [
     { href: "/editor", label: "Table Editor", icon: Table },
     { href: "/query", label: "AI SQL Translator", icon: BrainCircuit },
     { href: "/api", label: "API Generation", icon: Code },
-    { href: "/storage", label: "Storage", icon: Folder, disabled: true },
+    { href: "/storage", label: "Storage", icon: Folder },
     { href: "/settings", label: "Settings", icon: SettingsIcon },
 ]
 
-export function Nav() {
+export function Nav({ projectId }: { projectId?: string | null }) {
     const pathname = usePathname()
     
     return (
         <TooltipProvider>
-            {navItems.map((item) => (
-                <Tooltip key={item.href}>
-                    <TooltipTrigger asChild>
-                         <Link
-                            href={item.disabled ? "#" : item.href}
-                            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
-                                item.disabled ? "cursor-not-allowed text-muted-foreground/50" :
-                                pathname.startsWith(item.href)
-                                ? "bg-accent text-accent-foreground"
-                                : "text-muted-foreground hover:text-foreground"
-                            }`}
-                            aria-disabled={item.disabled}
-                            onClick={(e) => item.disabled && e.preventDefault()}
-                        >
-                            <item.icon className="h-5 w-5" />
-                            <span className="sr-only">{item.label}</span>
-                        </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">{item.disabled ? `${item.label} (select a project first)` : item.label}</TooltipContent>
-                </Tooltip>
-            ))}
+            {navItems.map((item) => {
+                const isProjectSpecific = ["/editor", "/api", "/storage", "/settings"].includes(item.href);
+                const isDisabled = isProjectSpecific && !projectId;
+                const finalHref = projectId && isProjectSpecific ? `${item.href}?projectId=${projectId}` : item.href;
+                
+                // For the dashboard link, we want to clear the project selection
+                const dashboardHref = "/dashboard";
+
+                return (
+                    <Tooltip key={item.href}>
+                        <TooltipTrigger asChild>
+                             <Link
+                                href={item.href === '/dashboard' ? dashboardHref : finalHref}
+                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
+                                    isDisabled ? "cursor-not-allowed text-muted-foreground/50" :
+                                    pathname === item.href
+                                    ? "bg-accent text-accent-foreground"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                aria-disabled={isDisabled}
+                                onClick={(e) => isDisabled && e.preventDefault()}
+                            >
+                                <item.icon className="h-5 w-5" />
+                                <span className="sr-only">{item.label}</span>
+                            </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">{isDisabled ? `${item.label} (select a project first)` : item.label}</TooltipContent>
+                    </Tooltip>
+                )
+            })}
         </TooltipProvider>
     )
 }
