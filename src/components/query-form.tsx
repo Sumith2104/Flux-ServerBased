@@ -6,32 +6,28 @@ import { generateInsights } from "@/ai/flows/generate-insights";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type Props = {
-    tableSchema: string;
-    data: string;
-}
-
-export function QueryForm({ tableSchema, data }: Props) {
+export function QueryForm() {
     const [query, setQuery] = useState("");
     const [sql, setSql] = useState("");
     const [insights, setInsights] = useState("");
     const [loading, setLoading] = useState(false);
+    const [tableSchema, setTableSchema] = useState("");
+    const [jsonData, setJsonData] = useState("");
     const { toast } = useToast();
-
-    // Mock results for demonstration purposes
-    const mockResults = [
-        { product: 'Laptop', total_quantity: 7, total_revenue: 8350.00 },
-        { product: 'Mouse', total_quantity: 10, total_revenue: 250.00 },
-        { product: 'Keyboard', total_quantity: 7, total_revenue: 528.50 },
-        { product: 'Monitor', total_quantity: 3, total_revenue: 900.00 },
-    ];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!tableSchema || !jsonData || !query) {
+            toast({
+                variant: "destructive",
+                title: "Missing Information",
+                description: "Please provide a table schema, JSON data, and a question.",
+            })
+            return;
+        }
         setLoading(true);
         setSql("");
         setInsights("");
@@ -40,7 +36,7 @@ export function QueryForm({ tableSchema, data }: Props) {
             const sqlResult = await generateSQL({ userInput: query, tableSchema });
             setSql(sqlResult.sqlQuery);
 
-            const insightsResult = await generateInsights({ data, query });
+            const insightsResult = await generateInsights({ data: jsonData, query });
             setInsights(insightsResult.insights);
         } catch (err) {
             toast({
@@ -56,20 +52,57 @@ export function QueryForm({ tableSchema, data }: Props) {
 
     return (
         <div className="grid gap-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Your Question</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Table Schema</CardTitle>
+                            <CardDescription>Provide the CREATE TABLE statement.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Textarea
+                                placeholder="CREATE TABLE users (id INT, name VARCHAR(255), ...);"
+                                value={tableSchema}
+                                onChange={(e) => setTableSchema(e.target.value)}
+                                rows={5}
+                                className="text-sm font-mono"
+                                required
+                            />
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>JSON Data</CardTitle>
+                             <CardDescription>Provide the data as a JSON array.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Textarea
+                                placeholder='[{"id": 1, "name": "Alice"}, ...]'
+                                value={jsonData}
+                                onChange={(e) => setJsonData(e.target.value)}
+                                rows={5}
+                                className="text-sm font-mono"
+                                required
+                            />
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Your Question</CardTitle>
+                        <CardDescription>Ask a question in plain English about your data.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                         <Textarea
                             placeholder="e.g., 'What are the total sales for each product?'"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             rows={3}
                             className="text-base"
+                            required
                         />
-                        <Button type="submit" disabled={loading || !query}>
+                        <Button type="submit" disabled={loading}>
                             {loading ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (
@@ -80,61 +113,34 @@ export function QueryForm({ tableSchema, data }: Props) {
                     </form>
                 </CardContent>
             </Card>
-
-            <div className="grid md:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Generated SQL</CardTitle>
-                        <CardDescription>The AI-generated SQL query.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="min-h-[100px]">
-                        {loading && !sql && <div className="text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</div>}
-                        {sql && <pre className="p-4 rounded-md bg-secondary text-secondary-foreground text-sm overflow-x-auto"><code>{sql}</code></pre>}
-                        {!loading && !sql && <div className="text-muted-foreground">SQL will appear here.</div>}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>AI Insights</CardTitle>
-                        <CardDescription>Analysis based on your query.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="min-h-[100px]">
-                        {loading && !insights && <div className="text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</div>}
-                        {insights && <p className="text-sm">{insights}</p>}
-                        {!loading && !insights && <div className="text-muted-foreground">Insights will appear here.</div>}
-                    </CardContent>
-                </Card>
-            </div>
             
-            <Card>
-                <CardHeader>
-                    <CardTitle>Query Results</CardTitle>
-                    <CardDescription>The data returned from your query.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Product</TableHead>
-                                    <TableHead>Total Quantity</TableHead>
-                                    <TableHead>Total Revenue</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {mockResults.map((row, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{row.product}</TableCell>
-                                        <TableCell>{row.total_quantity}</TableCell>
-                                        <TableCell>${row.total_revenue.toFixed(2)}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-4">Note: Query result display is mocked for demonstration.</p>
-                </CardContent>
-            </Card>
+            {(sql || insights || loading) && (
+                <div className="grid md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Generated SQL</CardTitle>
+                            <CardDescription>The AI-generated SQL query.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="min-h-[100px]">
+                            {loading && !sql && <div className="text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</div>}
+                            {sql && <pre className="p-4 rounded-md bg-secondary text-secondary-foreground text-sm overflow-x-auto"><code>{sql}</code></pre>}
+                            {!loading && !sql && <div className="text-muted-foreground">SQL will appear here.</div>}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>AI Insights</CardTitle>
+                            <CardDescription>Analysis based on your query.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="min-h-[100px]">
+                            {loading && !insights && <div className="text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</div>}
+                            {insights && <p className="text-sm">{insights}</p>}
+                            {!loading && !insights && <div className="text-muted-foreground">Insights will appear here.</div>}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
         </div>
     );
 }
