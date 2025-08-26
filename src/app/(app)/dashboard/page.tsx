@@ -1,16 +1,20 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, ChevronRight, LayoutGrid, List, Filter } from "lucide-react"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { getProjectsForCurrentUser, Project } from "@/lib/data";
+import { Badge } from "@/components/ui/badge";
 
-const projects = [
-  { name: "Dip_project", description: "aws | ap-south-1", tag: "NAND" },
-  { name: "Sumith@gymtrack", description: "aws | ap-south-1", tag: "NAND" },
-]
+export default async function DashboardPage() {
+    let projects: Project[] = [];
+    try {
+        projects = await getProjectsForCurrentUser();
+    } catch (error) {
+        console.error("Failed to fetch projects:", error);
+        // Handle case where user is not logged in or projects file doesn't exist
+    }
 
-export default function DashboardPage() {
     return (
         <div className="container mx-auto px-0">
             <div className="flex justify-between items-center mb-6">
@@ -39,17 +43,27 @@ export default function DashboardPage() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {projects.map((project) => (
-                    <Card key={project.name} className="flex flex-col group">
-                       <CardHeader className="flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-base font-medium">{project.name}</CardTitle>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                        </CardHeader>
-                        <CardContent className="flex-grow pt-0">
-                            <p className="text-sm text-muted-foreground">{project.description}</p>
-                            <Badge variant="secondary" className="mt-4">{project.tag}</Badge>
-                        </CardContent>
-                    </Card>
+                    <Link href={`/dashboard/project/${project.project_id}`} key={project.project_id} className="group">
+                        <Card className="flex flex-col h-full">
+                           <CardHeader className="flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-base font-medium">{project.display_name}</CardTitle>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                            </CardHeader>
+                            <CardContent className="flex-grow pt-0 flex flex-col justify-between">
+                                <p className="text-sm text-muted-foreground">Created: {new Date(project.created_at).toLocaleDateString()}</p>
+                                <Badge variant="secondary" className="mt-4 w-fit">Project</Badge>
+                            </CardContent>
+                        </Card>
+                    </Link>
                 ))}
+                 {projects.length === 0 && (
+                    <div className="col-span-full text-center text-muted-foreground py-10">
+                        <p>No projects yet.</p>
+                        <Button variant="link" asChild>
+                           <Link href="/dashboard/projects/create">Create your first project</Link>
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     )
