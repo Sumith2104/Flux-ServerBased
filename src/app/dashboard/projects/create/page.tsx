@@ -14,7 +14,7 @@ export default function CreateProjectPage() {
         'use server';
         const result = await createProjectAction(formData);
         if (result.success) {
-            redirect(`/dashboard/project/${result.projectId}`);
+            redirect(`/dashboard`);
         } else {
             console.error(result.error);
             redirect('/dashboard/projects/create?error=' + encodeURIComponent(result.error || ''));
