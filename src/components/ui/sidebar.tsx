@@ -236,14 +236,14 @@ const Sidebar = React.forwardRef<
         <div
           className={cn(
             "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
-            "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-hover/sidebar-wrapper:w-[var(--sidebar-width)]",
+            "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-hover/sidebar-wrapper:w-[var(--sidebar-width)]",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
             // Adjust the padding for floating and inset variants.
             variant === "floating" || variant === "inset"
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)] group-hover/sidebar-wrapper:w-[var(--sidebar-width)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-hover/sidebar-wrapper:w-[var(--sidebar-width)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-hover/sidebar-wrapper:w-[var(--sidebar-width)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
             className
           )}
           {...props}
@@ -462,6 +462,7 @@ const SidebarGroupAction = React.forwardRef<
   return (
     <Comp
       ref={ref}
+      type="button"
       data-sidebar="group-action"
       className={cn(
         "absolute right-3 top-3.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
