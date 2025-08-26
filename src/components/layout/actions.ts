@@ -8,7 +8,8 @@ import {getCurrentUserId} from '@/lib/auth';
 function sanitizeForUrl(name: string) {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^a-z0-9\s-]/g, '') // Allow spaces and hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
     .replace(/(^-|-$)/g, '');
 }
 
@@ -23,16 +24,16 @@ export async function createProjectAction(formData: FormData) {
   try {
     const projectId = sanitizeForUrl(projectName);
     const createdAt = new Date().toISOString();
-    const newProjectCsvRow = `\n${projectId},${userId},"${projectName}",${createdAt}`;
-
+    
     const userFolderPath = path.join(process.cwd(), 'src', 'database', userId);
     const projectFolderPath = path.join(userFolderPath, projectId);
     const projectsCsvPath = path.join(userFolderPath, 'projects.csv');
-
-    // 1. Create project folder
+    
+    // 1. Create the project's folder
     await fs.mkdir(projectFolderPath, {recursive: true});
 
     // 2. Append project to projects.csv
+    const newProjectCsvRow = `\n${projectId},${userId},"${projectName}",${createdAt}`;
     try {
       await fs.appendFile(projectsCsvPath, newProjectCsvRow, 'utf8');
     } catch (error) {
@@ -44,6 +45,9 @@ export async function createProjectAction(formData: FormData) {
     return {success: true, projectId};
   } catch (error) {
     console.error('Project creation failed:', error);
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+        return { error: 'A project with this name already exists.' };
+    }
     return {error: 'An unexpected error occurred.'};
   }
 }
