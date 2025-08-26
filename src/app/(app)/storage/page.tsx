@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { getCurrentUserId } from "@/lib/auth"
 import fs from "fs/promises"
 import path from "path"
+import { cookies } from "next/headers"
 
 type FileInfo = {
     name: string;
@@ -55,8 +56,9 @@ async function getProjectFiles(projectId: string): Promise<FileInfo[]> {
 }
 
 
-export default async function StoragePage({ searchParams }: { searchParams: { projectId: string } }) {
-    const projectId = searchParams.projectId;
+export default async function StoragePage() {
+    const selectedProjectCookie = cookies().get('selectedProject');
+    const projectId = selectedProjectCookie ? JSON.parse(selectedProjectCookie.value).project_id : null;
     const files = projectId ? await getProjectFiles(projectId) : [];
 
     return (

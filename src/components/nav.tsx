@@ -33,18 +33,20 @@ export function Nav({ projectId }: { projectId?: string | null }) {
     return (
         <TooltipProvider>
             {navItems.map((item) => {
-                const isProjectSpecific = ["/editor", "/api", "/storage", "/settings"].includes(item.href);
+                const isProjectSpecific = ["/editor", "/api", "/storage", "/settings", "/query"].includes(item.href);
                 const isDisabled = isProjectSpecific && !projectId;
-                const finalHref = projectId && isProjectSpecific ? `${item.href}?projectId=${projectId}` : item.href;
-                
-                // For the dashboard link, we want to clear the project selection
-                const dashboardHref = "/dashboard";
+                let finalHref = item.href;
+
+                // Dashboard link should clear the project selection
+                if (item.href !== '/dashboard' && isProjectSpecific && projectId) {
+                    finalHref = `${item.href}`;
+                }
 
                 return (
                     <Tooltip key={item.href}>
                         <TooltipTrigger asChild>
                              <Link
-                                href={item.href === '/dashboard' ? dashboardHref : finalHref}
+                                href={finalHref}
                                 className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
                                     isDisabled ? "cursor-not-allowed text-muted-foreground/50" :
                                     pathname === item.href
@@ -52,7 +54,9 @@ export function Nav({ projectId }: { projectId?: string | null }) {
                                     : "text-muted-foreground hover:text-foreground"
                                 }`}
                                 aria-disabled={isDisabled}
-                                onClick={(e) => isDisabled && e.preventDefault()}
+                                onClick={(e) => {
+                                    if (isDisabled) e.preventDefault();
+                                }}
                             >
                                 <item.icon className="h-5 w-5" />
                                 <span className="sr-only">{item.label}</span>

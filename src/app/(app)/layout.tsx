@@ -4,16 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, HelpCircle, MessageSquare } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { HelpCircle, MessageSquare } from "lucide-react";
 import { getCurrentUserId, login, logout, findUserById } from "@/lib/auth";
-import { getProjectById } from "@/lib/data";
+import { getProjectById, getProjectsForCurrentUser } from "@/lib/data";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { ProjectSwitcher } from "@/components/project-switcher";
 
 async function loginAction() {
     'use server';
@@ -24,15 +20,15 @@ async function loginAction() {
 async function logoutAction() {
     'use server';
     await logout();
+    // Also clear the selected project cookie on logout
+    cookies().delete('selectedProject');
     redirect('/login');
 }
 
 export default async function AppLayout({ 
     children,
-    searchParams
 }: { 
     children: React.ReactNode,
-    searchParams?: { [key: string]: string | string[] | undefined };
 }) {
     const userId = await getCurrentUserId();
     const user = userId ? await findUserById(userId) : null;
@@ -43,10 +39,9 @@ export default async function AppLayout({
         return redirect('/login');
     }
 
-    const projectId = searchParams?.projectId as string;
-    const project = projectId ? await getProjectById(projectId) : null;
-    const headerTitle = project ? `${orgName} / ${project.display_name}` : orgName;
-
+    const projects = await getProjectsForCurrentUser();
+    const selectedProjectCookie = cookies().get('selectedProject');
+    const selectedProject = selectedProjectCookie ? JSON.parse(selectedProjectCookie.value) : null;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
@@ -56,8 +51,12 @@ export default async function AppLayout({
                         <AvatarImage src="https://picsum.photos/32" data-ai-hint="logo" />
                         <AvatarFallback>{avatarFallback}</AvatarFallback>
                     </Avatar>
-                    <h1 className="text-lg font-semibold">{headerTitle}</h1>
-                    {project && <Badge variant="outline">Free</Badge>}
+                     <ProjectSwitcher 
+                        orgName={orgName}
+                        projects={projects}
+                        selectedProject={selectedProject}
+                    />
+                    {selectedProject && <Badge variant="outline">Free</Badge>}
                 </div>
                 <div className="flex-1"></div>
                  {userId ? (
@@ -81,7 +80,7 @@ export default async function AppLayout({
             <div className="flex flex-1">
                 <aside className="hidden w-14 flex-col border-r bg-background sm:flex">
                     <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-                       <Nav projectId={projectId} />
+                       <Nav projectId={selectedProject?.project_id} />
                     </nav>
                 </aside>
                 <main className="flex-1 overflow-auto p-4 md:p-8">

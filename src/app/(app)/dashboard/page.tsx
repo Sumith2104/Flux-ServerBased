@@ -5,6 +5,22 @@ import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { getProjectsForCurrentUser, Project } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
+import { cookies } from "next/headers";
+import { redirect } from 'next/navigation';
+
+async function selectProjectAction(formData: FormData) {
+    'use server';
+    const projectString = formData.get('project') as string;
+    if (projectString) {
+        cookies().set('selectedProject', projectString, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 365, // 1 year
+            path: '/',
+        });
+    }
+    redirect('/dashboard');
+}
 
 export default async function DashboardPage() {
     let projects: Project[] = [];
@@ -45,22 +61,25 @@ export default async function DashboardPage() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {projects.map((project) => (
-                    <Link href={`/dashboard?projectId=${project.project_id}`} key={project.project_id} className="group">
-                        <Card className="flex flex-col h-full">
-                           <CardHeader className="flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-base font-medium">{project.display_name}</CardTitle>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                            </CardHeader>
-                            <CardContent className="flex-grow pt-0 flex flex-col justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">
-                                        Created: {new Date(project.created_at).toLocaleDateString()}
-                                    </p>
-                                </div>
-                                <Badge variant="secondary" className="mt-4 w-fit">Project</Badge>
-                            </CardContent>
-                        </Card>
-                    </Link>
+                    <form action={selectProjectAction} key={project.project_id}>
+                        <input type="hidden" name="project" value={JSON.stringify(project)} />
+                        <button type="submit" className="w-full text-left group">
+                             <Card className="flex flex-col h-full">
+                                <CardHeader className="flex-row items-center justify-between pb-2">
+                                    <CardTitle className="text-base font-medium">{project.display_name}</CardTitle>
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                                </CardHeader>
+                                <CardContent className="flex-grow pt-0 flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">
+                                            Created: {new Date(project.created_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <Badge variant="secondary" className="mt-4 w-fit">Project</Badge>
+                                </CardContent>
+                            </Card>
+                        </button>
+                    </form>
                 ))}
                  {projects.length === 0 && (
                     <div className="col-span-full text-center text-muted-foreground py-10">
