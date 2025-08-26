@@ -3,21 +3,50 @@
 
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createTableAction } from './actions';
 import { SubmitButton } from '@/components/submit-button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid';
+
+type Column = {
+    id: string;
+    name: string;
+    type: 'text' | 'number' | 'date';
+};
 
 export default function CreateTablePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const projectId = searchParams.get('projectId');
     const { toast } = useToast();
+
+    const [tableName, setTableName] = useState('');
+    const [tableDescription, setTableDescription] = useState('');
+    const [columns, setColumns] = useState<Column[]>([
+        { id: uuidv4(), name: 'id', type: 'number' },
+    ]);
+
+    const addColumn = () => {
+        setColumns([...columns, { id: uuidv4(), name: '', type: 'text' }]);
+    };
+
+    const removeColumn = (id: string) => {
+        setColumns(columns.filter(col => col.id !== id));
+    };
+
+    const updateColumn = (id: string, field: 'name' | 'type', value: string) => {
+        setColumns(columns.map(col => 
+            col.id === id ? { ...col, [field]: value } : col
+        ));
+    };
 
     async function handleCreateTable(formData: FormData) {
         if (!projectId) {
@@ -28,6 +57,22 @@ export default function CreateTablePage() {
             });
             return;
         }
+
+        // Validate columns
+        for (const col of columns) {
+            if (!col.name.trim() || !col.type) {
+                 toast({
+                    variant: "destructive",
+                    title: "Invalid Column",
+                    description: "All column names and types must be filled out.",
+                });
+                return;
+            }
+        }
+        
+        const columnsStr = columns.map(c => `${c.name}:${c.type}`).join(',');
+
+        formData.set('columns', columnsStr);
         formData.append('projectId', projectId);
 
         const result = await createTableAction(formData);
@@ -56,13 +101,13 @@ export default function CreateTablePage() {
                     Back to Dashboard
                 </Link>
             </Button>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-2xl">Create New Table</CardTitle>
-                    <CardDescription>Define the schema for your new table.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form action={handleCreateTable} className="grid gap-6">
+            <form action={handleCreateTable}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl">Create New Table</CardTitle>
+                        <CardDescription>Define the schema for your new table.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="tableName">Table Name</Label>
                             <Input
@@ -71,6 +116,8 @@ export default function CreateTablePage() {
                                 placeholder="e.g., users"
                                 required
                                 className="font-mono"
+                                value={tableName}
+                                onChange={(e) => setTableName(e.target.value)}
                             />
                         </div>
                          <div className="grid gap-2">
@@ -80,28 +127,66 @@ export default function CreateTablePage() {
                                 name="tableDescription"
                                 placeholder="e.g., A table to store customer information."
                                 required
+                                value={tableDescription}
+                                onChange={(e) => setTableDescription(e.target.value)}
                             />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="columns">Columns</Label>
-                             <Textarea
-                                id="columns"
-                                name="columns"
-                                placeholder="id:number, name:text, email:text, created_at:date"
-                                required
-                                rows={4}
-                                className="font-mono"
-                            />
-                            <p className="text-sm text-muted-foreground">
-                                Enter column names and types, separated by commas. Supported types: text, number, date.
-                            </p>
+                        <div className="grid gap-4">
+                           <div>
+                                <Label>Columns</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Define the name and data type for each column.
+                                </p>
+                           </div>
+                           <div className="space-y-4">
+                            {columns.map((col, index) => (
+                                <div key={col.id} className="flex items-center gap-2">
+                                     <Input
+                                        placeholder="Column name"
+                                        value={col.name}
+                                        onChange={(e) => updateColumn(col.id, 'name', e.target.value)}
+                                        className="font-mono"
+                                        required
+                                    />
+                                    <Select 
+                                        value={col.type} 
+                                        onValueChange={(value: 'text' | 'number' | 'date') => updateColumn(col.id, 'type', value)}
+                                    >
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="text">Text</SelectItem>
+                                            <SelectItem value="number">Number</SelectItem>
+                                            <SelectItem value="date">Date</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                     <Button 
+                                        variant="destructive" 
+                                        size="icon" 
+                                        onClick={() => removeColumn(col.id)} 
+                                        type="button"
+                                        disabled={index === 0}
+                                    >
+                                        <Trash2 className="h-4 w-4"/>
+                                        <span className="sr-only">Remove column</span>
+                                    </Button>
+                                </div>
+                            ))}
+                           </div>
+                             <Button variant="outline" onClick={addColumn} type="button">
+                                <Plus className="mr-2 h-4 w-4"/>
+                                Add Column
+                            </Button>
                         </div>
-                        <SubmitButton type="submit" className="w-full">
+                    </CardContent>
+                    <CardFooter>
+                         <SubmitButton type="submit" className="w-full">
                             Create Table
                         </SubmitButton>
-                    </form>
-                </CardContent>
-            </Card>
+                    </CardFooter>
+                </Card>
+            </form>
         </div>
     </div>
   );
