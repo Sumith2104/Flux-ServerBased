@@ -6,13 +6,15 @@ export async function middleware(request: NextRequest) {
   const userId = await getCurrentUserId();
   const { pathname } = request.nextUrl;
 
+  const isAuthPage = ['/login', '/signup'].includes(pathname);
+
   // If user is not logged in and tries to access a protected route, redirect to login
-  if (!userId && !['/login', '/signup'].includes(pathname)) {
+  if (!userId && !isAuthPage) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // If user is logged in and tries to access login/signup, redirect to dashboard
-  if (userId && ['/login', '/signup'].includes(pathname)) {
+  if (userId && isAuthPage) {
      return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -29,6 +31,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
