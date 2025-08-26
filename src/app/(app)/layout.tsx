@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getCurrentUserId, login, logout } from "@/lib/auth";
+import { getCurrentUserId, login, logout, findUserById } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 async function loginAction() {
@@ -29,6 +29,10 @@ async function logoutAction() {
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
     const userId = await getCurrentUserId();
+    const user = userId ? await findUserById(userId) : null;
+    const orgName = user ? `${user.email.split('@')[0]}'s Org` : "My Org";
+    const avatarFallback = user ? user.email.charAt(0).toUpperCase() : "M";
+
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
@@ -36,9 +40,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src="https://picsum.photos/32" data-ai-hint="logo" />
-                        <AvatarFallback>S</AvatarFallback>
+                        <AvatarFallback>{avatarFallback}</AvatarFallback>
                     </Avatar>
-                    <h1 className="text-lg font-semibold">Sumith's Org</h1>
+                    <h1 className="text-lg font-semibold">{orgName}</h1>
                     <Badge variant="outline">Free</Badge>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -52,7 +56,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                         <MessageSquare className="h-5 w-5 text-muted-foreground" />
                         <Avatar className="h-8 w-8">
                             <AvatarImage src="https://picsum.photos/32/32" data-ai-hint="profile picture" alt="User" />
-                            <AvatarFallback>U</AvatarFallback>
+                            <AvatarFallback>{avatarFallback}</AvatarFallback>
                         </Avatar>
                     </div>
                 ) : (
