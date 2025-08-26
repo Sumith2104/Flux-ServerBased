@@ -23,7 +23,6 @@ const navItems = [
     { href: "/editor", label: "Table Editor", icon: Table },
     { href: "/query", label: "AI SQL Translator", icon: BrainCircuit },
     { href: "/api", label: "API Generation", icon: Code },
-    { href: "/storage", label: "Mock Storage", icon: Folder },
     { href: "/settings", label: "Settings", icon: SettingsIcon },
 ]
 

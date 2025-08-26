@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, HelpCircle, MessageSquare, Plus } from "lucide-react";
+import { ChevronDown, HelpCircle, MessageSquare } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const orgName = user ? `${user.email.split('@')[0]}'s Org` : "My Org";
     const avatarFallback = user ? user.email.charAt(0).toUpperCase() : "M";
 
+    if (!userId) {
+        return redirect('/login');
+    }
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
@@ -44,7 +47,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                     </Avatar>
                     <h1 className="text-lg font-semibold">{orgName}</h1>
                     <Badge variant="outline">Free</Badge>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1"></div>
                  {userId ? (
