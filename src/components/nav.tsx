@@ -8,12 +8,15 @@ import {
     BrainCircuit, 
     Code, 
     Folder, 
-    Settings as SettingsIcon,
+    Settings as SettingsIcon
+} from "lucide-react"
+import {
     Tooltip,
     TooltipContent,
+    TooltipProvider,
     TooltipTrigger,
-    TooltipProvider
-} from "lucide-react"
+} from "@/components/ui/tooltip";
+
 
 const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
