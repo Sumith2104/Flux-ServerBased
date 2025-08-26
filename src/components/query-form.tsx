@@ -110,9 +110,9 @@ export function QueryForm() {
                             )}
                             Generate
                         </Button>
-                    </form>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </form>
             
             {(sql || insights || loading) && (
                 <div className="grid md:grid-cols-2 gap-6">
