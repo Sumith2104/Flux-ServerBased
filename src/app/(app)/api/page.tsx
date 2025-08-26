@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { FileCode } from "lucide-react";
 
 export default function ApiPage() {
     return (
@@ -11,27 +12,14 @@ export default function ApiPage() {
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Sales Table API</CardTitle>
-                    <CardDescription>Endpoints for the 'sales' table.</CardDescription>
+                    <CardTitle>API Endpoints</CardTitle>
+                    <CardDescription>Select a table to view its generated API endpoints.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div>
-                        <h3 className="font-semibold">GET /api/sales</h3>
-                        <p className="text-sm text-muted-foreground">Retrieve all records from the sales table.</p>
-                        <pre className="mt-2 p-4 rounded-md bg-secondary text-secondary-foreground text-sm overflow-x-auto"><code>curl https://api.spreadsheetai.app/v1/sales</code></pre>
-                    </div>
-                    <div>
-                        <h3 className="font-semibold">GET /api/sales/:id</h3>
-                        <p className="text-sm text-muted-foreground">Retrieve a single record by ID.</p>
-                        <pre className="mt-2 p-4 rounded-md bg-secondary text-secondary-foreground text-sm overflow-x-auto"><code>curl https://api.spreadsheetai.app/v1/sales/1</code></pre>
-                    </div>
-                    <div>
-                        <h3 className="font-semibold">POST /api/sales</h3>
-                        <p className="text-sm text-muted-foreground">Create a new record.</p>
-                        <pre className="mt-2 p-4 rounded-md bg-secondary text-secondary-foreground text-sm overflow-x-auto"><code>{`curl -X POST \\
--H "Content-Type: application/json" \\
--d '{"product":"New Item","quantity":10}' \\
-https://api.spreadsheetai.app/v1/sales`}</code></pre>
+                <CardContent>
+                    <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-48 border-2 border-dashed rounded-lg">
+                        <FileCode className="h-12 w-12 mb-4" />
+                        <p className="text-lg font-medium">No Table Selected</p>
+                        <p>Your API endpoints will appear here once you select a table.</p>
                     </div>
                 </CardContent>
             </Card>
