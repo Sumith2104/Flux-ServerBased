@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import fs from 'fs/promises';
@@ -73,6 +74,9 @@ export interface Table {
     table_id: string;
     project_id: string;
     table_name: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface Column {

@@ -1,13 +1,23 @@
 
+
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, ChevronRight, LayoutGrid, List, Filter, Table } from "lucide-react"
+import { Plus, ChevronRight, LayoutGrid, List, Filter, Table, Edit } from "lucide-react"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
-import { getProjectsForCurrentUser, Project, getTablesForProject } from "@/lib/data";
+import { getProjectsForCurrentUser, Project, getTablesForProject, Table as DbTable } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
+import {
+  Table as ShadcnTable,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
 
 async function selectProjectAction(formData: FormData) {
     'use server';
@@ -124,13 +134,44 @@ export default async function DashboardPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {/* Table list will go here */}
-                             <div className="text-center text-muted-foreground py-10">
-                                <p>No tables yet.</p>
-                                <Button variant="link" asChild>
-                                   <Link href={`/dashboard/tables/create?projectId=${selectedProject.project_id}`}>Create your first table</Link>
-                                </Button>
-                            </div>
+                            {tables.length > 0 ? (
+                                <div className="border rounded-lg">
+                                    <ShadcnTable>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead>Description</TableHead>
+                                                <TableHead>Created</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {tables.map((table: DbTable) => (
+                                                <TableRow key={table.table_id}>
+                                                    <TableCell className="font-medium">{table.table_name}</TableCell>
+                                                    <TableCell className="text-muted-foreground">{table.description}</TableCell>
+                                                    <TableCell>{new Date(table.created_at).toLocaleDateString()}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="ghost" size="icon" asChild>
+                                                            <Link href={`/editor?tableId=${table.table_id}&tableName=${table.table_name}`}>
+                                                                <Edit className="h-4 w-4" />
+                                                                <span className="sr-only">Edit Table</span>
+                                                            </Link>
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </ShadcnTable>
+                                </div>
+                            ) : (
+                                 <div className="text-center text-muted-foreground py-10 border-2 border-dashed rounded-lg">
+                                    <p>No tables yet.</p>
+                                    <Button variant="link" asChild>
+                                       <Link href={`/dashboard/tables/create?projectId=${selectedProject.project_id}`}>Create your first table</Link>
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
