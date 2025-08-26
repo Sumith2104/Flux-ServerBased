@@ -1,19 +1,23 @@
 'use server';
 
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
+import {getCurrentUserId} from '@/lib/auth';
 
 function sanitizeForUrl(name: string) {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 export async function createProjectAction(formData: FormData) {
   const projectName = formData.get('projectName') as string;
-  const userId = formData.get('userId') as string; // This would come from session in a real app
+  const userId = await getCurrentUserId();
 
   if (!projectName || !userId) {
-    return { error: 'Project name and user ID are required.' };
+    return {error: 'Project name is required and user must be logged in.'};
   }
 
   try {
@@ -26,7 +30,7 @@ export async function createProjectAction(formData: FormData) {
     const projectsCsvPath = path.join(userFolderPath, 'projects.csv');
 
     // 1. Create project folder
-    await fs.mkdir(projectFolderPath, { recursive: true });
+    await fs.mkdir(projectFolderPath, {recursive: true});
 
     // 2. Append project to projects.csv
     try {
@@ -37,9 +41,9 @@ export async function createProjectAction(formData: FormData) {
       await fs.writeFile(projectsCsvPath, header + newProjectCsvRow, 'utf8');
     }
 
-    return { success: true, projectId };
+    return {success: true, projectId};
   } catch (error) {
     console.error('Project creation failed:', error);
-    return { error: 'An unexpected error occurred.' };
+    return {error: 'An unexpected error occurred.'};
   }
 }
