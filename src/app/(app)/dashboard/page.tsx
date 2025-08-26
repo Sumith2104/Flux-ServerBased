@@ -26,9 +26,11 @@ export default async function DashboardPage() {
                     <Button variant="ghost" size="icon">
                         <List className="h-4 w-4" />
                     </Button>
-                    <Button style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New project
+                    <Button asChild style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}>
+                       <Link href="/dashboard/projects/create">
+                            <Plus className="mr-2 h-4 w-4" />
+                            New project
+                       </Link>
                     </Button>
                 </div>
             </div>
