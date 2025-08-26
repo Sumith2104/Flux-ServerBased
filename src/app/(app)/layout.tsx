@@ -11,8 +11,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getCurrentUserId, login, logout } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+async function loginAction() {
+    'use server';
+    await login('123e4567-e89b-12d3-a456-426614174000');
+    redirect('/dashboard');
+}
+
+async function logoutAction() {
+    'use server';
+    await logout();
+    redirect('/login');
+}
+
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+    const userId = await getCurrentUserId();
+
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
             <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
@@ -26,13 +43,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1"></div>
-                <Button variant="outline" size="sm">Feedback</Button>
-                <HelpCircle className="h-5 w-5 text-muted-foreground" />
-                <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                 <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://picsum.photos/32/32" data-ai-hint="profile picture" alt="User" />
-                    <AvatarFallback>U</AvatarFallback>
-                </Avatar>
+                 {userId ? (
+                    <div className="flex items-center gap-4">
+                        <form action={logoutAction}>
+                            <Button variant="outline" size="sm">Logout</Button>
+                        </form>
+                        <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                        <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src="https://picsum.photos/32/32" data-ai-hint="profile picture" alt="User" />
+                            <AvatarFallback>U</AvatarFallback>
+                        </Avatar>
+                    </div>
+                ) : (
+                    <form action={loginAction}>
+                        <Button variant="outline" size="sm">Login</Button>
+                    </form>
+                )}
             </header>
             <div className="flex flex-1">
                 <aside className="hidden w-14 flex-col border-r bg-background sm:flex">
