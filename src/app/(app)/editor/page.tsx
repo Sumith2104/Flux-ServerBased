@@ -12,6 +12,7 @@ import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, S
 import { AddRowDialog } from "@/components/add-row-dialog"
 import { DataTable } from '@/components/data-table';
 import Cookies from 'js-cookie';
+import { BackButton } from '@/components/back-button';
 
 export default function EditorPage() {
     const searchParams = useSearchParams();
@@ -107,7 +108,10 @@ export default function EditorPage() {
             </Sidebar>
             <div className="flex-1 flex flex-col">
                 <div className="flex justify-between items-center p-4 md:p-6 border-b">
-                    <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
+                    <div className="flex items-center gap-4">
+                        <BackButton />
+                        <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
+                    </div>
                     {tableId && projectId ? (
                         <AddRowDialog columns={columns} projectId={projectId} tableName={tableName!} />
                     ) : (

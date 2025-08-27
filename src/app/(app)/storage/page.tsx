@@ -6,6 +6,7 @@ import { getCurrentUserId } from "@/lib/auth"
 import fs from "fs/promises"
 import path from "path"
 import { cookies } from "next/headers"
+import { BackButton } from "@/components/back-button"
 
 type FileInfo = {
     name: string;
@@ -64,11 +65,14 @@ export default async function StoragePage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold">Storage</h1>
-                    <p className="text-muted-foreground">
-                        File and folder management for your project.
-                    </p>
+                <div className="flex items-center gap-4">
+                    <BackButton />
+                    <div>
+                        <h1 className="text-3xl font-bold">Storage</h1>
+                        <p className="text-muted-foreground">
+                            File and folder management for your project.
+                        </p>
+                    </div>
                 </div>
                  <Button disabled={!projectId}>
                     <Upload className="mr-2 h-4 w-4" />

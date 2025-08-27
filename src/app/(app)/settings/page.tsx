@@ -3,15 +3,19 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/back-button"
 
 export default function SettingsPage() {
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
-            <div>
-                <h1 className="text-3xl font-bold">Settings</h1>
-                <p className="text-muted-foreground">
-                    Manage project settings and view logs.
-                </p>
+            <div className="flex items-center gap-4">
+                <BackButton />
+                <div>
+                    <h1 className="text-3xl font-bold">Settings</h1>
+                    <p className="text-muted-foreground">
+                        Manage project settings and view logs.
+                    </p>
+                </div>
             </div>
             <Card>
                 <CardHeader>

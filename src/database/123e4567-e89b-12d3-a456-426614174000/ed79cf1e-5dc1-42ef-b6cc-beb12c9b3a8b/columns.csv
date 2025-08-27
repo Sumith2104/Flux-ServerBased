@@ -1,6 +1,0 @@
-column_id,table_id,column_name,data_type
-6004371a-3baf-4979-a668-b10d54f51af6,cb8ee445-cccd-4e5d-9844-0a6820e9e2db,id,text
-472d67cc-d5db-4062-ac5d-30f00fbd326e,cb8ee445-cccd-4e5d-9844-0a6820e9e2db,name,text
-a2fdbe2c-39b9-4591-a8e8-9cd264211818,4b0525d8-ca12-4a2b-83a3-4c360cf6b447,id,text
-e425061f-4129-4379-a13c-5c5f475645c1,4b0525d8-ca12-4a2b-83a3-4c360cf6b447,name,text
-8a0ada85-5b3e-476d-9eb7-50c12008c2a4,4b0525d8-ca12-4a2b-83a3-4c360cf6b447,phno,number
