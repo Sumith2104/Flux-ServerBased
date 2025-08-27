@@ -1,38 +1,82 @@
 
 
-import { Table as ShadcnTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Plus, Table2, TableIcon } from "lucide-react"
 import Link from "next/link"
-import { getColumnsForTable, getTableData, Column, getTablesForProject, Table } from "@/lib/data"
-import { cookies } from "next/headers"
+import { getColumnsForTable, getTableData, type Column, getTablesForProject, type Table } from "@/lib/data"
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
 import { AddRowDialog } from "@/components/add-row-dialog"
+import { DataTable } from '@/components/data-table';
+import Cookies from 'js-cookie';
 
-export default async function EditorPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-    const tableId = searchParams.tableId as string;
-    const tableName = searchParams.tableName as string;
-    const selectedProjectCookie = cookies().get('selectedProject');
-    const selectedProject = selectedProjectCookie ? JSON.parse(selectedProjectCookie.value) : null;
-    const projectId = selectedProject?.project_id;
+export default function EditorPage() {
+    const searchParams = useSearchParams();
+    const tableId = searchParams.get('tableId');
+    const tableName = searchParams.get('tableName');
+    
+    const [columns, setColumns] = useState<Column[]>([]);
+    const [data, setData] = useState<Record<string, string>[]>([]);
+    const [tables, setTables] = useState<Table[]>([]);
+    const [projectId, setProjectId] = useState<string | null>(null);
 
-    let columns: Column[] = [];
-    let data: Record<string, string>[] = [];
-    let tables: Table[] = [];
-
-    if (projectId) {
-        try {
-            tables = await getTablesForProject(projectId);
-            if (tableId && tableName) {
-                columns = await getColumnsForTable(projectId, tableId);
-                data = await getTableData(projectId, tableName);
-            }
-        } catch (error) {
-            console.error("Failed to load table data:", error);
-            // Handle error state, maybe show a toast or message
+    // This effect runs once to get the project ID from the cookie.
+    useEffect(() => {
+        const selectedProjectCookie = Cookies.get('selectedProject');
+        const selectedProject = selectedProjectCookie ? JSON.parse(selectedProjectCookie) : null;
+        if (selectedProject) {
+            setProjectId(selectedProject.project_id);
         }
-    }
+    }, []);
 
+    // This effect fetches the list of tables when the project ID is available.
+    useEffect(() => {
+        if (projectId) {
+            getTablesForProject(projectId)
+                .then(setTables)
+                .catch(err => console.error("Failed to load tables:", err));
+        }
+    }, [projectId]);
+
+    // This effect fetches the table columns and data when a table is selected.
+    useEffect(() => {
+        if (tableId && tableName && projectId) {
+            getColumnsForTable(projectId, tableId)
+                .then(setColumns)
+                .catch(err => console.error("Failed to load columns:", err));
+            
+            getTableData(projectId, tableName)
+                .then(setData)
+                .catch(err => console.error("Failed to load table data:", err));
+        }
+    }, [tableId, tableName, projectId]);
+
+    // This effect re-fetches data when it's updated (e.g., after adding a row)
+     useEffect(() => {
+        if (tableId && tableName && projectId) {
+            getTableData(projectId, tableName)
+                .then(setData)
+                .catch(err => console.error("Failed to load table data:", err));
+        }
+    // By depending on the `data` state itself, we create a loop if not careful.
+    // A better approach would be a dedicated refetch function passed to the dialog.
+    // For now, this is a simple way to refresh, but it might be inefficient.
+    }, [data, tableId, tableName, projectId]);
+
+    const gridColumns = columns.map(col => ({
+        field: col.column_name,
+        headerName: col.column_name,
+        width: 150,
+        editable: true,
+    }));
+
+    const gridRows = data.map((row, index) => ({
+        id: index, // Using index as id, assuming no unique id in data
+        ...row
+    }));
 
     return (
         <SidebarProvider>
@@ -48,7 +92,7 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
                                     asChild
                                     isActive={table.table_id === tableId}
                                 >
-                                    <Link href={`/editor?tableId=${table.table_id}&tableName=${table.table_name}`} className="flex items-center gap-2">
+                                     <Link href={`/editor?tableId=${table.table_id}&tableName=${table.table_name}`} className="flex items-center gap-2">
                                         <TableIcon className="h-4 w-4" />
                                         <span>{table.table_name}</span>
                                     </Link>
@@ -69,7 +113,7 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
             <div className="flex-1 flex flex-col">
                 <div className="flex justify-between items-center p-4 md:p-6 border-b">
                     <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
-                    {tableId ? (
+                    {tableId && projectId ? (
                         <AddRowDialog columns={columns} projectId={projectId} tableName={tableName} />
                     ) : (
                          <Button asChild disabled={!projectId}>
@@ -81,57 +125,25 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
                     )}
                 </div>
                 <div className="p-4 md:p-6 flex-1 overflow-auto">
-                    <div className="rounded-lg border">
-                        <ShadcnTable>
-                            <TableHeader>
-                                <TableRow>
-                                    {columns.length > 0 ? (
-                                        <>
-                                            {columns.map(col => <TableHead key={col.column_id}>{col.column_name}</TableHead>)}
-                                            <TableHead className="w-[100px] text-right">Actions</TableHead>
-                                        </>
-                                    ) : (
-                                        <TableHead>ID</TableHead>
-                                    )}
-                                
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {tableId && data.length > 0 ? (
-                                    data.map((row, rowIndex) => (
-                                        <TableRow key={rowIndex}>
-                                            {columns.map(col => (
-                                                <TableCell key={col.column_id}>{row[col.column_name]}</TableCell>
-                                            ))}
-                                            <TableCell className="text-right">
-                                                {/* Action buttons can go here */}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : tableId && columns.length > 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={columns.length + 1} className="h-48 text-center text-muted-foreground">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <Table2 className="h-12 w-12 mb-4" />
-                                                <p className="text-lg font-medium">This table is empty</p>
-                                                <p>Add some data to get started.</p>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <Table2 className="h-12 w-12 mb-4" />
-                                                <p className="text-lg font-medium">No table selected</p>
-                                                <p>Select a table from the sidebar to start editing.</p>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </ShadcnTable>
-                    </div>
+                    {tableId && columns.length > 0 ? (
+                        <DataTable columns={gridColumns} rows={gridRows} />
+                    ) : tableId ? (
+                        <div className="h-full flex items-center justify-center text-center text-muted-foreground">
+                            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-12">
+                                <Table2 className="h-12 w-12 mb-4" />
+                                <p className="text-lg font-medium">This table is empty</p>
+                                <p>Add some data to get started.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-center text-muted-foreground">
+                           <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-12">
+                                <Table2 className="h-12 w-12 mb-4" />
+                                <p className="text-lg font-medium">No table selected</p>
+                                <p>Select a table from the sidebar to start editing.</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </SidebarProvider>
