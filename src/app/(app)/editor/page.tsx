@@ -45,27 +45,25 @@ export default function EditorPage() {
     useEffect(() => {
         if (tableId && tableName && projectId) {
             getColumnsForTable(projectId, tableId)
-                .then(setColumns)
+                .then(cols => {
+                    setColumns(cols);
+                    // After getting columns, fetch data.
+                    getTableData(projectId, tableName)
+                        .then(tableData => {
+                             // MUI DataGrid requires a unique `id` field for each row.
+                             // We'll add one if it doesn't exist.
+                             const dataWithIds = tableData.map((row, index) => ({
+                                id: row.id || `${tableName}-row-${index}`, // Use existing id or create one
+                                ...row,
+                            }));
+                            setData(dataWithIds);
+                        })
+                        .catch(err => console.error("Failed to load table data:", err));
+                })
                 .catch(err => console.error("Failed to load columns:", err));
-            
-            getTableData(projectId, tableName)
-                .then(setData)
-                .catch(err => console.error("Failed to load table data:", err));
         }
     }, [tableId, tableName, projectId]);
-
-    // This effect re-fetches data when it's updated (e.g., after adding a row)
-     useEffect(() => {
-        if (tableId && tableName && projectId) {
-            getTableData(projectId, tableName)
-                .then(setData)
-                .catch(err => console.error("Failed to load table data:", err));
-        }
-    // By depending on the `data` state itself, we create a loop if not careful.
-    // A better approach would be a dedicated refetch function passed to the dialog.
-    // For now, this is a simple way to refresh, but it might be inefficient.
-    }, [data, tableId, tableName, projectId]);
-
+    
     const gridColumns = columns.map(col => ({
         field: col.column_name,
         headerName: col.column_name,
@@ -73,10 +71,7 @@ export default function EditorPage() {
         editable: true,
     }));
 
-    const gridRows = data.map((row, index) => ({
-        id: index, // Using index as id, assuming no unique id in data
-        ...row
-    }));
+    const gridRows = data;
 
     return (
         <SidebarProvider>
@@ -114,7 +109,7 @@ export default function EditorPage() {
                 <div className="flex justify-between items-center p-4 md:p-6 border-b">
                     <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
                     {tableId && projectId ? (
-                        <AddRowDialog columns={columns} projectId={projectId} tableName={tableName} />
+                        <AddRowDialog columns={columns} projectId={projectId} tableName={tableName!} />
                     ) : (
                          <Button asChild disabled={!projectId}>
                             <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
