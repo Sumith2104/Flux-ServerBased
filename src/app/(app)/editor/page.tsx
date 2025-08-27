@@ -47,7 +47,7 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
                                     asChild
                                     isActive={table.table_id === tableId}
                                 >
-                                    <Link href={`/editor?tableId=${table.table_id}&tableName=${table.table_name}`}>
+                                    <Link href={`/editor?tableId=${table.table_id}&tableName=${table.table_name}`} className="flex items-center gap-2">
                                         <TableIcon className="h-4 w-4" />
                                         <span>{table.table_name}</span>
                                     </Link>
@@ -68,10 +68,17 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
             <div className="flex-1 flex flex-col">
                 <div className="flex justify-between items-center p-4 md:p-6 border-b">
                     <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
-                    {tableId && (
+                    {tableId ? (
                          <Button>
                             <Plus className="mr-2 h-4 w-4" />
                             Add Row
+                        </Button>
+                    ) : (
+                         <Button asChild disabled={!projectId}>
+                            <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                New Table
+                            </Link>
                         </Button>
                     )}
                 </div>
