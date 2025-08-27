@@ -7,6 +7,7 @@ import Link from "next/link"
 import { getColumnsForTable, getTableData, Column, getTablesForProject, Table } from "@/lib/data"
 import { cookies } from "next/headers"
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
+import { AddRowDialog } from "@/components/add-row-dialog"
 
 export default async function EditorPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
     const tableId = searchParams.tableId as string;
@@ -69,10 +70,7 @@ export default async function EditorPage({ searchParams }: { searchParams: { [ke
                 <div className="flex justify-between items-center p-4 md:p-6 border-b">
                     <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
                     {tableId ? (
-                         <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Row
-                        </Button>
+                        <AddRowDialog columns={columns} projectId={projectId} tableName={tableName} />
                     ) : (
                          <Button asChild disabled={!projectId}>
                             <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
