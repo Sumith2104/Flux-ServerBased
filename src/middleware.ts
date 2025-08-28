@@ -6,20 +6,20 @@ export async function middleware(request: NextRequest) {
   const userId = await getCurrentUserId();
   const { pathname } = request.nextUrl;
 
-  const isPublicPage = ['/login', '/signup', '/'].includes(pathname);
+  const isAuthPage = ['/login', '/signup'].includes(pathname);
 
   // If user is logged in...
   if (userId) {
-    // and tries to access a public page (like login, signup, or landing)
-    // redirect them to the dashboard.
-    if (isPublicPage) {
+    // and tries to access an auth page (login/signup), redirect to dashboard.
+    if (isAuthPage) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   } 
   // If user is not logged in...
   else {
     // and tries to access a protected page, redirect to login.
-    if (!isPublicPage) {
+    // The root page `/` should be accessible.
+    if (!isAuthPage && pathname !== '/') {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
@@ -37,6 +37,7 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // Update the matcher to exclude public assets and apply middleware to other routes.
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };
