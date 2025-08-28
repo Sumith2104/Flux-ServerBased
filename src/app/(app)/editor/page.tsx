@@ -1,6 +1,5 @@
 
 import { Suspense } from 'react';
-import dynamic from 'next/dynamic';
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTablesForProject, getColumnsForTable, getTableData } from '@/lib/data';
@@ -83,6 +82,8 @@ export default function EditorPage({
     const selectedProject = selectedProjectCookie ? JSON.parse(selectedProjectCookie.value) : null;
     const projectId = searchParams?.projectId as string || selectedProject?.project_id;
     
+    // If there's no project ID from either the URL or the cookie, we can't proceed.
+    // Redirect to the dashboard to have the user select a project.
     if (!projectId) {
         redirect('/dashboard');
     }
