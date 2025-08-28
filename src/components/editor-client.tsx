@@ -116,7 +116,10 @@ export function EditorClient({
         return rawColumns.map(col => ({
             field: col.column_name,
             headerName: col.column_name,
-            width: 150,
+            minWidth: 150,
+            flex: 1,
+            align: col.data_type === 'number' ? 'right' : 'left',
+            headerAlign: col.data_type === 'number' ? 'right' : 'left',
         }));
     }, [rawColumns]);
     
@@ -149,7 +152,7 @@ export function EditorClient({
 
     return (
         <>
-            <div className="flex h-full w-full">
+            <div className="flex h-full w-full items-start">
                 {/* Sidebar */}
                 <aside className="w-64 flex-shrink-0 border-r bg-background flex flex-col">
                     <div className="p-4">
@@ -165,7 +168,7 @@ export function EditorClient({
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Search tables..." className="pl-8" />
                     </div>
-                    <nav className="flex-1 overflow-y-auto px-2">
+                    <nav className="flex-1 px-2">
                         {allTables.map((table) => (
                              <div 
                                 key={table.table_id} 
@@ -270,7 +273,7 @@ export function EditorClient({
                                 </div>
                             </header>
 
-                            <div className="flex-1 p-6 overflow-y-auto">
+                            <div className="p-6 overflow-y-auto">
                                 <Tabs defaultValue="data" className="flex flex-col h-full">
                                     <TabsList>
                                         <TabsTrigger value="data">Data</TabsTrigger>
