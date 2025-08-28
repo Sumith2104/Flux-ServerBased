@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -6,47 +5,49 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 
 interface DataTableProps {
-    columns: GridColDef[];
-    rows: any[];
+  columns: GridColDef[];
+  rows: any[];
 }
 
 export function DataTable({ columns, rows }: DataTableProps) {
   const paginationModel = { page: 0, pageSize: 10 };
 
   return (
-    <Paper sx={{ 
-        height: '100%', 
+    <Paper
+      sx={{
+        height: '100%',
         width: '100%',
         '& .MuiDataGrid-root': {
-            border: 'none',
-            color: 'hsl(var(--foreground))',
-            backgroundColor: 'hsl(var(--card))',
+          border: 'none',
+          color: 'hsl(var(--foreground))',
+          backgroundColor: 'hsl(var(--card))',
         },
         '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid hsl(var(--border))',
+          borderBottom: '1px solid hsl(var(--border))',
         },
-         '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: 'hsl(var(--background))',
-            borderBottom: '1px solid hsl(var(--border))',
-            color: 'hsl(var(--foreground))',
+        '& .MuiDataGrid-columnHeaders': {
+          backgroundColor: 'white', // white header background
+          borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 'bold',
+          fontWeight: 'bold',
+          color: 'black', // header text in black
         },
         '& .MuiDataGrid-footerContainer': {
-            borderTop: '1px solid hsl(var(--border))',
-            color: 'hsl(var(--muted-foreground))',
+          borderTop: '1px solid hsl(var(--border))',
+          color: 'hsl(var(--muted-foreground))',
         },
         '& .MuiTablePagination-root': {
-            color: 'hsl(var(--muted-foreground))',
+          color: 'hsl(var(--muted-foreground))',
         },
         '& .MuiCheckbox-root.Mui-checked': {
-            color: 'hsl(var(--primary))',
+          color: 'hsl(var(--primary))',
         },
         '& .MuiDataGrid-iconButtonContainer > .MuiButtonBase-root': {
-            color: 'hsl(var(--foreground))'
-        }
-    }}>
+          color: 'hsl(var(--foreground))',
+        },
+      }}
+    >
       <DataGrid
         rows={rows}
         columns={columns}

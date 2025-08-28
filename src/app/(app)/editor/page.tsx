@@ -1,36 +1,39 @@
 
 import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTablesForProject, getColumnsForTable, getTableData } from '@/lib/data';
 import { EditorClient } from '@/components/editor-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
+
 async function Editor({ projectId, tableId, tableName }: { projectId: string; tableId?: string; tableName?: string; }) {
     const allTables = await getTablesForProject(projectId);
+    const currentTable = tableId ? allTables.find(t => t.table_id === tableId) : null;
 
     let columns: any[] = [];
     let rows: any[] = [];
     let tableColumnsForStructure: any[] = [];
 
-    const currentTable = tableId ? allTables.find(t => t.table_id === tableId) : null;
-
-    if (tableId && tableName) {
+    if (currentTable && tableId && tableName) {
         const tableColumns = await getColumnsForTable(projectId, tableId);
-        tableColumnsForStructure = tableColumns;
-        const tableData = await getTableData(projectId, tableName);
+        if (tableColumns) {
+            tableColumnsForStructure = tableColumns;
+            const tableData = await getTableData(projectId, tableName);
 
-        columns = tableColumns.map(col => ({
-            field: col.column_name,
-            headerName: col.column_name,
-            width: 150,
-            editable: true,
-        }));
-        
-        rows = tableData.map((row, index) => ({
-            id: row.id || index, 
-            ...row,
-        }));
+            columns = tableColumns.map(col => ({
+                field: col.column_name,
+                headerName: col.column_name,
+                width: 150,
+                editable: true,
+            }));
+            
+            rows = tableData.map((row, index) => ({
+                id: row.id || index, 
+                ...row,
+            }));
+        }
     }
 
     return (
