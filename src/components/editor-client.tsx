@@ -34,6 +34,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { deleteRowAction } from '@/app/(app)/editor/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
@@ -66,29 +78,27 @@ export function EditorClient({
     const handleDeleteSelected = async () => {
         if (!projectId || !tableId || !tableName || selectionModel.length === 0) return;
 
-        if (window.confirm(`Are you sure you want to delete ${selectionModel.length} row(s)?`)) {
-            let successCount = 0;
-            let errorCount = 0;
+        let successCount = 0;
+        let errorCount = 0;
 
-            for (const id of selectionModel) {
-                const result = await deleteRowAction(projectId, tableId, tableName, id as string);
-                if (result.success) {
-                    successCount++;
-                } else {
-                    errorCount++;
-                    console.error(`Failed to delete row ${id}: ${result.error}`);
-                }
+        for (const id of selectionModel) {
+            const result = await deleteRowAction(projectId, tableId, tableName, id as string);
+            if (result.success) {
+                successCount++;
+            } else {
+                errorCount++;
+                console.error(`Failed to delete row ${id}: ${result.error}`);
             }
-
-            if (successCount > 0) {
-                 toast({ title: 'Success', description: `${successCount} row(s) deleted successfully.` });
-            }
-            if (errorCount > 0) {
-                toast({ variant: 'destructive', title: 'Error', description: `Failed to delete ${errorCount} row(s).` });
-            }
-            router.refresh();
-            setSelectionModel([]);
         }
+
+        if (successCount > 0) {
+                toast({ title: 'Success', description: `${successCount} row(s) deleted successfully.` });
+        }
+        if (errorCount > 0) {
+            toast({ variant: 'destructive', title: 'Error', description: `Failed to delete ${errorCount} row(s).` });
+        }
+        router.refresh();
+        setSelectionModel([]);
     };
     
     const columns: GridColDef[] = React.useMemo(() => {
@@ -162,9 +172,26 @@ export function EditorClient({
                                 <Button variant="outline" size="sm" disabled={selectionModel.length !== 1}>
                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                 </Button>
-                                <Button variant="destructive" size="sm" disabled={selectionModel.length === 0} onClick={handleDeleteSelected}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectionModel.length})
-                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" size="sm" disabled={selectionModel.length === 0}>
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectionModel.length})
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete the selected
+                                            {selectionModel.length > 1 ? ` ${selectionModel.length} rows` : ' row'} from the table.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDeleteSelected}>Continue</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                             <div className="flex items-center gap-2 ml-auto">
                                 <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
