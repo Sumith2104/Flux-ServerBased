@@ -31,17 +31,16 @@ export async function createTableAction(formData: FormData) {
   const description = formData.get('description') as string;
   const projectId = formData.get('projectId') as string;
   const columnsStr = formData.get('columns') as string;
+  const csvContent = formData.get('csvContent') as string | null;
   const userId = await getCurrentUserId();
 
   if (!tableName || !projectId || !userId || !columnsStr) {
     return {error: 'Missing required fields.'};
   }
 
-  // Basic validation for table name (no spaces or special chars)
   if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
     return { error: 'Table name can only contain letters, numbers, and underscores.' };
   }
-
 
   try {
     const tableId = uuidv4();
@@ -100,8 +99,15 @@ export async function createTableAction(formData: FormData) {
     if (await fileExists(dataFilePath)) {
         return { error: `A data file named '${tableName}.csv' already exists.` };
     }
-    const dataFileHeader = columns.map(c => c.name).join(',');
-    await fs.writeFile(dataFilePath, dataFileHeader, 'utf8');
+    
+    if (csvContent) {
+        // If CSV content is provided, write it directly to the file.
+        await fs.writeFile(dataFilePath, csvContent, 'utf8');
+    } else {
+        // Otherwise, create an empty file with just the header.
+        const dataFileHeader = columns.map(c => c.name).join(',');
+        await fs.writeFile(dataFilePath, dataFileHeader, 'utf8');
+    }
 
     return {success: true, tableId};
   } catch (error) {

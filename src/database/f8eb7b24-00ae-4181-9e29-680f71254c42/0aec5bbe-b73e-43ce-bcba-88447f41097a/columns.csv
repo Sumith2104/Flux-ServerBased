@@ -8,3 +8,7 @@ b4bab8c9-8429-4f67-90ff-ff03997af768,52385772-866b-4bfa-af67-94565bdc83a2,id,gen
 6d36628b-781d-431d-808b-ae07f51162a3,3e7405af-0f69-448e-86fd-2be33c49ef8d,phone,number
 344a2160-ee7a-49f0-8f4e-3d32f8b521ac,3e7405af-0f69-448e-86fd-2be33c49ef8d,date,now_date()
 ed12cabd-3ee3-474d-baa7-27b754f2735e,3e7405af-0f69-448e-86fd-2be33c49ef8d,time,now_time()
+8fedb01f-33c0-44ee-9f9f-0b9447f43f89,ad95c5cd-2e6d-474d-a9f8-4069973b6dc5,id,gen_random_uuid(),left
+b0a754ef-8fa3-4152-aa85-0843e5052ddd,ad95c5cd-2e6d-474d-a9f8-4069973b6dc5,name,text,left
+5696a1bb-54ea-4bbd-ad54-f0217cf0b499,ad95c5cd-2e6d-474d-a9f8-4069973b6dc5,member_id,text,left
+de47fb48-6fc8-48b4-a0c9-564672544db9,ad95c5cd-2e6d-474d-a9f8-4069973b6dc5,join_date,now_date(),left
