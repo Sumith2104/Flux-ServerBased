@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import dynamic from 'next/dynamic';
 import { getTablesForProject, getColumnsForTable, getTableData, Table as DbTable } from '@/lib/data';
 import { 
     Plus, 
@@ -14,7 +15,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DataTable } from '@/components/data-table';
 import { GridColDef } from '@mui/x-data-grid';
 import { AddRowDialog } from '@/components/add-row-dialog';
 import { Separator } from '@/components/ui/separator';
@@ -28,6 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Skeleton } from '@/components/ui/skeleton';
+
+const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
+    ssr: false,
+    loading: () => <Skeleton className="h-[70vh] w-full" />,
+});
+
 
 async function Editor({ projectId, tableId, tableName }: { projectId: string; tableId?: string; tableName?: string; }) {
     const allTables = await getTablesForProject(projectId);
