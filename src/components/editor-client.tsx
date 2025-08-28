@@ -152,7 +152,7 @@ export function EditorClient({
 
     return (
         <>
-            <div className="flex h-full w-full items-start">
+            <div className="flex w-full items-start">
                 {/* Sidebar */}
                 <aside className="w-64 flex-shrink-0 border-r bg-background flex flex-col">
                     <div className="p-4">
@@ -274,7 +274,7 @@ export function EditorClient({
                             </header>
 
                             <div className="p-6 overflow-y-auto">
-                                <Tabs defaultValue="data" className="flex flex-col h-full">
+                                <Tabs defaultValue="data" className="flex flex-col">
                                     <TabsList>
                                         <TabsTrigger value="data">Data</TabsTrigger>
                                         <TabsTrigger value="structure">Structure</TabsTrigger>
