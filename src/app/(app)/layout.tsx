@@ -46,7 +46,6 @@ export default async function AppLayout({
             <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
                 <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://picsum.photos/32" data-ai-hint="logo" />
                         <AvatarFallback>{avatarFallback}</AvatarFallback>
                     </Avatar>
                      <ProjectSwitcher 
