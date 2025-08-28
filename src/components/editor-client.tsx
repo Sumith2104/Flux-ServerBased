@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -238,7 +239,11 @@ export function EditorClient({
                                         <CardHeader>
                                             <CardTitle>Table Structure</CardTitle>
                                             <CardDescription>
-                                                This is the schema for the '{currentTable.table_name}' table.
+                                                {currentTable.description ? (
+                                                    currentTable.description
+                                                ) : (
+                                                    `This is the schema for the '${currentTable.table_name}' table.`
+                                                )}
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent>

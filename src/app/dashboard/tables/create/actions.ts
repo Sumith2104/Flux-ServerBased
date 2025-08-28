@@ -28,6 +28,7 @@ async function getFileContent(filePath: string): Promise<string> {
 
 export async function createTableAction(formData: FormData) {
   const tableName = formData.get('tableName') as string;
+  const description = formData.get('description') as string;
   const projectId = formData.get('projectId') as string;
   const columnsStr = formData.get('columns') as string;
   const userId = await getCurrentUserId();
@@ -56,7 +57,7 @@ export async function createTableAction(formData: FormData) {
 
     // 1. Update tables.csv
     const tablesCsvPath = path.join(projectPath, 'tables.csv');
-    const newTableCsvRow = `\n${tableId},${projectId},"${tableName}","",${createdAt},${createdAt}`;
+    const newTableCsvRow = `\n${tableId},${projectId},"${tableName}","${description || ''}",${createdAt},${createdAt}`;
     
     const tablesCsvContent = await getFileContent(tablesCsvPath);
     if (!tablesCsvContent.trim()) {

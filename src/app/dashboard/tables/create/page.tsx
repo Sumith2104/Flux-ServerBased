@@ -14,6 +14,7 @@ import { SubmitButton } from '@/components/submit-button';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { Textarea } from '@/components/ui/textarea';
 
 type Column = {
     id: string;
@@ -28,6 +29,7 @@ export default function CreateTablePage() {
     const { toast } = useToast();
 
     const [tableName, setTableName] = useState('');
+    const [description, setDescription] = useState('');
     const [columns, setColumns] = useState<Column[]>([
         { id: uuidv4(), name: 'id', type: 'gen_random_uuid()' },
     ]);
@@ -116,6 +118,16 @@ export default function CreateTablePage() {
                                 className="font-mono"
                                 value={tableName}
                                 onChange={(e) => setTableName(e.target.value)}
+                            />
+                        </div>
+                         <div className="grid gap-2">
+                            <Label htmlFor="description">Description (Optional)</Label>
+                            <Textarea
+                                id="description"
+                                name="description"
+                                placeholder="e.g., A table to store customer information."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
                             />
                         </div>
                         <div className="grid gap-4">
