@@ -1,3 +1,4 @@
+
 'use server';
 
 import {v4 as uuidv4} from 'uuid';
@@ -66,25 +67,41 @@ export async function signupAction(formData: FormData) {
     return {error: 'Email and password are required.'};
   }
 
+  const dbPath = path.join(process.cwd(), 'src', 'database');
+  const usersCsvPath = path.join(dbPath, 'users.csv');
+
   try {
+    let usersData = '';
+    try {
+        usersData = await fs.readFile(usersCsvPath, 'utf8');
+    } catch (error: any) {
+        if (error.code !== 'ENOENT') throw error;
+        // File doesn't exist, which is fine. It will be created.
+    }
+    
+    const users = parseCsv(usersData);
+    const existingUser = users.find(u => u.email === email);
+
+    if (existingUser) {
+        return { error: 'An account with this email already exists.' };
+    }
+
     const userId = uuidv4();
     const createdAt = new Date().toISOString();
     const newUserCsvRow = `\n${userId},${email},${password},${createdAt}`;
 
-    const dbPath = path.join(process.cwd(), 'src', 'database');
-    const usersCsvPath = path.join(dbPath, 'users.csv');
     const userFolderPath = path.join(dbPath, userId);
 
     // 1. Create database directory if it doesn't exist
     await fs.mkdir(dbPath, {recursive: true});
 
     // 2. Append user to users.csv
-    try {
-      await fs.appendFile(usersCsvPath, newUserCsvRow, 'utf8');
-    } catch (error) {
-      // If file doesn't exist, create it with header
-      const header = 'id,email,password,created_at';
-      await fs.writeFile(usersCsvPath, header + newUserCsvRow, 'utf8');
+    if (usersData) {
+        await fs.appendFile(usersCsvPath, newUserCsvRow, 'utf8');
+    } else {
+        // If file doesn't exist, create it with header
+        const header = 'id,email,password,created_at';
+        await fs.writeFile(usersCsvPath, header + newUserCsvRow, 'utf8');
     }
 
     // 3. Create user's root folder
