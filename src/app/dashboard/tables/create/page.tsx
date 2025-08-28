@@ -17,11 +17,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { Textarea } from '@/components/ui/textarea';
 
 type ColumnType = 'text' | 'number' | 'date' | 'gen_random_uuid()' | 'now_date()' | 'now_time()';
+type Alignment = 'left' | 'center' | 'right';
 
 type Column = {
     id: string;
     name: string;
     type: ColumnType;
+    alignment: Alignment;
 };
 
 export default function CreateTablePage() {
@@ -33,20 +35,20 @@ export default function CreateTablePage() {
     const [tableName, setTableName] = useState('');
     const [description, setDescription] = useState('');
     const [columns, setColumns] = useState<Column[]>([
-        { id: uuidv4(), name: 'id', type: 'gen_random_uuid()' },
+        { id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' },
     ]);
 
     const addColumn = () => {
-        setColumns([...columns, { id: uuidv4(), name: '', type: 'text' }]);
+        setColumns([...columns, { id: uuidv4(), name: '', type: 'text', alignment: 'left' }]);
     };
 
     const removeColumn = (id: string) => {
         setColumns(columns.filter(col => col.id !== id));
     };
 
-    const updateColumn = (id: string, field: 'name' | 'type', value: string) => {
+    const updateColumn = (id: string, field: keyof Column, value: string) => {
         setColumns(columns.map(col => 
-            col.id === id ? { ...col, [field]: value as Column['type'] } : col
+            col.id === id ? { ...col, [field]: value } : col
         ));
     };
 
@@ -72,7 +74,7 @@ export default function CreateTablePage() {
             }
         }
         
-        const columnsStr = columns.map(c => `${c.name}:${c.type}`).join(',');
+        const columnsStr = columns.map(c => `${c.name}:${c.type}:${c.alignment}`).join(',');
 
         formData.set('columns', columnsStr);
         formData.append('projectId', projectId);
@@ -96,7 +98,7 @@ export default function CreateTablePage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-3xl">
             <Button variant="ghost" asChild className="mb-4">
                 <Link href="/dashboard">
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -136,12 +138,12 @@ export default function CreateTablePage() {
                            <div>
                                 <Label>Columns</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    Define the name and data type for each column.
+                                    Define the name, data type, and alignment for each column.
                                 </p>
                            </div>
                            <div className="space-y-4">
                             {columns.map((col, index) => (
-                                <div key={col.id} className="flex items-center gap-2">
+                                <div key={col.id} className="grid grid-cols-1 md:grid-cols-[1fr_150px_120px_auto] items-center gap-2">
                                      <Input
                                         placeholder="Column name"
                                         value={col.name}
@@ -153,7 +155,7 @@ export default function CreateTablePage() {
                                         value={col.type} 
                                         onValueChange={(value: ColumnType) => updateColumn(col.id, 'type', value)}
                                     >
-                                        <SelectTrigger className="w-[180px]">
+                                        <SelectTrigger>
                                             <SelectValue placeholder="Type" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -165,12 +167,26 @@ export default function CreateTablePage() {
                                             <SelectItem value="now_time()">Creation Time</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                     <Select 
+                                        value={col.alignment} 
+                                        onValueChange={(value: Alignment) => updateColumn(col.id, 'alignment', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Alignment" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="left">Left</SelectItem>
+                                            <SelectItem value="center">Center</SelectItem>
+                                            <SelectItem value="right">Right</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                      <Button 
                                         variant="destructive" 
                                         size="icon" 
                                         onClick={() => removeColumn(col.id)} 
                                         type="button"
                                         disabled={index === 0}
+                                        className="justify-self-end"
                                     >
                                         <Trash2 className="h-4 w-4"/>
                                         <span className="sr-only">Remove column</span>

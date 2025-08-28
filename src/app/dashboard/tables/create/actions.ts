@@ -68,11 +68,11 @@ export async function createTableAction(formData: FormData) {
     }
 
     const columns = columnsStr.split(',').map(c => {
-      const [name, type] = c.split(':');
+      const [name, type, alignment] = c.split(':');
       if (!name || !type || !['text', 'number', 'date', 'gen_random_uuid()', 'now_date()', 'now_time()'].includes(type.trim())) {
           throw new Error(`Invalid column definition: ${c}`);
       }
-      return {id: uuidv4(), name: name.trim(), type: type.trim()};
+      return {id: uuidv4(), name: name.trim(), type: type.trim(), alignment: alignment.trim() || 'left'};
     });
 
     if (columns.length === 0) {
@@ -83,12 +83,12 @@ export async function createTableAction(formData: FormData) {
     const columnsCsvPath = path.join(projectPath, 'columns.csv');
     let newColumnsCsvRows = '';
     for (const col of columns) {
-      newColumnsCsvRows += `\n${col.id},${tableId},${col.name},${col.type}`;
+      newColumnsCsvRows += `\n${col.id},${tableId},${col.name},${col.type},${col.alignment}`;
     }
 
     const columnsCsvContent = await getFileContent(columnsCsvPath);
     if (!columnsCsvContent.trim()) {
-        const header = 'column_id,table_id,column_name,data_type';
+        const header = 'column_id,table_id,column_name,data_type,alignment';
         await fs.writeFile(columnsCsvPath, header + newColumnsCsvRows, 'utf8');
     } else {
         await fs.appendFile(columnsCsvPath, newColumnsCsvRows, 'utf8');

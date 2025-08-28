@@ -118,8 +118,8 @@ export function EditorClient({
             headerName: col.column_name,
             minWidth: 150,
             flex: 1,
-            align: col.data_type === 'number' ? 'right' : 'left',
-            headerAlign: col.data_type === 'number' ? 'right' : 'left',
+            align: col.alignment || 'left',
+            headerAlign: col.alignment || 'left',
         }));
     }, [rawColumns]);
     
@@ -137,6 +137,8 @@ export function EditorClient({
             toast({ title: 'Success', description: `Table '${tableToDelete.table_name}' deleted successfully.` });
             if (tableToDelete.table_id === tableId) {
                 router.push(`/editor?projectId=${projectId}`);
+            } else {
+                router.refresh();
             }
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete table.' });
@@ -168,7 +170,7 @@ export function EditorClient({
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Search tables..." className="pl-8" />
                     </div>
-                    <nav className="flex-1 px-2">
+                    <nav className="flex-1 px-2 space-y-1">
                         {allTables.map((table) => (
                              <div 
                                 key={table.table_id} 
@@ -183,7 +185,7 @@ export function EditorClient({
                                 </Link>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100">
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 flex-shrink-0">
                                             <MoreHorizontal className="h-4 w-4" />
                                             <span className="sr-only">Table options</span>
                                         </Button>
@@ -274,7 +276,7 @@ export function EditorClient({
                             </header>
 
                             <div className="p-6 overflow-y-auto">
-                                <Tabs defaultValue="data" className="flex flex-col">
+                                <Tabs defaultValue="data" className="w-full">
                                     <TabsList>
                                         <TabsTrigger value="data">Data</TabsTrigger>
                                         <TabsTrigger value="structure">Structure</TabsTrigger>
@@ -309,6 +311,7 @@ export function EditorClient({
                                                             <TableRow>
                                                                 <TableHead>Column Name</TableHead>
                                                                 <TableHead>Data Type</TableHead>
+                                                                <TableHead>Alignment</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
@@ -316,6 +319,7 @@ export function EditorClient({
                                                                 <TableRow key={col.column_id}>
                                                                     <TableCell className="font-mono">{col.column_name}</TableCell>
                                                                     <TableCell className="font-mono">{col.data_type}</TableCell>
+                                                                    <TableCell className="font-mono capitalize">{col.alignment || 'left'}</TableCell>
                                                                 </TableRow>
                                                             ))}
                                                         </TableBody>

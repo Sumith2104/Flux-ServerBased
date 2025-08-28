@@ -77,7 +77,7 @@ export async function addRowAction(formData: FormData) {
         } else if (col.data_type === 'now_date()') {
             value = now.toLocaleDateString('en-CA', { timeZone }); // YYYY-MM-DD
         } else if (col.data_type === 'now_time()') {
-            value = now.toLocaleTimeString('en-GB', { timeZone }); // HH:MM:SS
+            value = now.toLocaleTimeString('en-GB', { hour12: false, timeZone }); // HH:MM:SS
         }
         newRowObject[col.column_name] = value || '';
     }
@@ -222,6 +222,7 @@ export async function addColumnAction(formData: FormData) {
   const tableName = formData.get('tableName') as string;
   const columnName = formData.get('columnName') as string;
   const columnType = formData.get('columnType') as string;
+  const alignment = formData.get('alignment') as string || 'left';
   const userId = await getCurrentUserId();
 
   if (!projectId || !tableId || !tableName || !columnName || !columnType || !userId) {
@@ -238,8 +239,22 @@ export async function addColumnAction(formData: FormData) {
     // 1. Update columns.csv
     const columnsCsvPath = path.join(projectPath, 'columns.csv');
     const newColumnId = uuidv4();
-    const newColumnCsvRow = `\n${newColumnId},${tableId},${columnName},${columnType}`;
-    await fs.appendFile(columnsCsvPath, newColumnCsvRow, 'utf8');
+    const newColumnCsvRow = `\n${newColumnId},${tableId},${columnName},${columnType},${alignment}`;
+    
+    const columnsFileContent = await readCsvFile(columnsCsvPath);
+    if(columnsFileContent.length > 0 && columnsFileContent[0].length < 5) {
+        // Old format, need to update header
+        const header = 'column_id,table_id,column_name,data_type,alignment';
+        const updatedContent = [header];
+        const oldColumns = await getFileContent(columnsCsvPath);
+        oldColumns.split('\n').slice(1).forEach(row => {
+            if(row) updatedContent.push(`${row},left`);
+        });
+        await fs.writeFile(columnsCsvPath, updatedContent.join('\n') + newColumnCsvRow, 'utf8');
+    } else {
+        await fs.appendFile(columnsCsvPath, newColumnCsvRow, 'utf8');
+    }
+
 
     // 2. Update the data file (e.g., users.csv)
     const dataFilePath = path.join(projectPath, `${tableName}.csv`);
@@ -302,10 +317,22 @@ export async function deleteTableAction(projectId: string, tableId: string, tabl
         }
 
         revalidatePath(`/editor`);
+        revalidatePath(`/dashboard`); // To update analytics
         return { success: true };
 
     } catch (error) {
         console.error('Failed to delete table:', error);
         return { error: `An unexpected error occurred: ${(error as Error).message}` };
+    }
+}
+
+async function getFileContent(filePath: string): Promise<string> {
+    try {
+        return await fs.readFile(filePath, 'utf8');
+    } catch (error: any) {
+        if (error.code === 'ENOENT') {
+            return ''; 
+        }
+        throw error;
     }
 }
