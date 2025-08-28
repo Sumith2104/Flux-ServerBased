@@ -2,10 +2,9 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, ChevronRight, LayoutGrid, List, Filter, Table, Edit } from "lucide-react"
+import { Plus, ChevronRight, Table, Edit, Rows, Database } from "lucide-react"
 import Link from "next/link"
-import { Input } from "@/components/ui/input"
-import { getProjectsForCurrentUser, Project, getTablesForProject, Table as DbTable } from "@/lib/data";
+import { getProjectsForCurrentUser, Project, getTablesForProject, Table as DbTable, getProjectAnalytics, ProjectAnalytics } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { cookies } from "next/headers";
 import {
@@ -17,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { selectProjectAction } from "@/app/actions"
+import { StorageChart } from "@/components/storage-chart";
 
 
 export default async function DashboardPage() {
@@ -30,6 +30,15 @@ export default async function DashboardPage() {
     const selectedProjectCookie = cookies().get('selectedProject');
     const selectedProject = selectedProjectCookie ? JSON.parse(selectedProjectCookie.value) : null;
     const tables = selectedProject ? await getTablesForProject(selectedProject.project_id) : [];
+    
+    let analytics: ProjectAnalytics | null = null;
+    if (selectedProject) {
+        try {
+            analytics = await getProjectAnalytics(selectedProject.project_id);
+        } catch (error) {
+            console.error("Failed to fetch project analytics:", error);
+        }
+    }
 
 
     return (
@@ -96,7 +105,7 @@ export default async function DashboardPage() {
                 </Card>
             ) : (
                 <div className="space-y-6">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <Card>
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
@@ -111,7 +120,40 @@ export default async function DashboardPage() {
                             </p>
                           </CardContent>
                         </Card>
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                              Total Rows
+                            </CardTitle>
+                            <Rows className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold">{analytics?.totalRows ?? 0}</div>
+                             <p className="text-xs text-muted-foreground">
+                              Across all tables
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                              Total Storage
+                            </CardTitle>
+                            <Database className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold">{analytics?.totalSize ?? 0} KB</div>
+                             <p className="text-xs text-muted-foreground">
+                              Total size of all CSV files
+                            </p>
+                          </CardContent>
+                        </Card>
                     </div>
+                    
+                    {analytics && analytics.tables.length > 0 && (
+                        <StorageChart data={analytics.tables} />
+                    )}
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Tables</CardTitle>

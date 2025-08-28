@@ -114,3 +114,57 @@ export async function getTableData(projectId: string, tableName: string): Promis
     const tableDataPath = path.join(DB_PATH, userId, projectId, `${tableName}.csv`);
     return readCsvFile(tableDataPath);
 }
+
+// --- Analytics Data ---
+export interface ProjectAnalytics {
+    totalSize: number; // in KB
+    totalRows: number;
+    tables: {
+        name: string;
+        size: number; // in KB
+        rows: number;
+    }[];
+}
+
+export async function getProjectAnalytics(projectId: string): Promise<ProjectAnalytics> {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        throw new Error("User not authenticated");
+    }
+
+    const projectPath = path.join(DB_PATH, userId, projectId);
+    const tables = await getTablesForProject(projectId);
+
+    let totalSize = 0;
+    let totalRows = 0;
+    const tableAnalytics = [];
+
+    for (const table of tables) {
+        const tableDataPath = path.join(projectPath, `${table.table_name}.csv`);
+        try {
+            const stats = await fs.stat(tableDataPath);
+            const tableData = await readCsvFile(tableDataPath);
+
+            const sizeInKb = parseFloat((stats.size / 1024).toFixed(2));
+            const rowCount = tableData.length;
+
+            totalSize += sizeInKb;
+            totalRows += rowCount;
+            
+            tableAnalytics.push({
+                name: table.table_name,
+                size: sizeInKb,
+                rows: rowCount,
+            });
+
+        } catch (error) {
+            console.warn(`Could not get analytics for table ${table.table_name}:`, error);
+        }
+    }
+
+    return {
+        totalSize: parseFloat(totalSize.toFixed(2)),
+        totalRows,
+        tables: tableAnalytics,
+    };
+}
