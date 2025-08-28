@@ -61,6 +61,10 @@ export default function EditorPage() {
                         .catch(err => console.error("Failed to load table data:", err));
                 })
                 .catch(err => console.error("Failed to load columns:", err));
+        } else {
+            // Clear data when no table is selected
+            setColumns([]);
+            setData([]);
         }
     }, [tableId, tableName, projectId]);
     
@@ -111,7 +115,7 @@ export default function EditorPage() {
                         <BackButton />
                         <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
                     </div>
-                    {tableId && projectId && tableName ? (
+                    {tableId && projectId && tableName && columns.length > 0 ? (
                         <AddRowDialog columns={columns} projectId={projectId} tableName={tableName} />
                     ) : (
                          <Button asChild disabled={!projectId}>
