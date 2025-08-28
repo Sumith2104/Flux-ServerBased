@@ -19,6 +19,7 @@ import { GridColDef } from '@mui/x-data-grid';
 import { AddRowDialog } from '@/components/add-row-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table as ShadcnTable,
   TableBody,
@@ -67,14 +68,6 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
                         <ChevronDown className="ml-auto h-4 w-4" />
                     </Button>
                 </div>
-                <div className="p-2">
-                    <Button asChild className="w-full">
-                        <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Table
-                        </Link>
-                    </Button>
-                </div>
                 <div className="p-2 relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Search tables..." className="pl-8" />
@@ -91,32 +84,42 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
                         </Link>
                     ))}
                 </nav>
+                 <div className="p-2 border-t">
+                    <Button asChild className="w-full">
+                        <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            New Table
+                        </Link>
+                    </Button>
+                </div>
             </aside>
             
             {/* Main Content */}
             <main className="flex-1 flex flex-col">
                 {currentTable ? (
                     <>
-                         <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
+                         <header className="flex h-14 items-center gap-4 border-b bg-background px-6 flex-shrink-0">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Table className="h-4 w-4" />
                                 <span className="font-semibold text-foreground">{currentTable.table_name}</span>
                             </div>
                             <Separator orientation="vertical" className="h-6" />
-                             <Tabs defaultValue="data" className="w-full">
-                                <TabsList>
-                                    <TabsTrigger value="data">Data</TabsTrigger>
-                                    <TabsTrigger value="structure">Structure</TabsTrigger>
-                                </TabsList>
-                                <div className="ml-auto flex items-center gap-2">
-                                     <AddRowDialog 
-                                        projectId={projectId}
-                                        tableId={currentTable.table_id}
-                                        tableName={currentTable.table_name}
-                                        columns={tableColumnsForStructure}
-                                    />
-                                    <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
-                                    <Button variant="outline" size="sm"><ArrowDownUp className="mr-2 h-4 w-4" /> Sort</Button>
+                             <Tabs defaultValue="data" className="flex-grow">
+                                <div className="flex items-center">
+                                    <TabsList>
+                                        <TabsTrigger value="data">Data</TabsTrigger>
+                                        <TabsTrigger value="structure">Structure</TabsTrigger>
+                                    </TabsList>
+                                    <div className="ml-auto flex items-center gap-2">
+                                        <AddRowDialog 
+                                            projectId={projectId}
+                                            tableId={currentTable.table_id}
+                                            tableName={currentTable.table_name}
+                                            columns={tableColumnsForStructure}
+                                        />
+                                        <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+                                        <Button variant="outline" size="sm"><ArrowDownUp className="mr-2 h-4 w-4" /> Sort</Button>
+                                    </div>
                                 </div>
                                 <TabsContent value="data" className="mt-4">
                                      <DataTable columns={columns} rows={rows} />
