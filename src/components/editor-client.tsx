@@ -19,10 +19,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { AddRowDialog } from '@/components/add-row-dialog';
+import { AddColumnDialog } from '@/components/add-column-dialog';
 import { EditRowDialog } from '@/components/edit-row-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
   Table as ShadcnTable,
   TableBody,
@@ -158,7 +159,7 @@ export function EditorClient({
             
             {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-hidden">
-                {currentTable && tableId ? (
+                {currentTable && tableId && tableName ? (
                     <>
                         <header className="flex h-14 items-center gap-4 border-b bg-background px-6 flex-shrink-0">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -266,6 +267,13 @@ export function EditorClient({
                                                 </ShadcnTable>
                                             </div>
                                         </CardContent>
+                                        <CardFooter>
+                                            <AddColumnDialog
+                                                projectId={projectId}
+                                                tableId={tableId}
+                                                tableName={tableName}
+                                            />
+                                        </CardFooter>
                                     </Card>
                                 </TabsContent>
                             </Tabs>

@@ -191,3 +191,56 @@ export async function deleteRowAction(projectId: string, tableId: string, tableN
         return { error: `An unexpected error occurred: ${(error as Error).message}` };
     }
 }
+
+export async function addColumnAction(formData: FormData) {
+  const projectId = formData.get('projectId') as string;
+  const tableId = formData.get('tableId') as string;
+  const tableName = formData.get('tableName') as string;
+  const columnName = formData.get('columnName') as string;
+  const columnType = formData.get('columnType') as string;
+  const userId = await getCurrentUserId();
+
+  if (!projectId || !tableId || !tableName || !columnName || !columnType || !userId) {
+    return { error: 'Missing required fields.' };
+  }
+
+  if (!/^[a-zA-Z0-9_]+$/.test(columnName)) {
+    return { error: 'Column name can only contain letters, numbers, and underscores.' };
+  }
+  
+  try {
+    const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
+    
+    // 1. Update columns.csv
+    const columnsCsvPath = path.join(projectPath, 'columns.csv');
+    const newColumnId = uuidv4();
+    const newColumnCsvRow = `\n${newColumnId},${tableId},${columnName},${columnType}`;
+    await fs.appendFile(columnsCsvPath, newColumnCsvRow, 'utf8');
+
+    // 2. Update the data file (e.g., users.csv)
+    const dataFilePath = path.join(projectPath, `${tableName}.csv`);
+    const fileContent = await fs.readFile(dataFilePath, 'utf8');
+    const rows = fileContent.trim().split('\n');
+    
+    if (rows.length > 0) {
+      // Add column to header
+      rows[0] = `${rows[0]},${columnName}`;
+
+      // Add empty value for new column to each data row
+      for (let i = 1; i < rows.length; i++) {
+        rows[i] = `${rows[i]},`;
+      }
+      const updatedContent = rows.join('\n');
+      await fs.writeFile(dataFilePath, updatedContent, 'utf8');
+    } else {
+        // If the file is empty, just write the new header
+        await fs.writeFile(dataFilePath, columnName, 'utf8');
+    }
+
+    revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to add column:', error);
+    return { error: `An unexpected error occurred: ${(error as Error).message}` };
+  }
+}
