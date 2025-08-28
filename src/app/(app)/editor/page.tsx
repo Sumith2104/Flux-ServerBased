@@ -118,7 +118,7 @@ export default function EditorPage() {
                     {tableId && projectId && tableName && columns.length > 0 ? (
                         <AddRowDialog columns={columns} projectId={projectId} tableName={tableName} />
                     ) : (
-                         <Button asChild disabled={!projectId}>
+                         <Button asChild disabled={!projectId || !tableId}>
                             <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
                                 <Plus className="mr-2 h-4 w-4" />
                                 New Table
