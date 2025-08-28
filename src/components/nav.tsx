@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -7,7 +8,8 @@ import {
     BrainCircuit, 
     Code, 
     Folder, 
-    Settings as SettingsIcon
+    Settings as SettingsIcon,
+    Table
 } from "lucide-react"
 import {
     Tooltip,
@@ -19,6 +21,7 @@ import {
 
 const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/editor", label: "Table Editor", icon: Table },
     { href: "/query", label: "AI SQL Translator", icon: BrainCircuit },
     { href: "/api", label: "API Generation", icon: Code },
     { href: "/storage", label: "Storage", icon: Folder },
@@ -47,7 +50,7 @@ export function Nav({ projectId }: { projectId?: string | null }) {
                                 href={finalHref}
                                 className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
                                     isDisabled ? "cursor-not-allowed text-muted-foreground/50" :
-                                    pathname === item.href
+                                    pathname.startsWith(item.href) // Use startsWith for editor sub-routes
                                     ? "bg-accent text-accent-foreground"
                                     : "text-muted-foreground hover:text-foreground"
                                 }`}
