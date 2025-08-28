@@ -65,6 +65,8 @@ export async function addRowAction(formData: FormData) {
     }
 
     const newRowObject: Record<string, any> = {};
+    const now = new Date();
+    const timeZone = 'Asia/Kolkata';
 
     for (const col of columns) {
         let value = formData.get(col.column_name) as string | null;
@@ -73,9 +75,9 @@ export async function addRowAction(formData: FormData) {
         } else if (col.data_type === 'gen_random_uuid()' && !value) {
             value = uuidv4();
         } else if (col.data_type === 'now_date()') {
-            value = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            value = now.toLocaleDateString('en-CA', { timeZone }); // YYYY-MM-DD
         } else if (col.data_type === 'now_time()') {
-            value = new Date().toLocaleTimeString('en-GB'); // HH:MM:SS
+            value = now.toLocaleTimeString('en-GB', { timeZone }); // HH:MM:SS
         }
         newRowObject[col.column_name] = value || '';
     }

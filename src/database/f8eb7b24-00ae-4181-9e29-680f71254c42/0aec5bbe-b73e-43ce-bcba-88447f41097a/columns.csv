@@ -1,8 +1,10 @@
 column_id,table_id,column_name,data_type
-f7788a7f-f241-44f8-b56a-4ef94cb05a9c,3bbd78ef-f5f0-4bd4-8367-c4e5b4e0a29e,id,text
-02c100ea-6dd8-42fb-bdcc-e147dcf958cf,3bbd78ef-f5f0-4bd4-8367-c4e5b4e0a29e,name,text
-1fceb078-c94e-435d-a51f-b633e8e8be00,3bbd78ef-f5f0-4bd4-8367-c4e5b4e0a29e,phno,number
 b4bab8c9-8429-4f67-90ff-ff03997af768,52385772-866b-4bfa-af67-94565bdc83a2,id,gen_random_uuid()
 8b36ad87-ccba-4939-9bea-2176bb5a2f62,52385772-866b-4bfa-af67-94565bdc83a2,name,text
 2c8a3982-a3c6-4676-a618-e1acc5a805d9,52385772-866b-4bfa-af67-94565bdc83a2,phno,number
 6551d968-b4f9-46de-9834-95c0ca476d9b,52385772-866b-4bfa-af67-94565bdc83a2,created_at,date
+82009500-50c4-4ac8-9413-622d2e894961,3e7405af-0f69-448e-86fd-2be33c49ef8d,id,gen_random_uuid()
+59651653-7da8-46ab-9100-079a3042736f,3e7405af-0f69-448e-86fd-2be33c49ef8d,name,text
+6d36628b-781d-431d-808b-ae07f51162a3,3e7405af-0f69-448e-86fd-2be33c49ef8d,phone,number
+344a2160-ee7a-49f0-8f4e-3d32f8b521ac,3e7405af-0f69-448e-86fd-2be33c49ef8d,date,now_date()
+ed12cabd-3ee3-474d-baa7-27b754f2735e,3e7405af-0f69-448e-86fd-2be33c49ef8d,time,now_time()
