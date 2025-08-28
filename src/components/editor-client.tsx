@@ -58,7 +58,7 @@ import {
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
-    loading: () => <Skeleton className="h-full w-full" />,
+    loading: () => <Skeleton className="h-96 w-full" />,
 });
 
 interface EditorClientProps {
@@ -276,7 +276,7 @@ export function EditorClient({
                                         <TabsTrigger value="data">Data</TabsTrigger>
                                         <TabsTrigger value="structure">Structure</TabsTrigger>
                                     </TabsList>
-                                    <TabsContent value="data" className="mt-4 flex-1">
+                                    <TabsContent value="data" className="mt-4">
                                         <DataTable 
                                             tableId={tableId}
                                             columns={columns} 

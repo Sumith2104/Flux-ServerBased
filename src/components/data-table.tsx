@@ -63,7 +63,6 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
   return (
     <Paper
       sx={{
-        height: '100%',
         width: '100%',
         '& .MuiDataGrid-root': {
           border: 'none',
@@ -113,6 +112,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
         disableRowSelectionOnClick
         onRowSelectionModelChange={onRowSelectionModelChange}
         rowSelectionModel={selectionModel}
+        autoHeight
       />
     </Paper>
   );
