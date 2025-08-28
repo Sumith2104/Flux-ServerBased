@@ -2,3 +2,6 @@ column_id,table_id,column_name,data_type
 f7788a7f-f241-44f8-b56a-4ef94cb05a9c,3bbd78ef-f5f0-4bd4-8367-c4e5b4e0a29e,id,text
 02c100ea-6dd8-42fb-bdcc-e147dcf958cf,3bbd78ef-f5f0-4bd4-8367-c4e5b4e0a29e,name,text
 1fceb078-c94e-435d-a51f-b633e8e8be00,3bbd78ef-f5f0-4bd4-8367-c4e5b4e0a29e,phno,number
+b4bab8c9-8429-4f67-90ff-ff03997af768,52385772-866b-4bfa-af67-94565bdc83a2,id,gen_random_uuid()
+8b36ad87-ccba-4939-9bea-2176bb5a2f62,52385772-866b-4bfa-af67-94565bdc83a2,name,text
+2c8a3982-a3c6-4676-a618-e1acc5a805d9,52385772-866b-4bfa-af67-94565bdc83a2,phno,number

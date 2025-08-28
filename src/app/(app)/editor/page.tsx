@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -112,8 +111,8 @@ export default function EditorPage() {
                         <BackButton />
                         <h1 className="text-2xl font-bold">{tableName ? `Editing: ${tableName}` : 'Table Editor'}</h1>
                     </div>
-                    {tableId && projectId ? (
-                        <AddRowDialog columns={columns} projectId={projectId} tableName={tableName!} />
+                    {tableId && projectId && tableName ? (
+                        <AddRowDialog columns={columns} projectId={projectId} tableName={tableName} />
                     ) : (
                          <Button asChild disabled={!projectId}>
                             <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
