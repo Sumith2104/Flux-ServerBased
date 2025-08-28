@@ -25,7 +25,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
           backgroundColor: 'hsl(var(--card))',
         },
         '& .MuiDataGrid-cell': {
-          borderBottom: '1px solid hsl(var(--border))',
+          borderBottom: 'thin solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaders': {
           backgroundColor: 'white', 
