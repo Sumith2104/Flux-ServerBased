@@ -3,18 +3,19 @@
 
 import Cookies from 'js-cookie';
 import type { Project } from '@/lib/data';
+import { selectProjectAction } from '@/app/(app)/dashboard/page';
 
 const COOKIE_NAME = 'selectedProject';
 
 export function useSelectedProject() {
   const setSelectedProject = (project: Project | null) => {
+    const formData = new FormData();
     if (project) {
-      Cookies.set(COOKIE_NAME, JSON.stringify(project), { expires: 365, path: '/' });
+        formData.append('project', JSON.stringify(project));
     } else {
-      Cookies.remove(COOKIE_NAME, { path: '/' });
+        formData.append('project', '');
     }
-    // Force a full page reload to the dashboard to ensure the server reads the new cookie
-    window.location.href = '/dashboard';
+    selectProjectAction(formData);
   };
 
   const getSelectedProject = (): Project | null => {

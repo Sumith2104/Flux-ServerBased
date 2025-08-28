@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table"
 
 
-async function selectProjectAction(formData: FormData) {
+export async function selectProjectAction(formData: FormData) {
     'use server';
     const projectString = formData.get('project') as string;
     if (projectString) {
@@ -29,6 +29,8 @@ async function selectProjectAction(formData: FormData) {
             maxAge: 60 * 60 * 24 * 365, // 1 year
             path: '/',
         });
+    } else {
+        cookies().delete('selectedProject');
     }
     redirect('/dashboard');
 }
