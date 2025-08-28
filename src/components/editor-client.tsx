@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -158,7 +157,7 @@ export function EditorClient({
             
             {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-hidden">
-                {currentTable ? (
+                {currentTable && tableId ? (
                     <>
                         <header className="flex h-14 items-center gap-4 border-b bg-background px-6 flex-shrink-0">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -225,6 +224,7 @@ export function EditorClient({
                                 </TabsList>
                                 <TabsContent value="data" className="mt-4 flex-1">
                                     <DataTable 
+                                        tableId={tableId}
                                         columns={columns} 
                                         rows={rows} 
                                         selectionModel={selectionModel}
