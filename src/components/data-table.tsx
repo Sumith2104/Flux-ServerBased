@@ -1,15 +1,16 @@
 'use client';
 
 import * as React from 'react';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridRowSelectionModel } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 
 interface DataTableProps {
   columns: GridColDef[];
   rows: any[];
+  onRowSelectionModelChange?: (selectionModel: GridRowSelectionModel) => void;
 }
 
-export function DataTable({ columns, rows }: DataTableProps) {
+export function DataTable({ columns, rows, onRowSelectionModelChange }: DataTableProps) {
   const paginationModel = { page: 0, pageSize: 10 };
 
   return (
@@ -40,6 +41,9 @@ export function DataTable({ columns, rows }: DataTableProps) {
         '& .MuiTablePagination-root': {
           color: 'hsl(var(--muted-foreground))',
         },
+        '& .MuiCheckbox-root': {
+          color: 'hsl(var(--foreground))',
+        },
         '& .MuiCheckbox-root.Mui-checked': {
           color: 'hsl(var(--primary))',
         },
@@ -64,6 +68,7 @@ export function DataTable({ columns, rows }: DataTableProps) {
         pageSizeOptions={[5, 10, 20]}
         checkboxSelection
         disableRowSelectionOnClick
+        onRowSelectionModelChange={onRowSelectionModelChange}
       />
     </Paper>
   );

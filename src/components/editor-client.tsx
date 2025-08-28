@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import React from 'react';
+import React, { useState } from 'react';
 import type { Table as DbTable, Column as DbColumn } from '@/lib/data';
 import { 
     Plus, 
@@ -17,8 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { GridColDef, GridRowParams } from '@mui/x-data-grid';
-import { GridActionsCellItem } from '@mui/x-data-grid';
+import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { AddRowDialog } from '@/components/add-row-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,66 +61,44 @@ export function EditorClient({
 }: EditorClientProps) {
     const { toast } = useToast();
     const router = useRouter();
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
 
-    const handleDelete = React.useCallback(
-        async (id: string) => {
-            if (!projectId || !tableId || !tableName) return;
-            if (window.confirm('Are you sure you want to delete this row?')) {
-                const result = await deleteRowAction(projectId, tableId, tableName, id);
+    const handleDeleteSelected = async () => {
+        if (!projectId || !tableId || !tableName || selectionModel.length === 0) return;
+
+        if (window.confirm(`Are you sure you want to delete ${selectionModel.length} row(s)?`)) {
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const id of selectionModel) {
+                const result = await deleteRowAction(projectId, tableId, tableName, id as string);
                 if (result.success) {
-                    toast({ title: 'Success', description: 'Row deleted successfully.' });
-                    router.refresh();
+                    successCount++;
                 } else {
-                    toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete row.' });
+                    errorCount++;
+                    console.error(`Failed to delete row ${id}: ${result.error}`);
                 }
             }
-        },
-        [projectId, tableId, tableName, toast, router]
-    );
 
-    const handleEdit = React.useCallback((id: string) => {
-        const rowToEdit = rows.find(row => row.id === id);
-        console.log('Editing row:', rowToEdit);
-        // Here you would typically open a dialog/modal for editing
-        alert(`Editing row ID: ${id}. Check console for data.`);
-    }, [rows]);
+            if (successCount > 0) {
+                 toast({ title: 'Success', description: `${successCount} row(s) deleted successfully.` });
+            }
+            if (errorCount > 0) {
+                toast({ variant: 'destructive', title: 'Error', description: `Failed to delete ${errorCount} row(s).` });
+            }
+            router.refresh();
+            setSelectionModel([]);
+        }
+    };
     
     const columns: GridColDef[] = React.useMemo(() => {
-        const mappedCols: GridColDef[] = rawColumns.map(col => ({
+        return rawColumns.map(col => ({
             field: col.column_name,
             headerName: col.column_name,
             width: 150,
             editable: true,
         }));
-
-        const actionCol: GridColDef = {
-            field: 'actions',
-            type: 'actions',
-            headerName: 'Actions',
-            width: 100,
-            cellClassName: 'actions',
-            getActions: ({ id }) => {
-                return [
-                    <GridActionsCellItem
-                        key="edit"
-                        icon={<Edit className="h-5 w-5" />}
-                        label="Edit"
-                        onClick={() => handleEdit(id as string)}
-                        color="inherit"
-                    />,
-                    <GridActionsCellItem
-                        key="delete"
-                        icon={<Trash2 className="h-5 w-5" />}
-                        label="Delete"
-                        onClick={() => handleDelete(id as string)}
-                        color="inherit"
-                    />,
-                ];
-            },
-        };
-
-        return [...mappedCols, actionCol];
-    }, [rawColumns, handleEdit, handleDelete]);
+    }, [rawColumns]);
 
 
     return (
@@ -173,15 +150,23 @@ export function EditorClient({
                                 <span className="font-semibold text-foreground">{currentTable.table_name}</span>
                             </div>
                             <Separator orientation="vertical" className="h-6" />
-                            <div className="flex items-center gap-2 ml-auto">
-                                {tableId && tableName && projectId && rawColumns &&
+                             <div className="flex items-center gap-2">
+                                {tableId && tableName && projectId && rawColumns && (
                                     <AddRowDialog 
                                         projectId={projectId}
                                         tableId={tableId}
                                         tableName={tableName}
                                         columns={rawColumns}
                                     />
-                                }
+                                )}
+                                <Button variant="outline" size="sm" disabled={selectionModel.length !== 1}>
+                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                </Button>
+                                <Button variant="destructive" size="sm" disabled={selectionModel.length === 0} onClick={handleDeleteSelected}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectionModel.length})
+                                </Button>
+                            </div>
+                            <div className="flex items-center gap-2 ml-auto">
                                 <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
                                 <Button variant="outline" size="sm"><ArrowDownUp className="mr-2 h-4 w-4" /> Sort</Button>
                             </div>
@@ -194,7 +179,13 @@ export function EditorClient({
                                     <TabsTrigger value="structure">Structure</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="data" className="mt-4 flex-1">
-                                    <DataTable columns={columns} rows={rows} />
+                                    <DataTable 
+                                        columns={columns} 
+                                        rows={rows} 
+                                        onRowSelectionModelChange={(newSelectionModel) => {
+                                            setSelectionModel(newSelectionModel);
+                                        }}
+                                    />
                                 </TabsContent>
                                 <TabsContent value="structure" className="mt-4">
                                     <Card>
