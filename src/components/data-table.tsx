@@ -28,6 +28,7 @@ export function DataTable({ columns, rows }: DataTableProps) {
          '& .MuiDataGrid-columnHeaders': {
             backgroundColor: 'hsl(var(--background))',
             borderBottom: '1px solid hsl(var(--border))',
+            color: 'hsl(var(--foreground))',
         },
         '& .MuiDataGrid-columnHeaderTitle': {
             fontWeight: 'bold',
@@ -39,8 +40,11 @@ export function DataTable({ columns, rows }: DataTableProps) {
         '& .MuiTablePagination-root': {
             color: 'hsl(var(--muted-foreground))',
         },
-        '& .MuiCheckbox-root': {
+        '& .MuiCheckbox-root.Mui-checked': {
             color: 'hsl(var(--primary))',
+        },
+        '& .MuiDataGrid-iconButtonContainer > .MuiButtonBase-root': {
+            color: 'hsl(var(--foreground))'
         }
     }}>
       <DataGrid
