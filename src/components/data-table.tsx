@@ -34,31 +34,30 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
     } catch (error) {
       console.error("Failed to parse saved grid state:", error);
       setInitialState({ // Fallback state
-          pagination: {
-            paginationModel: paginationModel,
-          },
+        pagination: {
+          paginationModel: paginationModel,
+        },
       });
     }
   }, [localStorageKey]);
 
   const handleStateChange = (newState: GridState) => {
     try {
-        const stateToSave = {
-            columns: newState.columns,
-            // Add other state parts you want to persist, e.g., sorting, filtering
-            sorting: newState.sorting,
-            filter: newState.filter,
-        };
+      const stateToSave = {
+        columns: newState.columns,
+        // Add other state parts you want to persist, e.g., sorting, filtering
+        sorting: newState.sorting,
+        filter: newState.filter,
+      };
       localStorage.setItem(localStorageKey, JSON.stringify(stateToSave));
     } catch (error) {
       console.error("Failed to save grid state:", error);
     }
   };
 
-
   if (initialState === undefined) {
     // Render a placeholder or nothing until the initial state is loaded from localStorage
-    return null; 
+    return null;
   }
 
   return (
@@ -72,15 +71,15 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
           backgroundColor: 'hsl(var(--card))',
         },
         '& .MuiDataGrid-cell': {
-          borderBottom: 'thin solid hsl(var(--border))',
+          borderBottom: '1px solid hsl(var(--border))', // thinner row divider
         },
         '& .MuiDataGrid-columnHeaders': {
-          backgroundColor: 'hsl(var(--card))', 
-          borderBottom: '1px solid hsl(var(--border))',
+          backgroundColor: 'hsl(var(--card))',
+          borderBottom: '1px solid hsl(var(--border))', // keep consistent with row divider
         },
         '& .MuiDataGrid-columnHeaderTitle': {
           fontWeight: 'bold',
-          color: 'black', 
+          color: 'black',
         },
         '& .MuiDataGrid-footerContainer': {
           borderTop: '1px solid hsl(var(--border))',
@@ -99,14 +98,14 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
           color: 'hsl(var(--foreground))',
         },
         '& .MuiDataGrid-actionsCell .MuiIconButton-root': {
-            color: 'hsl(var(--foreground))',
+          color: 'hsl(var(--foreground))',
         },
       }}
     >
       <DataGrid
         rows={rows}
         columns={columns}
-        getRowId={(row) => row.id} 
+        getRowId={(row) => row.id}
         initialState={initialState}
         onStateChange={handleStateChange}
         pageSizeOptions={[5, 10, 20]}
