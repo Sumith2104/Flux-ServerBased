@@ -142,7 +142,6 @@ export default async function DashboardPage() {
                                                 <TableHead>Name</TableHead>
                                                 <TableHead>Description</TableHead>
                                                 <TableHead>Created</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -151,14 +150,6 @@ export default async function DashboardPage() {
                                                     <TableCell className="font-medium">{table.table_name}</TableCell>
                                                     <TableCell className="text-muted-foreground">{table.description}</TableCell>
                                                     <TableCell>{new Date(table.created_at).toLocaleDateString()}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="ghost" size="icon" asChild>
-                                                            <Link href={`/editor?tableId=${table.table_id}&tableName=${table.table_name}`}>
-                                                                <Edit className="h-4 w-4" />
-                                                                <span className="sr-only">Edit Table</span>
-                                                            </Link>
-                                                        </Button>
-                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
