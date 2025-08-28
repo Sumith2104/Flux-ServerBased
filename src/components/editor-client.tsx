@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import React, 'use-client';
+import React from 'react';
 import type { Table as DbTable, Column as DbColumn } from '@/lib/data';
 import { 
     Plus, 
@@ -99,7 +99,6 @@ export function EditorClient({
         if (errorCount > 0) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to delete ${errorCount} row(s).` });
         }
-        router.refresh();
         setSelectionModel([]);
     };
     
