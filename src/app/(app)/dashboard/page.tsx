@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { getProjectsForCurrentUser, Project, getTablesForProject, Table as DbTable } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { cookies } from "next/headers";
-import { redirect } from 'next/navigation';
 import {
   Table as ShadcnTable,
   TableBody,
@@ -17,23 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { selectProjectAction } from "@/app/actions"
 
-
-export async function selectProjectAction(formData: FormData) {
-    'use server';
-    const projectString = formData.get('project') as string;
-    if (projectString) {
-        cookies().set('selectedProject', projectString, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 365, // 1 year
-            path: '/',
-        });
-    } else {
-        cookies().delete('selectedProject');
-    }
-    redirect('/dashboard');
-}
 
 export default async function DashboardPage() {
     let projects: Project[] = [];

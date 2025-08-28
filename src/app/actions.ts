@@ -4,6 +4,9 @@ import {v4 as uuidv4} from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
 import {login} from '@/lib/auth';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+
 
 function parseCsv(data: string) {
   if (!data) return [];
@@ -95,4 +98,19 @@ export async function signupAction(formData: FormData) {
     console.error('Signup failed:', error);
     return {error: 'An unexpected error occurred.'};
   }
+}
+
+export async function selectProjectAction(formData: FormData) {
+    const projectString = formData.get('project') as string;
+    if (projectString) {
+        cookies().set('selectedProject', projectString, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 365, // 1 year
+            path: '/',
+        });
+    } else {
+        cookies().delete('selectedProject');
+    }
+    redirect('/dashboard');
 }

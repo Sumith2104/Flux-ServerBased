@@ -3,7 +3,7 @@
 
 import Cookies from 'js-cookie';
 import type { Project } from '@/lib/data';
-import { selectProjectAction } from '@/app/(app)/dashboard/page';
+import { selectProjectAction } from '@/app/actions';
 
 const COOKIE_NAME = 'selectedProject';
 
