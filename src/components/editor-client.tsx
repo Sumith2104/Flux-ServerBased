@@ -182,6 +182,7 @@ export function EditorClient({
                                     <DataTable 
                                         columns={columns} 
                                         rows={rows} 
+                                        selectionModel={selectionModel}
                                         onRowSelectionModelChange={(newSelectionModel) => {
                                             setSelectionModel(newSelectionModel);
                                         }}

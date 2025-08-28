@@ -8,9 +8,10 @@ interface DataTableProps {
   columns: GridColDef[];
   rows: any[];
   onRowSelectionModelChange?: (selectionModel: GridRowSelectionModel) => void;
+  selectionModel?: GridRowSelectionModel;
 }
 
-export function DataTable({ columns, rows, onRowSelectionModelChange }: DataTableProps) {
+export function DataTable({ columns, rows, onRowSelectionModelChange, selectionModel }: DataTableProps) {
   const paginationModel = { page: 0, pageSize: 10 };
 
   return (
@@ -27,12 +28,12 @@ export function DataTable({ columns, rows, onRowSelectionModelChange }: DataTabl
           borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaders': {
-          backgroundColor: 'white', // white header background
+          backgroundColor: 'white', 
           borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaderTitle': {
           fontWeight: 'bold',
-          color: 'black', // header text in black
+          color: 'black', 
         },
         '& .MuiDataGrid-footerContainer': {
           borderTop: '1px solid hsl(var(--border))',
@@ -42,7 +43,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange }: DataTabl
           color: 'hsl(var(--muted-foreground))',
         },
         '& .MuiCheckbox-root': {
-          color: 'hsl(var(--foreground))',
+          color: 'hsl(var(--primary))',
         },
         '& .MuiCheckbox-root.Mui-checked': {
           color: 'hsl(var(--primary))',
@@ -50,7 +51,6 @@ export function DataTable({ columns, rows, onRowSelectionModelChange }: DataTabl
         '& .MuiDataGrid-iconButtonContainer > .MuiButtonBase-root': {
           color: 'hsl(var(--foreground))',
         },
-        // Ensure actions cell icons are visible
         '& .MuiDataGrid-actionsCell .MuiIconButton-root': {
             color: 'hsl(var(--foreground))',
         },
@@ -59,7 +59,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange }: DataTabl
       <DataGrid
         rows={rows}
         columns={columns}
-        getRowId={(row) => row.id} // Use the 'id' field as the unique row identifier
+        getRowId={(row) => row.id} 
         initialState={{
           pagination: {
             paginationModel: paginationModel,
@@ -69,6 +69,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange }: DataTabl
         checkboxSelection
         disableRowSelectionOnClick
         onRowSelectionModelChange={onRowSelectionModelChange}
+        rowSelectionModel={selectionModel}
       />
     </Paper>
   );
