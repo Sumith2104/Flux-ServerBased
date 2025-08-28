@@ -17,6 +17,24 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
+async function readCsvFile(filePath: string): Promise<string[][]> {
+    try {
+        const data = await fs.readFile(filePath, 'utf8');
+        return data.trim().split('\n').map(row => row.split(','));
+    } catch (error: any) {
+        if (error.code === 'ENOENT') {
+            return [];
+        }
+        throw error;
+    }
+}
+
+async function writeCsvFile(filePath: string, data: string[][]): Promise<void> {
+    const content = data.map(row => row.join(',')).join('\n');
+    await fs.writeFile(filePath, content, 'utf8');
+}
+
+
 export async function addRowAction(formData: FormData) {
   const projectId = formData.get('projectId') as string;
   const tableId = formData.get('tableId') as string;
@@ -247,4 +265,45 @@ export async function addColumnAction(formData: FormData) {
     console.error('Failed to add column:', error);
     return { error: `An unexpected error occurred: ${(error as Error).message}` };
   }
+}
+
+
+export async function deleteTableAction(projectId: string, tableId: string, tableName: string) {
+    const userId = await getCurrentUserId();
+    if (!projectId || !tableId || !tableName || !userId) {
+        return { error: 'Missing required fields for table deletion.' };
+    }
+
+    try {
+        const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
+        
+        // 1. Delete the data file (e.g., users.csv)
+        const dataFilePath = path.join(projectPath, `${tableName}.csv`);
+        if (await fileExists(dataFilePath)) {
+            await fs.unlink(dataFilePath);
+        }
+
+        // 2. Remove table from tables.csv
+        const tablesCsvPath = path.join(projectPath, 'tables.csv');
+        const tablesData = await readCsvFile(tablesCsvPath);
+        if(tablesData.length > 0) {
+            const newTablesData = tablesData.filter(row => row[0] !== tableId);
+            await writeCsvFile(tablesCsvPath, newTablesData);
+        }
+
+        // 3. Remove columns from columns.csv
+        const columnsCsvPath = path.join(projectPath, 'columns.csv');
+        const columnsData = await readCsvFile(columnsCsvPath);
+        if(columnsData.length > 0) {
+            const newColumnsData = columnsData.filter(row => row[1] !== tableId);
+            await writeCsvFile(columnsCsvPath, newColumnsData);
+        }
+
+        revalidatePath(`/editor`);
+        return { success: true };
+
+    } catch (error) {
+        console.error('Failed to delete table:', error);
+        return { error: `An unexpected error occurred: ${(error as Error).message}` };
+    }
 }
