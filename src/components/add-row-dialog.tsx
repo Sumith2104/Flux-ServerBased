@@ -48,7 +48,7 @@ export function AddRowDialog({ projectId, tableId, tableName, columns }: AddRowD
     }
   };
 
-  const visibleColumns = columns.filter(col => col.data_type !== 'gen_random_uuid()');
+  const visibleColumns = columns.filter(col => col.data_type !== 'gen_random_uuid()' && col.data_type !== 'now_date()' && col.data_type !== 'now_time()');
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

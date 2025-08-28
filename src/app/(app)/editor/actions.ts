@@ -54,6 +54,10 @@ export async function addRowAction(formData: FormData) {
             value = uuidv4();
         } else if (col.data_type === 'gen_random_uuid()' && !value) {
             value = uuidv4();
+        } else if (col.data_type === 'now_date()') {
+            value = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        } else if (col.data_type === 'now_time()') {
+            value = new Date().toLocaleTimeString('en-GB'); // HH:MM:SS
         }
         newRowObject[col.column_name] = value || '';
     }

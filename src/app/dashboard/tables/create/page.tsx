@@ -16,10 +16,12 @@ import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { Textarea } from '@/components/ui/textarea';
 
+type ColumnType = 'text' | 'number' | 'date' | 'gen_random_uuid()' | 'now_date()' | 'now_time()';
+
 type Column = {
     id: string;
     name: string;
-    type: 'text' | 'number' | 'date' | 'gen_random_uuid()';
+    type: ColumnType;
 };
 
 export default function CreateTablePage() {
@@ -149,7 +151,7 @@ export default function CreateTablePage() {
                                     />
                                     <Select 
                                         value={col.type} 
-                                        onValueChange={(value: 'text' | 'number' | 'date' | 'gen_random_uuid()') => updateColumn(col.id, 'type', value)}
+                                        onValueChange={(value: ColumnType) => updateColumn(col.id, 'type', value)}
                                     >
                                         <SelectTrigger className="w-[180px]">
                                             <SelectValue placeholder="Type" />
@@ -159,6 +161,8 @@ export default function CreateTablePage() {
                                             <SelectItem value="number">Number</SelectItem>
                                             <SelectItem value="date">Date</SelectItem>
                                             <SelectItem value="gen_random_uuid()">UUID</SelectItem>
+                                            <SelectItem value="now_date()">Creation Date</SelectItem>
+                                            <SelectItem value="now_time()">Creation Time</SelectItem>
                                         </SelectContent>
                                     </Select>
                                      <Button 
