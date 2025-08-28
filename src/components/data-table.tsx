@@ -80,7 +80,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
         },
         '& .MuiDataGrid-columnHeaderTitle': {
           fontWeight: 'bold',
-          color: 'hsl(var(--foreground))', 
+          color: 'black', 
         },
         '& .MuiDataGrid-footerContainer': {
           borderTop: '1px solid hsl(var(--border))',
