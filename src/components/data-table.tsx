@@ -15,7 +15,7 @@ export function DataTable({ columns, rows }: DataTableProps) {
 
   return (
     <Paper sx={{ 
-        height: '70vh', 
+        height: '100%', 
         width: '100%',
         '& .MuiDataGrid-root': {
             border: 'none',

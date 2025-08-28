@@ -95,34 +95,37 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
             </aside>
             
             {/* Main Content */}
-            <main className="flex-1 flex flex-col">
+            <main className="flex-1 flex flex-col overflow-hidden">
                 {currentTable ? (
                     <>
-                         <header className="flex h-14 items-center gap-4 border-b bg-background px-6 flex-shrink-0">
+                        <header className="flex h-14 items-center gap-4 border-b bg-background px-6 flex-shrink-0">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Table className="h-4 w-4" />
                                 <span className="font-semibold text-foreground">{currentTable.table_name}</span>
                             </div>
                             <Separator orientation="vertical" className="h-6" />
-                             <Tabs defaultValue="data" className="flex-grow">
-                                <div className="flex items-center">
-                                    <TabsList>
-                                        <TabsTrigger value="data">Data</TabsTrigger>
-                                        <TabsTrigger value="structure">Structure</TabsTrigger>
-                                    </TabsList>
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <AddRowDialog 
-                                            projectId={projectId}
-                                            tableId={currentTable.table_id}
-                                            tableName={currentTable.table_name}
-                                            columns={tableColumnsForStructure}
-                                        />
-                                        <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
-                                        <Button variant="outline" size="sm"><ArrowDownUp className="mr-2 h-4 w-4" /> Sort</Button>
-                                    </div>
-                                </div>
-                                <TabsContent value="data" className="mt-4">
-                                     <DataTable columns={columns} rows={rows} />
+                            <div className="flex items-center gap-2 ml-auto">
+                                {tableId && tableName && projectId &&
+                                    <AddRowDialog 
+                                        projectId={projectId}
+                                        tableId={tableId}
+                                        tableName={tableName}
+                                        columns={tableColumnsForStructure}
+                                    />
+                                }
+                                <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+                                <Button variant="outline" size="sm"><ArrowDownUp className="mr-2 h-4 w-4" /> Sort</Button>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 p-6 overflow-y-auto">
+                            <Tabs defaultValue="data" className="flex flex-col h-full">
+                                <TabsList>
+                                    <TabsTrigger value="data">Data</TabsTrigger>
+                                    <TabsTrigger value="structure">Structure</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="data" className="mt-4 flex-1">
+                                    <DataTable columns={columns} rows={rows} />
                                 </TabsContent>
                                 <TabsContent value="structure" className="mt-4">
                                     <Card>
@@ -134,28 +137,28 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
                                         </CardHeader>
                                         <CardContent>
                                             <div className="border rounded-lg">
-                                            <ShadcnTable>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>Column Name</TableHead>
-                                                        <TableHead>Data Type</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {tableColumnsForStructure.map(col => (
-                                                        <TableRow key={col.column_id}>
-                                                            <TableCell className="font-mono">{col.column_name}</TableCell>
-                                                            <TableCell className="font-mono">{col.data_type}</TableCell>
+                                                <ShadcnTable>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead>Column Name</TableHead>
+                                                            <TableHead>Data Type</TableHead>
                                                         </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </ShadcnTable>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {tableColumnsForStructure.map(col => (
+                                                            <TableRow key={col.column_id}>
+                                                                <TableCell className="font-mono">{col.column_name}</TableCell>
+                                                                <TableCell className="font-mono">{col.data_type}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </ShadcnTable>
                                             </div>
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
                             </Tabs>
-                        </header>
+                        </div>
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center">
