@@ -1,4 +1,4 @@
-# Spreadsheet AI Project
+#Fluxbase
 
 This is a Next.js application built with ShadCN UI, Tailwind CSS, and Genkit for AI-powered features. It allows users to manage projects, create tables, and interact with data using natural language queries.
 
