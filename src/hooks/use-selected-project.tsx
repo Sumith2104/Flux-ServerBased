@@ -16,8 +16,8 @@ export function useSelectedProject() {
     } else {
       Cookies.remove(COOKIE_NAME, { path: '/' });
     }
-    // Refresh the page to apply the new project context server-side
-    router.refresh();
+    // Redirect to the dashboard to apply the new project context globally
+    router.push('/dashboard');
   };
 
   const getSelectedProject = (): Project | null => {

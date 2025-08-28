@@ -34,13 +34,12 @@ export function Nav({ projectId }: { projectId?: string | null }) {
     return (
         <TooltipProvider>
             {navItems.map((item) => {
-                const isProjectSpecific = ["/editor", "/api", "/storage", "settings", "/query"].includes(item.href);
+                const isProjectSpecific = ["/editor", "/api", "/storage", "/settings", "/query"].includes(item.href);
                 const isDisabled = isProjectSpecific && !projectId;
                 let finalHref = item.href;
 
-                // Dashboard link should clear the project selection
-                if (item.href !== '/dashboard' && isProjectSpecific && projectId) {
-                    finalHref = `${item.href}`;
+                if (isProjectSpecific && projectId) {
+                    finalHref = `${item.href}?projectId=${projectId}`;
                 }
 
                 return (
