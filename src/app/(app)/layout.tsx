@@ -1,12 +1,11 @@
-import { SidebarProvider, Sidebar, SidebarContent, SidebarTrigger } from "@/components/ui/sidebar";
+
 import { Nav } from "@/components/nav";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, MessageSquare } from "lucide-react";
 import { getCurrentUserId, login, logout, findUserById } from "@/lib/auth";
-import { getProjectById, getProjectsForCurrentUser } from "@/lib/data";
+import { getProjectsForCurrentUser } from "@/lib/data";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { ProjectSwitcher } from "@/components/project-switcher";
@@ -20,7 +19,6 @@ async function loginAction() {
 async function logoutAction() {
     'use server';
     await logout();
-    // Also clear the selected project cookie on logout
     cookies().delete('selectedProject');
     redirect('/login');
 }
@@ -64,8 +62,6 @@ export default async function AppLayout({
                         <form action={logoutAction}>
                             <Button variant="outline" size="sm">Logout</Button>
                         </form>
-                        <HelpCircle className="h-5 w-5 text-muted-foreground" />
-                        <MessageSquare className="h-5 w-5 text-muted-foreground" />
                         <Avatar className="h-8 w-8">
                             <AvatarImage src="https://picsum.photos/32/32" data-ai-hint="profile picture" alt="User" />
                             <AvatarFallback>{avatarFallback}</AvatarFallback>
