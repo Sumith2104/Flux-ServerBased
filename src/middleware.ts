@@ -6,16 +6,22 @@ export async function middleware(request: NextRequest) {
   const userId = await getCurrentUserId();
   const { pathname } = request.nextUrl;
 
-  const isAuthPage = ['/login', '/signup'].includes(pathname);
+  const isPublicPage = ['/login', '/signup', '/'].includes(pathname);
 
-  // If user is not logged in and tries to access a protected route, redirect to login
-  if (!userId && !isAuthPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // If user is logged in and tries to access login/signup, redirect to dashboard
-  if (userId && isAuthPage) {
-     return NextResponse.redirect(new URL('/dashboard', request.url));
+  // If user is logged in...
+  if (userId) {
+    // and tries to access a public page (like login, signup, or landing)
+    // redirect them to the dashboard.
+    if (isPublicPage) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  } 
+  // If user is not logged in...
+  else {
+    // and tries to access a protected page, redirect to login.
+    if (!isPublicPage) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
   }
 
   return NextResponse.next();
