@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import React from 'react';
 import type { Table as DbTable, Column as DbColumn } from '@/lib/data';
 import { 
     Plus, 
@@ -10,11 +11,14 @@ import {
     Search,
     ChevronDown,
     Filter,
-    ArrowDownUp
+    ArrowDownUp,
+    Edit,
+    Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { GridColDef } from '@mui/x-data-grid';
+import type { GridColDef, GridRowParams } from '@mui/x-data-grid';
+import { GridActionsCellItem } from '@mui/x-data-grid';
 import { AddRowDialog } from '@/components/add-row-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +32,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from '@/components/ui/skeleton';
+import { deleteRowAction } from '@/app/(app)/editor/actions';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
@@ -40,9 +47,8 @@ interface EditorClientProps {
     tableName?: string;
     allTables: DbTable[];
     currentTable: DbTable | null | undefined;
-    columns: GridColDef[];
+    columns: DbColumn[];
     rows: any[];
-    tableColumnsForStructure: DbColumn[];
 }
 
 export function EditorClient({
@@ -51,10 +57,73 @@ export function EditorClient({
     tableName,
     allTables,
     currentTable,
-    columns,
+    columns: rawColumns,
     rows,
-    tableColumnsForStructure,
 }: EditorClientProps) {
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const handleDelete = React.useCallback(
+        async (id: string) => {
+            if (!projectId || !tableId || !tableName) return;
+            if (window.confirm('Are you sure you want to delete this row?')) {
+                const result = await deleteRowAction(projectId, tableId, tableName, id);
+                if (result.success) {
+                    toast({ title: 'Success', description: 'Row deleted successfully.' });
+                    router.refresh();
+                } else {
+                    toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete row.' });
+                }
+            }
+        },
+        [projectId, tableId, tableName, toast, router]
+    );
+
+    const handleEdit = React.useCallback((id: string) => {
+        const rowToEdit = rows.find(row => row.id === id);
+        console.log('Editing row:', rowToEdit);
+        // Here you would typically open a dialog/modal for editing
+        alert(`Editing row ID: ${id}. Check console for data.`);
+    }, [rows]);
+    
+    const columns: GridColDef[] = React.useMemo(() => {
+        const mappedCols: GridColDef[] = rawColumns.map(col => ({
+            field: col.column_name,
+            headerName: col.column_name,
+            width: 150,
+            editable: true,
+        }));
+
+        const actionCol: GridColDef = {
+            field: 'actions',
+            type: 'actions',
+            headerName: 'Actions',
+            width: 100,
+            cellClassName: 'actions',
+            getActions: ({ id }) => {
+                return [
+                    <GridActionsCellItem
+                        key="edit"
+                        icon={<Edit className="h-5 w-5" />}
+                        label="Edit"
+                        onClick={() => handleEdit(id as string)}
+                        color="inherit"
+                    />,
+                    <GridActionsCellItem
+                        key="delete"
+                        icon={<Trash2 className="h-5 w-5" />}
+                        label="Delete"
+                        onClick={() => handleDelete(id as string)}
+                        color="inherit"
+                    />,
+                ];
+            },
+        };
+
+        return [...mappedCols, actionCol];
+    }, [rawColumns, handleEdit, handleDelete]);
+
+
     return (
         <div className="flex h-full w-full">
             {/* Sidebar */}
@@ -105,12 +174,12 @@ export function EditorClient({
                             </div>
                             <Separator orientation="vertical" className="h-6" />
                             <div className="flex items-center gap-2 ml-auto">
-                                {tableId && tableName && projectId && tableColumnsForStructure &&
+                                {tableId && tableName && projectId && rawColumns &&
                                     <AddRowDialog 
                                         projectId={projectId}
                                         tableId={tableId}
                                         tableName={tableName}
-                                        columns={tableColumnsForStructure}
+                                        columns={rawColumns}
                                     />
                                 }
                                 <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
@@ -145,7 +214,7 @@ export function EditorClient({
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                        {tableColumnsForStructure.map(col => (
+                                                        {rawColumns.map(col => (
                                                             <TableRow key={col.column_id}>
                                                                 <TableCell className="font-mono">{col.column_name}</TableCell>
                                                                 <TableCell className="font-mono">{col.data_type}</TableCell>

@@ -13,26 +13,10 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
 
     let columns: any[] = [];
     let rows: any[] = [];
-    let tableColumnsForStructure: any[] = [];
 
     if (currentTable && tableId && tableName) {
-        const tableColumns = await getColumnsForTable(projectId, tableId);
-        if (tableColumns) {
-            tableColumnsForStructure = tableColumns;
-            const tableData = await getTableData(projectId, tableName);
-
-            columns = tableColumns.map(col => ({
-                field: col.column_name,
-                headerName: col.column_name,
-                width: 150,
-                editable: true,
-            }));
-            
-            rows = tableData.map((row, index) => ({
-                id: row.id || index, 
-                ...row,
-            }));
-        }
+        columns = await getColumnsForTable(projectId, tableId);
+        rows = await getTableData(projectId, tableName);
     }
 
     return (
@@ -44,7 +28,6 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
             currentTable={currentTable}
             columns={columns}
             rows={rows}
-            tableColumnsForStructure={tableColumnsForStructure}
         />
     );
 }
@@ -82,8 +65,6 @@ export default function EditorPage({
     const selectedProject = selectedProjectCookie ? JSON.parse(selectedProjectCookie.value) : null;
     const projectId = searchParams?.projectId as string || selectedProject?.project_id;
     
-    // If there's no project ID from either the URL or the cookie, we can't proceed.
-    // Redirect to the dashboard to have the user select a project.
     if (!projectId) {
         redirect('/dashboard');
     }

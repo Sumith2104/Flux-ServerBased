@@ -46,11 +46,16 @@ export function DataTable({ columns, rows }: DataTableProps) {
         '& .MuiDataGrid-iconButtonContainer > .MuiButtonBase-root': {
           color: 'hsl(var(--foreground))',
         },
+        // Ensure actions cell icons are visible
+        '& .MuiDataGrid-actionsCell .MuiIconButton-root': {
+            color: 'hsl(var(--foreground))',
+        },
       }}
     >
       <DataGrid
         rows={rows}
         columns={columns}
+        getRowId={(row) => row.id} // Use the 'id' field as the unique row identifier
         initialState={{
           pagination: {
             paginationModel: paginationModel,
