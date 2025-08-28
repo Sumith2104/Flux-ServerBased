@@ -58,14 +58,10 @@ export default async function AppLayout({
                 </div>
                 <div className="flex-1"></div>
                  {userId ? (
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center">
                         <form action={logoutAction}>
                             <Button variant="outline" size="sm">Logout</Button>
                         </form>
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src="https://picsum.photos/32/32" data-ai-hint="profile picture" alt="User" />
-                            <AvatarFallback>{avatarFallback}</AvatarFallback>
-                        </Avatar>
                     </div>
                 ) : (
                     <form action={loginAction}>
