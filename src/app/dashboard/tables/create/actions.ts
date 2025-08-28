@@ -1,3 +1,4 @@
+
 'use server';
 
 import {v4 as uuidv4} from 'uuid';
@@ -27,12 +28,11 @@ async function getFileContent(filePath: string): Promise<string> {
 
 export async function createTableAction(formData: FormData) {
   const tableName = formData.get('tableName') as string;
-  const tableDescription = formData.get('tableDescription') as string;
   const projectId = formData.get('projectId') as string;
   const columnsStr = formData.get('columns') as string;
   const userId = await getCurrentUserId();
 
-  if (!tableName || !tableDescription || !projectId || !userId || !columnsStr) {
+  if (!tableName || !projectId || !userId || !columnsStr) {
     return {error: 'Missing required fields.'};
   }
 
@@ -56,7 +56,7 @@ export async function createTableAction(formData: FormData) {
 
     // 1. Update tables.csv
     const tablesCsvPath = path.join(projectPath, 'tables.csv');
-    const newTableCsvRow = `\n${tableId},${projectId},"${tableName}","${tableDescription}",${createdAt},${createdAt}`;
+    const newTableCsvRow = `\n${tableId},${projectId},"${tableName}","",${createdAt},${createdAt}`;
     
     const tablesCsvContent = await getFileContent(tablesCsvPath);
     if (!tablesCsvContent.trim()) {
@@ -68,7 +68,7 @@ export async function createTableAction(formData: FormData) {
 
     const columns = columnsStr.split(',').map(c => {
       const [name, type] = c.split(':');
-      if (!name || !type || !['text', 'number', 'date'].includes(type.trim())) {
+      if (!name || !type || !['text', 'number', 'date', 'gen_random_uuid()'].includes(type.trim())) {
           throw new Error(`Invalid column definition: ${c}`);
       }
       return {id: uuidv4(), name: name.trim(), type: type.trim()};

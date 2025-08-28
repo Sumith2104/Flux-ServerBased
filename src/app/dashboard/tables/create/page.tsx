@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createTableAction } from './actions';
 import { SubmitButton } from '@/components/submit-button';
@@ -19,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 type Column = {
     id: string;
     name: string;
-    type: 'text' | 'number' | 'date';
+    type: 'text' | 'number' | 'date' | 'gen_random_uuid()';
 };
 
 export default function CreateTablePage() {
@@ -29,9 +28,8 @@ export default function CreateTablePage() {
     const { toast } = useToast();
 
     const [tableName, setTableName] = useState('');
-    const [tableDescription, setTableDescription] = useState('');
     const [columns, setColumns] = useState<Column[]>([
-        { id: uuidv4(), name: 'id', type: 'number' },
+        { id: uuidv4(), name: 'id', type: 'gen_random_uuid()' },
     ]);
 
     const addColumn = () => {
@@ -44,7 +42,7 @@ export default function CreateTablePage() {
 
     const updateColumn = (id: string, field: 'name' | 'type', value: string) => {
         setColumns(columns.map(col => 
-            col.id === id ? { ...col, [field]: value } : col
+            col.id === id ? { ...col, [field]: value as Column['type'] } : col
         ));
     };
 
@@ -120,17 +118,6 @@ export default function CreateTablePage() {
                                 onChange={(e) => setTableName(e.target.value)}
                             />
                         </div>
-                         <div className="grid gap-2">
-                            <Label htmlFor="tableDescription">Description</Label>
-                            <Textarea
-                                id="tableDescription"
-                                name="tableDescription"
-                                placeholder="e.g., A table to store customer information."
-                                required
-                                value={tableDescription}
-                                onChange={(e) => setTableDescription(e.target.value)}
-                            />
-                        </div>
                         <div className="grid gap-4">
                            <div>
                                 <Label>Columns</Label>
@@ -150,7 +137,7 @@ export default function CreateTablePage() {
                                     />
                                     <Select 
                                         value={col.type} 
-                                        onValueChange={(value: 'text' | 'number' | 'date') => updateColumn(col.id, 'type', value)}
+                                        onValueChange={(value: 'text' | 'number' | 'date' | 'gen_random_uuid()') => updateColumn(col.id, 'type', value)}
                                     >
                                         <SelectTrigger className="w-[180px]">
                                             <SelectValue placeholder="Type" />
@@ -159,6 +146,7 @@ export default function CreateTablePage() {
                                             <SelectItem value="text">Text</SelectItem>
                                             <SelectItem value="number">Number</SelectItem>
                                             <SelectItem value="date">Date</SelectItem>
+                                            <SelectItem value="gen_random_uuid()">UUID</SelectItem>
                                         </SelectContent>
                                     </Select>
                                      <Button 

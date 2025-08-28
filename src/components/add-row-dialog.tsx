@@ -54,6 +54,8 @@ export function AddRowDialog({ columns, projectId, tableName }: AddRowDialogProp
                 return 'text';
         }
     }
+    
+    const userFacingColumns = columns.filter(col => col.data_type !== 'gen_random_uuid()');
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -75,7 +77,7 @@ export function AddRowDialog({ columns, projectId, tableName }: AddRowDialogProp
                     <input type="hidden" name="tableName" value={tableName} />
                     <input type="hidden" name="columns" value={JSON.stringify(columns)} />
                     <div className="grid gap-4 py-4">
-                        {columns.map((col) => (
+                        {userFacingColumns.map((col) => (
                             <div className="grid grid-cols-4 items-center gap-4" key={col.column_id}>
                                 <Label htmlFor={col.column_name} className="text-right">
                                     {col.column_name}

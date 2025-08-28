@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { getCurrentUserId } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function addRowAction(formData: FormData) {
   const projectId = formData.get('projectId') as string;
@@ -31,7 +32,13 @@ export async function addRowAction(formData: FormData) {
 
     // Construct the new row, ensuring values are in the correct order
     const newRowValues = columns.map(col => {
-        const value = formData.get(col.column_name) as string;
+        let value: string;
+        if (col.data_type === 'gen_random_uuid()') {
+            value = uuidv4();
+        } else {
+            value = formData.get(col.column_name) as string;
+        }
+
         // Basic CSV escaping: if value contains comma, newline or double quote, wrap it in double quotes.
         // Also, double up any existing double quotes.
         if (value && /[",\n]/.test(value)) {
