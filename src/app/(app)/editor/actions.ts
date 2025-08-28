@@ -46,7 +46,6 @@ export async function addRowAction(formData: FormData) {
         return { error: 'No columns found for this table.' };
     }
 
-    const newRowValues: string[] = [];
     const newRowObject: Record<string, any> = {};
 
     for (const col of columns) {
@@ -59,18 +58,16 @@ export async function addRowAction(formData: FormData) {
         newRowObject[col.column_name] = value || '';
     }
 
-    // Ensure the order matches the header
     const fileContent = await fs.readFile(dataFilePath, 'utf8');
     const rows = fileContent.trim().split('\n');
     let header = rows[0] ? rows[0].split(',') : columns.map(c => c.column_name);
 
-    // Add 'id' to header if it doesn't exist
     if (!header.includes('id')) {
-        header.unshift('id');
+        header = ['id', ...header];
         newRowObject['id'] = uuidv4();
         
         const updatedHeader = header.join(',');
-        const updatedRows = rows.slice(1).map(row => `,${row}`); // Add comma for new id column
+        const updatedRows = rows.slice(1).map(row => `,${row}`); 
         await fs.writeFile(dataFilePath, [updatedHeader, ...updatedRows].join('\n'), 'utf8');
     }
 
@@ -93,6 +90,66 @@ export async function addRowAction(formData: FormData) {
     return {error: `An unexpected error occurred: ${(error as Error).message}`};
   }
 }
+
+export async function editRowAction(formData: FormData) {
+  const projectId = formData.get('projectId') as string;
+  const tableId = formData.get('tableId') as string;
+  const tableName = formData.get('tableName') as string;
+  const rowId = formData.get('rowId') as string;
+  const userId = await getCurrentUserId();
+  
+  if (!projectId || !tableName || !userId || !rowId) {
+    return {error: 'Missing required fields for editing.'};
+  }
+
+  try {
+    const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
+    const dataFilePath = path.join(projectPath, `${tableName}.csv`);
+
+    if (!(await fileExists(dataFilePath))) {
+        return { error: `Data file for table '${tableName}' not found.` };
+    }
+
+    const fileContent = await fs.readFile(dataFilePath, 'utf8');
+    const rows = fileContent.trim().split('\n');
+    const header = rows[0].split(',');
+    const idColumnIndex = header.indexOf('id');
+    
+    if (idColumnIndex === -1) {
+      return {error: "Cannot edit row: 'id' column not found."};
+    }
+
+    const columns = await getColumnsForTable(projectId, tableId);
+    
+    const updatedRows = rows.map((row, index) => {
+        if (index === 0) return row; // Keep header as is
+
+        const values = row.split(',');
+        if (values[idColumnIndex] === rowId) {
+            const newValues = header.map(colName => {
+                if (colName === 'id') {
+                    return rowId;
+                }
+                const newValue = formData.get(colName) as string | null;
+                const formattedValue = (newValue && newValue.includes(',')) ? `"${newValue}"` : newValue;
+                return formattedValue || '';
+            });
+            return newValues.join(',');
+        }
+        return row;
+    });
+
+    const newContent = updatedRows.join('\n');
+    await fs.writeFile(dataFilePath, newContent, 'utf8');
+
+    revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
+    return {success: true};
+  } catch (error) {
+    console.error('Failed to edit row:', error);
+    return {error: `An unexpected error occurred: ${(error as Error).message}`};
+  }
+}
+
 
 export async function deleteRowAction(projectId: string, tableId: string, tableName: string, rowId: string) {
     const userId = await getCurrentUserId();

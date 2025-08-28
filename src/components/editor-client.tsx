@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import React, { useState } from 'react';
+import React, 'use-client';
 import type { Table as DbTable, Column as DbColumn } from '@/lib/data';
 import { 
     Plus, 
@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { AddRowDialog } from '@/components/add-row-dialog';
+import { EditRowDialog } from '@/components/edit-row-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,7 +74,8 @@ export function EditorClient({
 }: EditorClientProps) {
     const { toast } = useToast();
     const router = useRouter();
-    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
+    const [selectionModel, setSelectionModel] = React.useState<GridRowSelectionModel>([]);
+    const [isEditOpen, setIsEditOpen] = React.useState(false);
 
     const handleDeleteSelected = async () => {
         if (!projectId || !tableId || !tableName || selectionModel.length === 0) return;
@@ -106,9 +108,14 @@ export function EditorClient({
             field: col.column_name,
             headerName: col.column_name,
             width: 150,
-            editable: true,
         }));
     }, [rawColumns]);
+    
+    const selectedRowData = React.useMemo(() => {
+        if (selectionModel.length !== 1) return null;
+        const selectedId = selectionModel[0];
+        return rows.find(row => row.id === selectedId) || null;
+    }, [selectionModel, rows]);
 
 
     return (
@@ -169,9 +176,21 @@ export function EditorClient({
                                         columns={rawColumns}
                                     />
                                 )}
-                                <Button variant="outline" size="sm" disabled={selectionModel.length !== 1}>
+                                <Button variant="outline" size="sm" disabled={selectionModel.length !== 1} onClick={() => setIsEditOpen(true)}>
                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                 </Button>
+                                {selectedRowData && tableId && tableName && (
+                                    <EditRowDialog
+                                        isOpen={isEditOpen}
+                                        setIsOpen={setIsEditOpen}
+                                        projectId={projectId}
+                                        tableId={tableId}
+                                        tableName={tableName}
+                                        columns={rawColumns}
+                                        rowData={selectedRowData}
+                                    />
+                                )}
+
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="destructive" size="sm" disabled={selectionModel.length === 0}>
