@@ -14,7 +14,8 @@ import {
     ArrowDownUp,
     Edit,
     Trash2,
-    MoreHorizontal
+    MoreHorizontal,
+    Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { AddRowDialog } from '@/components/add-row-dialog';
 import { AddColumnDialog } from '@/components/add-column-dialog';
 import { EditRowDialog } from '@/components/edit-row-dialog';
+import { ImportCsvDialog } from '@/components/import-csv-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -226,12 +228,20 @@ export function EditorClient({
                                 <Separator orientation="vertical" className="h-6" />
                                  <div className="flex items-center gap-2">
                                     {tableId && tableName && projectId && rawColumns && (
-                                        <AddRowDialog 
-                                            projectId={projectId}
-                                            tableId={tableId}
-                                            tableName={tableName}
-                                            columns={rawColumns}
-                                        />
+                                        <>
+                                            <AddRowDialog 
+                                                projectId={projectId}
+                                                tableId={tableId}
+                                                tableName={tableName}
+                                                columns={rawColumns}
+                                            />
+                                            <ImportCsvDialog
+                                                projectId={projectId}
+                                                tableId={tableId}
+                                                tableName={tableName}
+                                                columns={rawColumns}
+                                            />
+                                        </>
                                     )}
                                     <Button variant="outline" size="sm" disabled={selectionModel.length !== 1} onClick={() => setIsEditOpen(true)}>
                                         <Edit className="mr-2 h-4 w-4" /> Edit
