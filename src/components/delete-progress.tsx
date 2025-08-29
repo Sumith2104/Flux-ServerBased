@@ -33,12 +33,22 @@ function LinearProgressWithLabel(props: LinearProgressProps & { value: number })
 }
 
 export function DeleteProgress() {
-  const [progress, setProgress] = React.useState(10);
+  const [progress, setProgress] = React.useState(0);
 
   React.useEffect(() => {
+    // This timer simulates progress for a long-running operation.
+    // It starts fast and slows down as it approaches 90%.
     const timer = setInterval(() => {
-      setProgress((prevProgress) => (prevProgress >= 90 ? 90 : prevProgress + 10));
-    }, 800);
+      setProgress((oldProgress) => {
+        if (oldProgress >= 90) {
+          return 90;
+        }
+        // The increment decreases as the progress increases, creating a slowing effect.
+        const diff = Math.random() * 10;
+        return Math.min(oldProgress + diff, 90);
+      });
+    }, 500); // Update every 500ms for a smoother feel
+
     return () => {
       clearInterval(timer);
     };
