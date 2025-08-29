@@ -57,6 +57,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { DeleteProgress } from './delete-progress';
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
@@ -257,19 +258,28 @@ export function EditorClient({
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogTitle>
+                                                {isDeleting ? 'Deletion in Progress' : 'Are you absolutely sure?'}
+                                            </AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently delete the selected
-                                                {selectionModel.length > 1 ? ` ${selectionModel.length} rows` : ' row'} from the table.
+                                                 {isDeleting
+                                                    ? 'Please wait while the selected rows are being deleted. This may take a moment.'
+                                                    : `This action cannot be undone. This will permanently delete the selected ${selectionModel.length > 1 ? `${selectionModel.length} rows` : 'row'} from the table.`
+                                                }
                                             </AlertDialogDescription>
                                             </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={handleDeleteSelectedRows} disabled={isDeleting}>
-                                                     {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                     {isDeleting ? 'Deleting...' : 'Continue'}
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
+                                            {isDeleting ? (
+                                                <div className="py-4">
+                                                    <DeleteProgress />
+                                                </div>
+                                            ) : (
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleDeleteSelectedRows} disabled={isDeleting}>
+                                                         Continue
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            )}
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </div>
