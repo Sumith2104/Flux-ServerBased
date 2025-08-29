@@ -55,12 +55,3 @@ This starts the Genkit server that handles all AI-related tasks.
 ### 4. Access the Application
 
 Once both servers are running, you can open your web browser and navigate to `http://localhost:9002` to use the application.
-
-## Available Scripts
-
-- `npm run dev`: Starts the Next.js application in development mode.
-- `npm run genkit:dev`: Starts the Genkit server for AI flows.
-- `npm run build`: Builds the application for production.
-- `npm run start`: Starts a production server.
-- `npm run lint`: Lints the project files.
-- `npm run typecheck`: Runs the TypeScript compiler to check for type errors.
