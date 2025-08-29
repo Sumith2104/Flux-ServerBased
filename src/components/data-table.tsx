@@ -4,6 +4,7 @@
 import * as React from 'react';
 import { DataGrid, type GridColDef, type GridRowSelectionModel } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
+import { useEffect, useState } from 'react';
 
 interface DataTableProps {
   columns: GridColDef[];
@@ -32,7 +33,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
         },
         '& .MuiDataGrid-columnHeaderTitle': {
           fontWeight: 'bold',
-          color: 'hsl(var(--foreground))',
+          color: 'black',
         },
         '& .MuiDataGrid-footerContainer': {
           borderTop: '1px solid hsl(var(--border))',
