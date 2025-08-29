@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import {v4 as uuidv4} from 'uuid';
@@ -354,7 +355,7 @@ export async function importCsvAction(formData: FormData) {
     const expectedHeader = tableColumns.map(c => c.column_name);
 
     const rows = csvContent.trim().split('\n');
-    const csvHeader = rows[0].trim().split(',');
+    const csvHeader = rows[0].trim().split(',').map(h => h.replace(/^"|"$/g, ''));
 
     // Column compatibility check
     if (JSON.stringify(csvHeader) !== JSON.stringify(expectedHeader)) {
@@ -370,7 +371,7 @@ export async function importCsvAction(formData: FormData) {
     const processedRows = dataRows.map((row, rowIndex) => {
         const values = row.split(',');
         if (values.length !== expectedHeader.length) {
-            throw new Error(`Row ${rowIndex + 1} has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}.`);
+            throw new Error(`Row ${rowIndex + 2} has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}.`);
         }
 
         const newRow = values.map((val, colIndex) => {
