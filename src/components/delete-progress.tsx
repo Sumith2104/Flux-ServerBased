@@ -9,7 +9,18 @@ function LinearProgressWithLabel(props: LinearProgressProps & { value: number })
   return (
     <Box sx={{ display: 'flex', alignItems: 'center' }}>
       <Box sx={{ width: '100%', mr: 1 }}>
-        <LinearProgress variant="determinate" {...props} />
+        <LinearProgress
+          variant="determinate"
+          {...props}
+          sx={{
+            backgroundColor: 'hsl(var(--secondary))',
+            '& .MuiLinearProgress-bar': {
+              backgroundColor: 'hsl(var(--primary))',
+            },
+            height: 8,
+            borderRadius: 5,
+          }}
+        />
       </Box>
       <Box sx={{ minWidth: 35 }}>
         <Typography
@@ -26,8 +37,6 @@ export function DeleteProgress() {
 
   React.useEffect(() => {
     const timer = setInterval(() => {
-      // This simulates a slow progress, it will not reach 100% on its own
-      // but gives the user a sense of progress.
       setProgress((prevProgress) => (prevProgress >= 90 ? 90 : prevProgress + 10));
     }, 800);
     return () => {
