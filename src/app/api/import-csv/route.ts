@@ -79,14 +79,16 @@ export async function POST(request: Request) {
       });
 
       readableStream.on('end', () => {
-        if (buffer.trim()) { // Process any remaining data in the buffer
-             const values = buffer.split(',');
-             if (values.length !== expectedHeader.length) {
-                 const err = new Error(`Final row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}.`);
-                 readableStream.destroy(err);
-                 return;
-             }
-            fileWriteStream.write(buffer + '\n');
+        // Process the final chunk of data if it exists and is not just whitespace.
+        const finalLine = buffer.trim();
+        if (finalLine) {
+            const values = finalLine.split(',');
+            if (values.length !== expectedHeader.length) {
+                const err = new Error(`Final row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}.`);
+                readableStream.destroy(err);
+                return;
+            }
+            fileWriteStream.write(finalLine + '\n');
             importedCount++;
         }
         fileWriteStream.end();
