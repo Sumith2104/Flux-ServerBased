@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridState } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridRowSelectionModel } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 
 interface DataTableProps {
@@ -10,61 +10,10 @@ interface DataTableProps {
   rows: any[];
   onRowSelectionModelChange?: (selectionModel: GridRowSelectionModel) => void;
   selectionModel?: GridRowSelectionModel;
-  tableId: string; // Unique ID for storing state
+  tableId: string;
 }
 
-export function DataTable({ columns, rows, onRowSelectionModelChange, selectionModel, tableId }: DataTableProps) {
-  const paginationModel = { page: 0, pageSize: 10 };
-  const localStorageKey = `data-grid-state-${tableId}`;
-
-  const [initialState, setInitialState] = React.useState<any | undefined>(undefined);
-
-  React.useEffect(() => {
-    try {
-      const savedState = localStorage.getItem(localStorageKey);
-      if (savedState) {
-        setInitialState(JSON.parse(savedState));
-      } else {
-        // Set a default state if nothing is saved
-        setInitialState({
-          pagination: {
-            paginationModel: paginationModel,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Failed to parse saved grid state:", error);
-      setInitialState({ // Fallback state
-        pagination: {
-          paginationModel: paginationModel,
-        },
-      });
-    }
-  }, [localStorageKey]);
-
-  const handleStateChange = (newState: GridState) => {
-    try {
-      // Be very selective about what to save to avoid exceeding localStorage quota.
-      // Only save user-configured state that is small and essential.
-      const stateToSave = {
-        columns: {
-          columnVisibilityModel: newState.columns.columnVisibilityModel,
-          orderedFields: newState.columns.orderedFields,
-        },
-        sorting: newState.sorting,
-        // The filter model can get very large, so we exclude it.
-      };
-      localStorage.setItem(localStorageKey, JSON.stringify(stateToSave));
-    } catch (error) {
-      console.error("Failed to save grid state:", error);
-    }
-  };
-
-  if (initialState === undefined) {
-    // Render a placeholder or nothing until the initial state is loaded from localStorage
-    return null;
-  }
-
+export function DataTable({ columns, rows, onRowSelectionModelChange, selectionModel }: DataTableProps) {
   return (
     <Paper
       sx={{
@@ -83,7 +32,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
         },
         '& .MuiDataGrid-columnHeaderTitle': {
           fontWeight: 'bold',
-          color: 'black',
+          color: 'hsl(var(--foreground))',
         },
         '& .MuiDataGrid-footerContainer': {
           borderTop: '1px solid hsl(var(--border))',
@@ -110,8 +59,11 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
         rows={rows}
         columns={columns}
         getRowId={(row) => row.id}
-        initialState={initialState}
-        onStateChange={handleStateChange}
+        initialState={{
+          pagination: {
+            paginationModel: { page: 0, pageSize: 10 },
+          },
+        }}
         pageSizeOptions={[5, 10, 20, 30, 40, 50, 100, 500, 1000]}
         checkboxSelection
         disableRowSelectionOnClick
