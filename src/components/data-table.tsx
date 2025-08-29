@@ -107,7 +107,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
         getRowId={(row) => row.id}
         initialState={initialState}
         onStateChange={handleStateChange}
-        pageSizeOptions={[5, 10, 20]}
+        pageSizeOptions={[5, 10, 20, 30, 40, 50, 100, 500, 1000]}
         checkboxSelection
         disableRowSelectionOnClick
         onRowSelectionModelChange={onRowSelectionModelChange}

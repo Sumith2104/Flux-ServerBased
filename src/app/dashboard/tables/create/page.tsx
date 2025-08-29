@@ -81,7 +81,7 @@ export default function CreateTablePage() {
                     if (!header.some(h => h.toLowerCase() === 'id')) {
                         newColumns.unshift({ id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' });
                         // We need to update the CSV content to add the ID column if it wasn't there
-                        const rows = lines.slice(1).map(line => `${uuidv4()},${line}`);
+                         const rows = lines.slice(1).map(line => `,${line}`); // Prepend comma for empty ID
                         const updatedCsv = [ `id,${lines[0]}`, ...rows ].join('\n');
                         setCsvContent(updatedCsv);
 
@@ -237,7 +237,7 @@ export default function CreateTablePage() {
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Alignment" />
-                                                </SelectTrigger>
+                                                </Trigger>
                                                 <SelectContent>
                                                     <SelectItem value="left">Left</SelectItem>
                                                     <SelectItem value="center">Center</SelectItem>
@@ -320,7 +320,7 @@ export default function CreateTablePage() {
                                                         >
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Alignment" />
-                                                            </SelectTrigger>
+                                                            </Trigger>
                                                             <SelectContent>
                                                                 <SelectItem value="left">Left</SelectItem>
                                                                 <SelectItem value="center">Center</SelectItem>
@@ -349,3 +349,5 @@ export default function CreateTablePage() {
     </div>
   );
 }
+
+    

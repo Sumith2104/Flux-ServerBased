@@ -2,3 +2,4 @@ table_id,project_id,table_name,description,created_at,updated_at
 52385772-866b-4bfa-af67-94565bdc83a2,0aec5bbe-b73e-43ce-bcba-88447f41097a,"test2","",2025-08-28T05:29:58.846Z,2025-08-28T05:29:58.846Z
 3e7405af-0f69-448e-86fd-2be33c49ef8d,0aec5bbe-b73e-43ce-bcba-88447f41097a,"test_table","just for dev",2025-08-28T18:57:09.525Z,2025-08-28T18:57:09.525Z
 ad95c5cd-2e6d-474d-a9f8-4069973b6dc5,0aec5bbe-b73e-43ce-bcba-88447f41097a,"member","",2025-08-28T20:42:57.396Z,2025-08-28T20:42:57.396Z
+23e724fe-3c2f-4fca-afcc-74a6c4339eba,0aec5bbe-b73e-43ce-bcba-88447f41097a,"example","",2025-08-28T20:58:18.297Z,2025-08-28T20:58:18.297Z
