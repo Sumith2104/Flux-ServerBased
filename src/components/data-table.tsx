@@ -16,7 +16,7 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
   const paginationModel = { page: 0, pageSize: 10 };
   const localStorageKey = `data-grid-state-${tableId}`;
 
-  const [initialState, setInitialState] = React.useState<GridState | undefined>(undefined);
+  const [initialState, setInitialState] = React.useState<any | undefined>(undefined);
 
   React.useEffect(() => {
     try {
@@ -43,9 +43,13 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
 
   const handleStateChange = (newState: GridState) => {
     try {
+      // Be more selective about what to save to avoid exceeding localStorage quota.
+      // Only save the user-configured parts of the column state.
       const stateToSave = {
-        columns: newState.columns,
-        // Add other state parts you want to persist, e.g., sorting, filtering
+        columns: {
+          columnVisibilityModel: newState.columns.columnVisibilityModel,
+          orderedFields: newState.columns.orderedFields,
+        },
         sorting: newState.sorting,
         filter: newState.filter,
       };
