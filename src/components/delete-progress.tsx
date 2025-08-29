@@ -36,18 +36,19 @@ export function DeleteProgress() {
   const [progress, setProgress] = React.useState(0);
 
   React.useEffect(() => {
-    // This timer simulates progress for a long-running operation.
-    // It starts fast and slows down as it approaches 90%.
+    // This timer simulates progress with a smooth ease-out animation.
     const timer = setInterval(() => {
       setProgress((oldProgress) => {
         if (oldProgress >= 90) {
+          clearInterval(timer);
           return 90;
         }
-        // The increment decreases as the progress increases, creating a slowing effect.
-        const diff = Math.random() * 10;
-        return Math.min(oldProgress + diff, 90);
+        // The increment gets smaller as progress approaches 90, creating a smooth slowdown.
+        const remaining = 90 - oldProgress;
+        const increment = remaining / 25; // Adjust divisor for speed
+        return Math.min(oldProgress + increment, 90);
       });
-    }, 500); // Update every 500ms for a smoother feel
+    }, 50); // Update every 50ms for a smooth animation
 
     return () => {
       clearInterval(timer);
