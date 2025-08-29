@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { type Column } from '@/lib/data';
 import { SubmitButton } from './submit-button';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { DeleteProgress } from './delete-progress';
 
 type ImportCsvDialogProps = {
   projectId: string;
@@ -113,48 +114,57 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Import Data into `{tableName}`</DialogTitle>
-          <DialogDescription>
-            Upload a CSV file to add new rows. The file must have a header that matches the table structure exactly.
-          </DialogDescription>
+           {!isSubmitting && (
+            <DialogDescription>
+              Upload a CSV file to add new rows. The file must have a header that matches the table structure exactly.
+            </DialogDescription>
+           )}
         </DialogHeader>
-        <form onSubmit={handleAction}>
-          <div className="grid gap-6 py-4">
-             <Alert>
-                <AlertTitle>Required CSV Structure</AlertTitle>
-                <AlertDescription>
-                    <p className="mb-2">For a successful import, please ensure your CSV file follows these rules:</p>
-                    <ul className="list-disc pl-5 space-y-1 text-xs">
-                        <li>The first line must be a header row with column names.</li>
-                        <li>The header must exactly match the table columns: <code className="font-mono bg-muted p-1 rounded-sm">{expectedHeader}</code></li>
-                        <li>All fields should be wrapped in double quotes (").</li>
-                        <li>Fields should not contain newline characters.</li>
-                        <li>The file should be UTF-8 encoded.</li>
-                    </ul>
-                </AlertDescription>
-            </Alert>
-            <div>
-              <Label htmlFor="csvFile" className="sr-only">
-                CSV File
-              </Label>
-              <Input
-                id="csvFile"
-                name="csvFile"
-                type="file"
-                accept=".csv"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-              />
-            </div>
+        {isSubmitting ? (
+          <div className="py-8 space-y-4">
+            <p className="text-center text-muted-foreground">Importing data... Please do not close this window.</p>
+            <DeleteProgress />
           </div>
+        ) : (
+          <form onSubmit={handleAction}>
+            <div className="grid gap-6 py-4">
+              <Alert>
+                  <AlertTitle>Required CSV Structure</AlertTitle>
+                  <AlertDescription>
+                      <p className="mb-2">For a successful import, please ensure your CSV file follows these rules:</p>
+                      <ul className="list-disc pl-5 space-y-1 text-xs">
+                          <li>The first line must be a header row with column names.</li>
+                          <li>The header must exactly match the table columns: <code className="font-mono bg-muted p-1 rounded-sm">{expectedHeader}</code></li>
+                          <li>All fields should be wrapped in double quotes (").</li>
+                          <li>Fields should not contain newline characters.</li>
+                          <li>The file should be UTF-8 encoded.</li>
+                      </ul>
+                  </AlertDescription>
+              </Alert>
+              <div>
+                <Label htmlFor="csvFile" className="sr-only">
+                  CSV File
+                </Label>
+                <Input
+                  id="csvFile"
+                  name="csvFile"
+                  type="file"
+                  accept=".csv"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
+              </div>
+            </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>Cancel</Button>
-            <SubmitButton type="submit" disabled={!csvFile || isSubmitting}>
-              {isSubmitting ? 'Importing...' : 'Import Data'}
-            </SubmitButton>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>Cancel</Button>
+              <SubmitButton type="submit" disabled={!csvFile || isSubmitting}>
+                {isSubmitting ? 'Importing...' : 'Import Data'}
+              </SubmitButton>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
