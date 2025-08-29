@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -43,15 +44,15 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
 
   const handleStateChange = (newState: GridState) => {
     try {
-      // Be more selective about what to save to avoid exceeding localStorage quota.
-      // Only save the user-configured parts of the column state.
+      // Be very selective about what to save to avoid exceeding localStorage quota.
+      // Only save user-configured state that is small and essential.
       const stateToSave = {
         columns: {
           columnVisibilityModel: newState.columns.columnVisibilityModel,
           orderedFields: newState.columns.orderedFields,
         },
         sorting: newState.sorting,
-        filter: newState.filter,
+        // The filter model can get very large, so we exclude it.
       };
       localStorage.setItem(localStorageKey, JSON.stringify(stateToSave));
     } catch (error) {
