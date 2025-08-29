@@ -96,6 +96,7 @@ export function EditorClient({
         
         setIsDeleting(true);
         const result = await deleteRowAction(projectId, tableId, tableName, selectionModel as string[]);
+        setIsDeleting(false);
         
         if (result.success) {
             toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
@@ -103,7 +104,6 @@ export function EditorClient({
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }
-        setIsDeleting(false);
     };
     
     const columns: GridColDef[] = React.useMemo(() => {
@@ -250,7 +250,7 @@ export function EditorClient({
                                         />
                                     )}
 
-                                    <AlertDialog>
+                                    <AlertDialog onOpenChange={() => isDeleting && setIsDeleting(false)}>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" size="sm" disabled={selectionModel.length === 0}>
                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectionModel.length})
