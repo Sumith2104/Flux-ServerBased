@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Spreadsheet AI',
-  description: 'AI-powered spreadsheet and data analysis tool',
+  title: 'Fluxbase',
+  description: 'The modern, AI-powered spreadsheet and data analysis tool.',
 };
 
 export default function RootLayout({

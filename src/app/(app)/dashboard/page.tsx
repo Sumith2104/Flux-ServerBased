@@ -73,7 +73,7 @@ export default async function DashboardPage() {
             {!selectedProject ? (
                  <Card>
                     <CardHeader>
-                        <CardTitle>Welcome to Spreadsheet AI</CardTitle>
+                        <CardTitle>Welcome to Fluxbase</CardTitle>
                         <CardDescription>Select a project to get started or create a new one.</CardDescription>
                     </CardHeader>
                     <CardContent>
