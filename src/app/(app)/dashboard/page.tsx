@@ -40,6 +40,13 @@ export default async function DashboardPage() {
         }
     }
 
+    const formatSize = (kb: number) => {
+        if (kb > 1000) {
+            return `${(kb / 1024).toFixed(2)} MB`;
+        }
+        return `${kb} KB`;
+    }
+
 
     return (
         <div className="container mx-auto px-0">
@@ -142,7 +149,7 @@ export default async function DashboardPage() {
                             <Database className="h-4 w-4 text-muted-foreground" />
                           </CardHeader>
                           <CardContent>
-                            <div className="text-2xl font-bold">{analytics?.totalSize ?? 0} KB</div>
+                            <div className="text-2xl font-bold">{formatSize(analytics?.totalSize ?? 0)}</div>
                              <p className="text-xs text-muted-foreground">
                               Total size of all CSV files
                             </p>

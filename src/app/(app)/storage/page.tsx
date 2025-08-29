@@ -15,6 +15,16 @@ type FileInfo = {
     modified: string;
 };
 
+function formatSize(bytes: number): string {
+    const kb = bytes / 1024;
+    if (kb > 1000) {
+        const mb = kb / 1024;
+        return `${mb.toFixed(2)} MB`;
+    }
+    return `${kb.toFixed(2)} KB`;
+}
+
+
 async function getProjectFiles(projectId: string): Promise<FileInfo[]> {
     const userId = await getCurrentUserId();
     if (!userId) {
@@ -44,7 +54,7 @@ async function getProjectFiles(projectId: string): Promise<FileInfo[]> {
                 return {
                     name: dirent.name,
                     type: dirent.isDirectory() ? 'folder' : 'file',
-                    size: `${(stats.size / 1024).toFixed(2)} KB`,
+                    size: formatSize(stats.size),
                     modified: stats.mtime.toLocaleDateString(),
                 } as FileInfo;
             })
