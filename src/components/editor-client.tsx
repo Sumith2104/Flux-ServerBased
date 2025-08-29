@@ -56,8 +56,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Progress } from './ui/progress';
-
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
@@ -89,38 +87,6 @@ export function EditorClient({
     const [isEditOpen, setIsEditOpen] = React.useState(false);
     const [isDeleteTableAlertOpen, setIsDeleteTableAlertOpen] = React.useState(false);
     const [tableToDelete, setTableToDelete] = React.useState<DbTable | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [progress, setProgress] = useState(10);
-
-    useEffect(() => {
-        setIsLoading(true);
-        setProgress(10);
-    }, [tableId]);
-
-    useEffect(() => {
-        if (isLoading) {
-            const timer = setInterval(() => {
-                setProgress(prev => {
-                    if (prev >= 95) {
-                        clearInterval(timer);
-                        return prev;
-                    }
-                    return prev + 5;
-                });
-            }, 200);
-
-            return () => clearInterval(timer);
-        }
-    }, [isLoading]);
-    
-    useEffect(() => {
-        if (rows && rawColumns) {
-            setProgress(100);
-            const timer = setTimeout(() => setIsLoading(false), 500);
-            return () => clearTimeout(timer);
-        }
-    }, [rows, rawColumns]);
-
 
     const handleDeleteSelectedRows = async () => {
         if (!projectId || !tableId || !tableName || selectionModel.length === 0) return;
@@ -384,14 +350,7 @@ export function EditorClient({
                     )}
                 </main>
             </div>
-            {isLoading && (
-                 <div className="fixed bottom-4 right-4 w-64 z-50">
-                    <div className="p-3 bg-card border rounded-lg shadow-lg">
-                        <p className="text-sm font-medium text-foreground mb-2">Loading table data...</p>
-                        <Progress value={progress} className="w-full" />
-                    </div>
-                </div>
-            )}
+            
             <AlertDialog open={isDeleteTableAlertOpen} onOpenChange={setIsDeleteTableAlertOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
