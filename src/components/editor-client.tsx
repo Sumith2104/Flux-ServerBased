@@ -92,24 +92,12 @@ export function EditorClient({
     const handleDeleteSelectedRows = async () => {
         if (!projectId || !tableId || !tableName || selectionModel.length === 0) return;
 
-        let successCount = 0;
-        let errorCount = 0;
-
-        for (const id of selectionModel) {
-            const result = await deleteRowAction(projectId, tableId, tableName, id as string);
-            if (result.success) {
-                successCount++;
-            } else {
-                errorCount++;
-                console.error(`Failed to delete row ${id}: ${result.error}`);
-            }
-        }
-
-        if (successCount > 0) {
-                toast({ title: 'Success', description: `${successCount} row(s) deleted successfully.` });
-        }
-        if (errorCount > 0) {
-            toast({ variant: 'destructive', title: 'Error', description: `Failed to delete ${errorCount} row(s).` });
+        const result = await deleteRowAction(projectId, tableId, tableName, selectionModel as string[]);
+        
+        if (result.success) {
+            toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }
         setSelectionModel([]);
     };

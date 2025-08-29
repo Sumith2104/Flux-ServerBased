@@ -176,9 +176,9 @@ export async function editRowAction(formData: FormData) {
 }
 
 
-export async function deleteRowAction(projectId: string, tableId: string, tableName: string, rowId: string) {
+export async function deleteRowAction(projectId: string, tableId: string, tableName: string, rowIds: string[]) {
     const userId = await getCurrentUserId();
-    if (!projectId || !tableName || !userId || !rowId) {
+    if (!projectId || !tableName || !userId || !rowIds || rowIds.length === 0) {
         return { error: 'Missing required fields for deletion.' };
     }
 
@@ -192,27 +192,34 @@ export async function deleteRowAction(projectId: string, tableId: string, tableN
 
         const fileContent = await fs.readFile(dataFilePath, 'utf8');
         const rows = fileContent.trim().split('\n');
+        
+        if (rows.length < 1) {
+            return { success: true }; // Nothing to delete
+        }
+
         const header = rows[0];
         const headerCols = header.split(',');
         const idColumnIndex = headerCols.indexOf('id');
 
         if (idColumnIndex === -1) {
-            return { error: "Cannot delete row: 'id' column not found in the data file." };
+            return { error: "Cannot delete row(s): 'id' column not found in the data file." };
         }
         
+        const rowIdsToDelete = new Set(rowIds);
+
         const rowsToKeep = rows.slice(1).filter(row => {
             const values = row.split(',');
-            return values[idColumnIndex] !== rowId;
+            return !rowIdsToDelete.has(values[idColumnIndex]);
         });
 
         const newContent = [header, ...rowsToKeep].join('\n');
         await fs.writeFile(dataFilePath, newContent, 'utf8');
 
         revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
-        return { success: true };
+        return { success: true, deletedCount: rowIds.length };
 
     } catch (error) {
-        console.error('Failed to delete row:', error);
+        console.error('Failed to delete row(s):', error);
         return { error: `An unexpected error occurred: ${(error as Error).message}` };
     }
 }
@@ -262,7 +269,7 @@ export async function addColumnAction(formData: FormData) {
     const fileContent = await fs.readFile(dataFilePath, 'utf8');
     const rows = fileContent.trim().split('\n');
     
-    if (rows.length > 0) {
+    if (rows.length > 0 && rows[0] !== '') {
       // Add column to header
       rows[0] = `${rows[0]},${columnName}`;
 
