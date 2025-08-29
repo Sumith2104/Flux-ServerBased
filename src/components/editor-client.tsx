@@ -15,7 +15,8 @@ import {
     Edit,
     Trash2,
     MoreHorizontal,
-    Upload
+    Upload,
+    Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,18 +88,21 @@ export function EditorClient({
     const [isEditOpen, setIsEditOpen] = React.useState(false);
     const [isDeleteTableAlertOpen, setIsDeleteTableAlertOpen] = React.useState(false);
     const [tableToDelete, setTableToDelete] = React.useState<DbTable | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
     const handleDeleteSelectedRows = async () => {
         if (!projectId || !tableId || !tableName || selectionModel.length === 0) return;
-
+        
+        setIsDeleting(true);
         const result = await deleteRowAction(projectId, tableId, tableName, selectionModel as string[]);
         
         if (result.success) {
             toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
+            setSelectionModel([]);
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }
-        setSelectionModel([]);
+        setIsDeleting(false);
     };
     
     const columns: GridColDef[] = React.useMemo(() => {
@@ -260,8 +264,11 @@ export function EditorClient({
                                             </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteSelectedRows}>Continue</AlertDialogAction>
+                                                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleDeleteSelectedRows} disabled={isDeleting}>
+                                                     {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                     {isDeleting ? 'Deleting...' : 'Continue'}
+                                                </AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
