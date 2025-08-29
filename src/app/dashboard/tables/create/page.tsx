@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -43,7 +42,6 @@ export default function CreateTablePage() {
     const [csvFileName, setCsvFileName] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('manual');
 
-
     const addColumn = () => {
         setColumns([...columns, { id: uuidv4(), name: '', type: 'text', alignment: 'left' }]);
     };
@@ -77,14 +75,11 @@ export default function CreateTablePage() {
                         alignment: 'left'
                     }));
 
-                    // Ensure there's an 'id' column
                     if (!header.some(h => h.toLowerCase() === 'id')) {
                         newColumns.unshift({ id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' });
-                        // We need to update the CSV content to add the ID column if it wasn't there
-                         const rows = lines.slice(1).map(line => `,${line}`); // Prepend comma for empty ID
+                        const rows = lines.slice(1).map(line => `,${line}`);
                         const updatedCsv = [ `id,${lines[0]}`, ...rows ].join('\n');
                         setCsvContent(updatedCsv);
-
                     }
                     setColumns(newColumns);
                 }
@@ -95,7 +90,6 @@ export default function CreateTablePage() {
     
     const handleTabChange = (value: string) => {
         setActiveTab(value);
-        // Reset state when switching tabs
         setColumns([{ id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' }]);
         setCsvContent(null);
         setCsvFileName(null);
@@ -113,7 +107,6 @@ export default function CreateTablePage() {
             return;
         }
 
-        // Validate columns
         for (const col of columns) {
             if (!col.name.trim() || !col.type) {
                  toast({
@@ -126,13 +119,11 @@ export default function CreateTablePage() {
         }
         
         const columnsStr = columns.map(c => `${c.name}:${c.type}:${c.alignment}`).join(',');
-
         formData.set('columns', columnsStr);
         formData.append('projectId', projectId);
         if (csvContent && activeTab === 'import') {
             formData.append('csvContent', csvContent);
         }
-
 
         const result = await createTableAction(formData);
 
@@ -237,7 +228,7 @@ export default function CreateTablePage() {
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Alignment" />
-                                                </Trigger>
+                                                </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="left">Left</SelectItem>
                                                     <SelectItem value="center">Center</SelectItem>
@@ -293,7 +284,7 @@ export default function CreateTablePage() {
                                                 </p>
                                             </div>
                                             <div className="space-y-4">
-                                                {columns.map((col, index) => (
+                                                {columns.map((col) => (
                                                     <div key={col.id} className="grid grid-cols-1 md:grid-cols-[1fr_150px_120px_auto] items-center gap-2">
                                                         <Input
                                                             value={col.name}
@@ -320,7 +311,7 @@ export default function CreateTablePage() {
                                                         >
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Alignment" />
-                                                            </Trigger>
+                                                            </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="left">Left</SelectItem>
                                                                 <SelectItem value="center">Center</SelectItem>
@@ -333,7 +324,6 @@ export default function CreateTablePage() {
                                             </div>
                                         </div>
                                     )}
-
                                 </div>
                             </TabsContent>
                         </Tabs>
