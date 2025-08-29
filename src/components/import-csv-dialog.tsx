@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Upload } from 'lucide-react';
-import { importCsvAction } from '@/app/(app)/editor/actions';
 import { useToast } from '@/hooks/use-toast';
 import { type Column } from '@/lib/data';
 import { SubmitButton } from './submit-button';
@@ -30,26 +30,22 @@ type ImportCsvDialogProps = {
 
 export function ImportCsvDialog({ projectId, tableId, tableName, columns }: ImportCsvDialogProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [csvContent, setCsvContent] = useState<string | null>(null);
-  const [csvFileName, setCsvFileName] = useState<string | null>(null);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        setCsvContent(text);
-        setCsvFileName(file.name);
-      };
-      reader.readAsText(file);
+      setCsvFile(file);
     }
   };
 
-  const handleAction = async (formData: FormData) => {
-    if (!csvContent) {
+  const handleAction = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!csvFile) {
       toast({
         variant: 'destructive',
         title: 'No File Selected',
@@ -57,31 +53,57 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
       });
       return;
     }
-    formData.set('csvContent', csvContent);
 
-    const result = await importCsvAction(formData);
-    if (result.success) {
-      toast({
-        title: 'Success',
-        description: `${result.importedCount} rows imported successfully.`,
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append('projectId', projectId);
+    formData.append('tableId', tableId);
+    formData.append('tableName', tableName);
+    formData.append('csvFile', csvFile);
+
+    try {
+      const response = await fetch('/api/import-csv', {
+        method: 'POST',
+        body: formData,
       });
-      setIsOpen(false);
-      setCsvContent(null);
-      setCsvFileName(null);
-    } else {
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: `${result.importedCount} rows imported successfully.`,
+        });
+        setIsOpen(false);
+        setCsvFile(null);
+        if(fileInputRef.current) fileInputRef.current.value = '';
+        router.refresh(); // Re-fetch data for the page
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Import Failed',
+          description: result.error || 'An unexpected error occurred.',
+          duration: 10000,
+        });
+      }
+    } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Import Failed',
-        description: result.error || 'An unexpected error occurred.',
-        duration: 10000, // Show error for longer
+        title: 'Network Error',
+        description: 'Failed to communicate with the server.',
+        duration: 10000,
       });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
   const expectedHeader = columns.map(c => c.column_name).join(', ');
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+        if(!isSubmitting) setIsOpen(open);
+    }}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Upload className="mr-2 h-4 w-4" />
@@ -92,14 +114,10 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
         <DialogHeader>
           <DialogTitle>Import Data into `{tableName}`</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to add new rows to this table. The file must have a header row that matches the table structure exactly.
+            Upload a CSV file to add new rows. The file must have a header that matches the table structure.
           </DialogDescription>
         </DialogHeader>
-        <form action={handleAction}>
-          <input type="hidden" name="projectId" value={projectId} />
-          <input type="hidden" name="tableId" value={tableId} />
-          <input type="hidden" name="tableName" value={tableName} />
-
+        <form onSubmit={handleAction}>
           <div className="grid gap-4 py-4">
              <Alert>
                 <AlertTitle>Required CSV Header</AlertTitle>
@@ -113,22 +131,21 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
               </Label>
               <Input
                 id="csvFile"
+                name="csvFile"
                 type="file"
                 accept=".csv"
                 ref={fileInputRef}
-                className="hidden"
                 onChange={handleFileChange}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
               />
-              <Button type="button" variant="outline" className='w-full' onClick={() => fileInputRef.current?.click()}>
-                <Upload className="mr-2 h-4 w-4" />
-                {csvFileName ? `Selected: ${csvFileName}` : "Choose a CSV file"}
-              </Button>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <SubmitButton type="submit" disabled={!csvContent}>Import Data</SubmitButton>
+            <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <SubmitButton type="submit" disabled={!csvFile || isSubmitting}>
+              {isSubmitting ? 'Importing...' : 'Import Data'}
+            </SubmitButton>
           </DialogFooter>
         </form>
       </DialogContent>
