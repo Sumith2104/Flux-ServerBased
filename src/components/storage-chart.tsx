@@ -1,8 +1,9 @@
 
 'use client';
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 interface StorageChartProps {
     data: {
@@ -11,12 +12,45 @@ interface StorageChartProps {
     }[];
 }
 
+const formatSize = (kb: number) => {
+    if (kb > 1000) {
+        return `${(kb / 1024).toFixed(2)} MB`;
+    }
+    return `${kb.toFixed(2)} KB`;
+}
+
+const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+  if (active && payload && payload.length) {
+    const value = payload[0].value as number;
+    return (
+      <div className="rounded-lg border bg-background p-2 shadow-sm">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col space-y-1">
+            <span className="text-[0.70rem] uppercase text-muted-foreground">
+              Table
+            </span>
+            <span className="font-bold text-muted-foreground">{label}</span>
+          </div>
+          <div className="flex flex-col space-y-1">
+            <span className="text-[0.70rem] uppercase text-muted-foreground">
+              Size
+            </span>
+            <span className="font-bold">{formatSize(value)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 export function StorageChart({ data }: StorageChartProps) {
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Table Storage Usage</CardTitle>
-                <CardDescription>Size of each table's CSV file in kilobytes (KB).</CardDescription>
+                <CardDescription>Size of each table's CSV file.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div style={{ width: '100%', height: 300 }}>
@@ -35,11 +69,7 @@ export function StorageChart({ data }: StorageChartProps) {
                             <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value} KB`} />
                             <Tooltip
                                 cursor={{ fill: 'hsl(var(--accent))' }}
-                                contentStyle={{
-                                    backgroundColor: 'hsl(var(--background))',
-                                    borderColor: 'hsl(var(--border))',
-                                    borderRadius: 'var(--radius)',
-                                }}
+                                content={<CustomTooltip />}
                             />
                             <Bar dataKey="size" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
