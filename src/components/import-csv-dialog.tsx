@@ -98,7 +98,7 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
     }
   };
 
-  const expectedHeader = columns.map(c => c.column_name).join(', ');
+  const expectedHeader = columns.map(c => c.column_name).join(',');
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -110,19 +110,26 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
           Import
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Import Data into `{tableName}`</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to add new rows. The file must have a header that matches the table structure.
+            Upload a CSV file to add new rows. The file must have a header that matches the table structure exactly.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleAction}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-4">
              <Alert>
-                <AlertTitle>Required CSV Header</AlertTitle>
-                <AlertDescription className="font-mono text-xs">
-                    {expectedHeader}
+                <AlertTitle>Required CSV Structure</AlertTitle>
+                <AlertDescription>
+                    <p className="mb-2">For a successful import, please ensure your CSV file follows these rules:</p>
+                    <ul className="list-disc pl-5 space-y-1 text-xs">
+                        <li>The first line must be a header row with column names.</li>
+                        <li>The header must exactly match the table columns: <code className="font-mono bg-muted p-1 rounded-sm">{expectedHeader}</code></li>
+                        <li>All fields should be wrapped in double quotes (").</li>
+                        <li>Fields should not contain newline characters.</li>
+                        <li>The file should be UTF-8 encoded.</li>
+                    </ul>
                 </AlertDescription>
             </Alert>
             <div>

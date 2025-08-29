@@ -1,12 +1,10 @@
 
 import { NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
 import { getCurrentUserId } from '@/lib/auth';
 import { getColumnsForTable } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
-import { Writable } from 'stream';
 import { Readable } from 'stream';
 
 export const maxDuration = 300; // 5 minutes
@@ -32,82 +30,70 @@ export async function POST(request: Request) {
     const expectedHeader = tableColumns.map(c => c.column_name);
 
     // Stream processing
-    const readableStream = Readable.from(csvFile.stream());
-    let headerChecked = false;
-    let importedCount = 0;
-    let buffer = '';
-
+    const readableStream = csvFile.stream();
     const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
     const dataFilePath = path.join(projectPath, `${tableName}.csv`);
     
-    // Create a writable stream to append to the file
-    const fileWriteStream = (await fs.open(dataFilePath, 'a')).createWriteStream();
-    
-    fileWriteStream.write('\n'); // Start on a new line
+    // Open the file in append mode
+    const fileHandle = await fs.open(dataFilePath, 'a');
+    const fileWriteStream = fileHandle.createWriteStream();
 
-    await new Promise<void>((resolve, reject) => {
-      readableStream.on('data', (chunk) => {
-        buffer += chunk.toString('utf-8');
-        let lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep the last partial line in the buffer
+    let headerChecked = false;
+    let importedCount = 0;
+    let buffer = '';
+    let firstChunk = true;
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
+    // Append a newline to the file in case the last line is not terminated
+    await fileHandle.appendFile('\n');
 
-          if (!headerChecked) {
+    for await (const chunk of readableStream) {
+      buffer += new TextDecoder().decode(chunk);
+      let lines = buffer.split('\n');
+      
+      // Keep the last partial line in the buffer
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        if (!headerChecked && firstChunk) {
             const csvHeader = line.trim().split(',').map(h => h.replace(/^"|"$/g, ''));
             if (JSON.stringify(csvHeader) !== JSON.stringify(expectedHeader)) {
-              const err = new Error(`CSV header does not match table structure. Expected: ${expectedHeader.join(',')}`);
-              readableStream.destroy(err);
-              return;
+              const errorMessage = `CSV header does not match table structure. Expected: ${expectedHeader.join(',')}`;
+              await fileWriteStream.close();
+              return NextResponse.json({ error: errorMessage }, { status: 400 });
             }
             headerChecked = true;
-            continue; // Skip header row from being written
-          }
-
-          // Basic validation for number of columns. More robust validation can be added.
-          const values = line.split(',');
-          if (values.length !== expectedHeader.length) {
-              const err = new Error(`Row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}.`);
-              readableStream.destroy(err);
-              return;
-          }
-          
-          fileWriteStream.write(line + '\n');
-          importedCount++;
+            // Skip writing the header row
+            continue; 
         }
-      });
 
-      readableStream.on('end', () => {
-        // The 'end' event is fired when there is no more data to be consumed from the stream.
-        // The remaining buffer content (the last line of the file) is processed here.
-        if (buffer.trim()) {
-           const values = buffer.split(',');
-           if (values.length !== expectedHeader.length) {
-               const err = new Error(`Final row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}.`);
-               readableStream.destroy(err);
-               return;
-           }
-           fileWriteStream.write(buffer + '\n');
-           importedCount++;
+        const values = line.split(',');
+        if (values.length !== expectedHeader.length) {
+            const errorMessage = `Row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}. Row content: ${line.substring(0, 100)}...`;
+            await fileWriteStream.close();
+            return NextResponse.json({ error: errorMessage }, { status: 400 });
         }
-        fileWriteStream.end();
-      });
+        
+        fileWriteStream.write(line + '\n');
+        importedCount++;
+      }
+      firstChunk = false;
+    }
 
-      fileWriteStream.on('finish', () => {
-        resolve();
-      });
-      
-      readableStream.on('error', (err) => {
-        fileWriteStream.close();
-        reject(err);
-      });
+    // Process any remaining data in the buffer (the very last line of the file)
+    if (buffer.trim()) {
+      const values = buffer.split(',');
+      if (values.length !== expectedHeader.length) {
+        const errorMessage = `Final row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}.`;
+        await fileWriteStream.close();
+        return NextResponse.json({ error: errorMessage }, { status: 400 });
+      }
+      fileWriteStream.write(buffer + '\n');
+      importedCount++;
+    }
 
-      fileWriteStream.on('error', (err) => {
-        readableStream.destroy();
-        reject(err);
-      });
-    });
+    await fileWriteStream.close();
 
     revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
     return NextResponse.json({ success: true, importedCount });
