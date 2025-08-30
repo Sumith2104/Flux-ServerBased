@@ -5,31 +5,17 @@ import { usePathname } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { getCurrentUserId, login, logout } from "@/lib/auth";
+import { getCurrentUserId, User } from "@/lib/auth";
 import { findUserById } from "@/lib/auth-actions";
-import { getProjectsForCurrentUser } from "@/lib/data";
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { getProjectsForCurrentUser, Project } from "@/lib/data";
 import { ProjectSwitcher } from "@/components/project-switcher";
 import { useEffect, useState } from "react";
-import { User } from "@/lib/auth";
-import { Project } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { loginAction, logoutAction } from "./actions";
+import { Skeleton } from "@/components/ui/skeleton";
+import Cookies from "js-cookie";
 
-async function loginAction() {
-    'use server';
-    await login('123e4567-e89b-12d3-a456-426614174000');
-    redirect('/dashboard');
-}
-
-async function logoutAction() {
-    'use server';
-    await logout();
-    cookies().delete('selectedProject');
-    redirect('/login');
-}
 
 export default function AppLayout({ 
     children,
@@ -45,34 +31,74 @@ export default function AppLayout({
 
     useEffect(() => {
         async function fetchData() {
-            const id = await getCurrentUserId();
-            setUserId(id);
-            if (!id) {
-                redirect('/login');
-            } else {
-                const userData = await findUserById(id);
-                setUser(userData);
-                const projectsData = await getProjectsForCurrentUser();
-                setProjects(projectsData);
+            setLoading(true);
+            try {
+                const id = await getCurrentUserId();
+                setUserId(id);
 
-                const selectedProjectCookie = cookies().get('selectedProject');
-                if (selectedProjectCookie) {
-                    try {
-                        setSelectedProject(JSON.parse(selectedProjectCookie.value));
-                    } catch (e) {
-                        console.error("Failed to parse selected project cookie", e)
+                if (id) {
+                    const userData = await findUserById(id);
+                    setUser(userData);
+                    const projectsData = await getProjectsForCurrentUser();
+                    setProjects(projectsData);
+                    
+                    const selectedProjectCookie = Cookies.get('selectedProject');
+                    if (selectedProjectCookie) {
+                        setSelectedProject(JSON.parse(selectedProjectCookie));
+                    } else {
+                        setSelectedProject(null);
                     }
                 }
+            } catch (error) {
+                console.error("Failed to fetch layout data:", error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         }
         fetchData();
-    }, []);
+    }, [pathname]);
+
+    const isEditorPage = pathname.startsWith('/editor');
 
     if (loading) {
-        return <div className="flex items-center justify-center h-screen">Loading...</div>;
+        return (
+            <div className="flex min-h-screen w-full flex-col bg-background">
+                <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
+                   <Skeleton className="h-8 w-8 rounded-full" />
+                   <Skeleton className="h-6 w-40" />
+                   <div className="flex-1"></div>
+                   <Skeleton className="h-8 w-20" />
+                </header>
+                 <div className="flex flex-1 overflow-hidden">
+                    <aside className="hidden w-14 flex-col border-r bg-background sm:flex">
+                        <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+                            <Skeleton className="h-8 w-8 rounded-lg" />
+                            <Skeleton className="h-8 w-8 rounded-lg" />
+                            <Skeleton className="h-8 w-8 rounded-lg" />
+                        </nav>
+                    </aside>
+                    <main className="flex-1 overflow-auto p-4 md:p-8">
+                         <div className="flex items-center justify-center h-full">
+                            <p>Loading...</p>
+                         </div>
+                    </main>
+                </div>
+            </div>
+        );
     }
     
+    // Redirect logic should be handled by middleware, but as a fallback:
+    if (!loading && !userId && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+        // Can't use next/navigation.redirect in a client component directly like this.
+        // The middleware is the primary guard.
+        // For a client-side redirect, you could use:
+        // if (typeof window !== 'undefined') {
+        //     window.location.href = '/login';
+        // }
+        return <div className="flex items-center justify-center h-screen">Redirecting to login...</div>;
+    }
+
+
     const orgName = user ? `${user.email.split('@')[0]}'s Org` : "My Org";
     const avatarFallback = user ? user.email.charAt(0).toUpperCase() : "M";
 
@@ -98,6 +124,8 @@ export default function AppLayout({
                         </form>
                     </div>
                 ) : (
+                    // The login button here is a simple example.
+                    // It doesn't take credentials, just simulates a login.
                     <form action={loginAction}>
                         <Button variant="outline" size="sm">Login</Button>
                     </form>
@@ -110,7 +138,7 @@ export default function AppLayout({
                     </nav>
                 </aside>
                 <main className={cn("flex-1 overflow-auto", {
-                    "p-4 md:p-8": !pathname.startsWith('/editor')
+                    "p-4 md:p-8": !isEditorPage,
                 })}>
                     {children}
                 </main>
