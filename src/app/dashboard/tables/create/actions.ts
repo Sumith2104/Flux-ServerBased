@@ -31,7 +31,9 @@ export async function createTableAction(formData: FormData) {
   const description = formData.get('description') as string;
   const projectId = formData.get('projectId') as string;
   const columnsStr = formData.get('columns') as string;
-  const csvContent = formData.get('csvContent') as string | null;
+  // This is no longer passed from the client for performance reasons.
+  // The client will now upload the file to a separate streaming API endpoint.
+  // const csvContent = formData.get('csvContent') as string | null; 
   const userId = await getCurrentUserId();
 
   if (!tableName || !projectId || !userId || !columnsStr) {
@@ -100,14 +102,11 @@ export async function createTableAction(formData: FormData) {
         return { error: `A data file named '${tableName}.csv' already exists.` };
     }
     
-    if (csvContent) {
-        // If CSV content is provided, write it directly to the file.
-        await fs.writeFile(dataFilePath, csvContent, 'utf8');
-    } else {
-        // Otherwise, create an empty file with just the header.
-        const dataFileHeader = columns.map(c => c.name).join(',');
-        await fs.writeFile(dataFilePath, dataFileHeader, 'utf8');
-    }
+    // Always create an empty file with just the header.
+    // The actual data will be streamed to the import API.
+    const dataFileHeader = columns.map(c => c.name).join(',');
+    await fs.writeFile(dataFilePath, dataFileHeader, 'utf8');
+    
 
     return {success: true, tableId};
   } catch (error) {

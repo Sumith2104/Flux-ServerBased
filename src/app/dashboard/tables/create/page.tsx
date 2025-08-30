@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { DeleteProgress } from '@/components/delete-progress';
 
 type ColumnType = 'text' | 'number' | 'date' | 'gen_random_uuid()' | 'now_date()' | 'now_time()';
 type Alignment = 'left' | 'center' | 'right';
@@ -39,9 +41,11 @@ export default function CreateTablePage() {
     const [columns, setColumns] = useState<Column[]>([
         { id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' },
     ]);
-    const [csvContent, setCsvContent] = useState<string | null>(null);
+    const [csvFile, setCsvFile] = useState<File | null>(null);
     const [csvFileName, setCsvFileName] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('manual');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
 
     const addColumn = () => {
         setColumns([...columns, { id: uuidv4(), name: '', type: 'text', alignment: 'left' }]);
@@ -60,16 +64,16 @@ export default function CreateTablePage() {
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            setCsvFile(file);
+            setCsvFileName(file.name);
+            
             const reader = new FileReader();
             reader.onload = (e) => {
                 const text = e.target?.result as string;
-                setCsvContent(text);
-                setCsvFileName(file.name);
-
                 const lines = text.trim().split('\n');
                 if (lines.length > 0) {
                     const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-                    const newColumns: Column[] = header.map(name => ({
+                    let newColumns: Column[] = header.map(name => ({
                         id: uuidv4(),
                         name: name,
                         type: 'text',
@@ -78,9 +82,6 @@ export default function CreateTablePage() {
 
                     if (!header.some(h => h.toLowerCase() === 'id')) {
                         newColumns.unshift({ id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' });
-                        const rows = lines.slice(1).map(line => `,${line}`);
-                        const updatedCsv = [ `id,${lines[0]}`, ...rows ].join('\n');
-                        setCsvContent(updatedCsv);
                     }
                     setColumns(newColumns);
                 }
@@ -92,7 +93,7 @@ export default function CreateTablePage() {
     const handleTabChange = (value: string) => {
         setActiveTab(value);
         setColumns([{ id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' }]);
-        setCsvContent(null);
+        setCsvFile(null);
         setCsvFileName(null);
         setTableName('');
         setDescription('');
@@ -108,6 +109,11 @@ export default function CreateTablePage() {
             return;
         }
 
+        if (activeTab === 'import' && !csvFile) {
+            toast({ variant: "destructive", title: "Missing File", description: "Please select a CSV file to import." });
+            return;
+        }
+
         for (const col of columns) {
             if (!col.name.trim() || !col.type) {
                  toast({
@@ -119,27 +125,68 @@ export default function CreateTablePage() {
             }
         }
         
+        setIsSubmitting(true);
+
         const columnsStr = columns.map(c => `${c.name}:${c.type}:${c.alignment}`).join(',');
         formData.set('columns', columnsStr);
         formData.append('projectId', projectId);
-        if (csvContent && activeTab === 'import') {
-            formData.append('csvContent', csvContent);
-        }
-
+        
+        // Step 1: Create the table schema
         const result = await createTableAction(formData);
 
-        if (result.success) {
-            toast({
+        if (!result.success || !result.tableId) {
+             toast({
+                variant: "destructive",
+                title: "Error",
+                description: result.error || 'Failed to create table schema.',
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+        // Step 2: If creating from CSV, stream the file to the import API
+        if (activeTab === 'import' && csvFile) {
+            const importFormData = new FormData();
+            importFormData.append('projectId', projectId);
+            importFormData.append('tableId', result.tableId);
+            importFormData.append('tableName', formData.get('tableName') as string);
+            importFormData.append('csvFile', csvFile);
+
+            try {
+                const response = await fetch('/api/import-csv', {
+                    method: 'POST',
+                    body: importFormData,
+                });
+                const importResult = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(importResult.error || 'An unknown error occurred during import.');
+                }
+                toast({
+                    title: "Success",
+                    description: `Table created and ${importResult.importedCount} rows imported successfully.`,
+                });
+                router.push(`/editor?projectId=${projectId}&tableId=${result.tableId}&tableName=${formData.get('tableName') as string}`);
+
+            } catch (error) {
+                 toast({
+                    variant: "destructive",
+                    title: "Import Failed",
+                    description: `The table schema was created, but data import failed. You can import data later. Error: ${(error as Error).message}`,
+                    duration: 10000,
+                });
+                // Redirect to the (empty) table so the user can try importing again
+                 router.push(`/editor?projectId=${projectId}&tableId=${result.tableId}&tableName=${formData.get('tableName') as string}`);
+            } finally {
+                setIsSubmitting(false);
+            }
+        } else {
+             toast({
                 title: "Success",
                 description: "Table created successfully.",
             });
-            router.push(`/dashboard`);
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: result.error || 'An unexpected error occurred.',
-            });
+            router.push(`/editor?projectId=${projectId}&tableId=${result.tableId}&tableName=${formData.get('tableName') as string}`);
+            setIsSubmitting(false);
         }
     }
 
@@ -156,9 +203,24 @@ export default function CreateTablePage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-2xl">Create New Table</CardTitle>
-                        <CardDescription>Define the schema for your new table manually or by importing a CSV file.</CardDescription>
+                        {isSubmitting ? (
+                             <CardDescription>
+                                Your table is being created. Please wait...
+                            </CardDescription>
+                        ) : (
+                             <CardDescription>
+                                Define the schema for your new table manually or by importing a CSV file.
+                            </CardDescription>
+                        )}
+                       
                     </CardHeader>
                     <CardContent>
+                         {isSubmitting ? (
+                            <div className="py-8 space-y-4">
+                                <p className="text-center text-muted-foreground">Creating table and importing data... Please do not close this window.</p>
+                                <DeleteProgress />
+                            </div>
+                        ) : (
                         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                             <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="manual">Create Manually</TabsTrigger>
@@ -241,7 +303,7 @@ export default function CreateTablePage() {
                                                 size="icon" 
                                                 onClick={() => removeColumn(col.id)} 
                                                 type="button"
-                                                disabled={index === 0}
+                                                disabled={index === 0 && col.name === 'id'}
                                                 className="justify-self-end"
                                             >
                                                 <Trash2 className="h-4 w-4"/>
@@ -258,25 +320,26 @@ export default function CreateTablePage() {
                             </TabsContent>
                             <TabsContent value="import" className="mt-6">
                                 <div className="grid gap-4">
-                                     <div>
-                                        <Label>Upload CSV</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            The first row of the CSV will be used as column headers.
-                                        </p>
-                                    </div>
+                                     <Alert>
+                                        <AlertTitle>Import Guidelines</AlertTitle>
+                                        <AlertDescription>
+                                            The first row of the CSV must be a header that exactly matches the columns defined below. An 'id' column will be added automatically if not present.
+                                        </AlertDescription>
+                                    </Alert>
                                     <Input 
                                         type="file" 
                                         accept=".csv"
                                         ref={fileInputRef}
                                         className="hidden"
                                         onChange={handleFileChange}
+                                        required={activeTab === 'import'}
                                     />
                                     <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
                                         <Upload className="mr-2 h-4 w-4" />
                                         {csvFileName ? `Selected: ${csvFileName}` : "Choose a CSV file"}
                                     </Button>
 
-                                    {csvContent && (
+                                    {csvFile && (
                                         <div className="grid gap-4">
                                             <div>
                                                 <Label>Columns Detected</Label>
@@ -328,10 +391,11 @@ export default function CreateTablePage() {
                                 </div>
                             </TabsContent>
                         </Tabs>
+                        )}
                     </CardContent>
                     <CardFooter>
-                         <SubmitButton type="submit" className="w-full">
-                            Create Table
+                         <SubmitButton type="submit" className="w-full" disabled={isSubmitting}>
+                            {isSubmitting ? 'Creating...' : 'Create Table'}
                         </SubmitButton>
                     </CardFooter>
                 </Card>
