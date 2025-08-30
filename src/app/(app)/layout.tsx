@@ -10,7 +10,7 @@ import { getCurrentUserId, User } from "@/lib/auth";
 import { findUserById } from "@/lib/auth-actions";
 import { getProjectsForCurrentUser, Project } from "@/lib/data";
 import { ProjectSwitcher } from "@/components/project-switcher";
-import { useEffect, useState } from "react";
+import { useEffect, useState }from "react";
 import { cn } from "@/lib/utils";
 import { loginAction, logoutAction } from "./actions";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +48,7 @@ export default function AppLayout({
                            setSelectedProject(JSON.parse(selectedProjectCookie));
                         } catch (e) {
                             console.error("Failed to parse selected project cookie", e);
+                            Cookies.remove('selectedProject');
                             setSelectedProject(null);
                         }
                     } else {
@@ -92,14 +93,7 @@ export default function AppLayout({
         );
     }
     
-    // Redirect logic should be handled by middleware, but as a fallback:
     if (!loading && !userId && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
-        // Can't use next/navigation.redirect in a client component directly like this.
-        // The middleware is the primary guard.
-        // For a client-side redirect, you could use:
-        // if (typeof window !== 'undefined') {
-        //     window.location.href = '/login';
-        // }
         return <div className="flex items-center justify-center h-screen">Redirecting to login...</div>;
     }
 
@@ -129,8 +123,6 @@ export default function AppLayout({
                         </form>
                     </div>
                 ) : (
-                    // The login button here is a simple example.
-                    // It doesn't take credentials, just simulates a login.
                     <form action={loginAction}>
                         <Button variant="outline" size="sm">Login</Button>
                     </form>
@@ -143,6 +135,7 @@ export default function AppLayout({
                     </nav>
                 </aside>
                 <main className={cn("flex-1 overflow-auto", {
+                    "p-0": isEditorPage,
                     "p-4 md:p-8": !isEditorPage,
                 })}>
                     {children}
