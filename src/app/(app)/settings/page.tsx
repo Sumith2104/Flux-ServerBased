@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { BackButton } from "@/components/back-button"
+import { SubmitButton } from "@/components/submit-button"
 
 export default function SettingsPage() {
     return (
@@ -43,7 +44,7 @@ export default function SettingsPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button>Save Changes</Button>
+                    <SubmitButton>Save Changes</SubmitButton>
                 </CardFooter>
             </Card>
             <Card>

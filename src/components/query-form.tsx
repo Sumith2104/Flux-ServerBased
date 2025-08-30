@@ -104,14 +104,10 @@ export function QueryForm() {
                             className="text-base"
                             required
                         />
-                        <Button type="submit" disabled={loading}>
-                            {loading ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <BrainCircuit className="mr-2 h-4 w-4" />
-                            )}
+                        <SubmitButton type="submit" disabled={loading}>
+                            <BrainCircuit className="mr-2 h-4 w-4" />
                             Generate
-                        </Button>
+                        </SubmitButton>
                     </CardContent>
                 </Card>
             </form>
