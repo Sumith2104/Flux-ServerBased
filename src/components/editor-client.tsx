@@ -356,7 +356,7 @@ export function EditorClient({
                             </div>
                         </>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center">
+                        <div className="flex flex-col items-center justify-center h-full text-center p-6">
                             <Table className="h-16 w-16 text-muted-foreground" />
                             <h2 className="mt-4 text-xl font-semibold">Select a table to begin</h2>
                             <p className="mt-2 text-muted-foreground">Choose a table from the sidebar to view its data and structure.</p>

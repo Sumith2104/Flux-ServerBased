@@ -44,7 +44,7 @@ function EditorSkeleton() {
                     <Skeleton className="h-8 w-full" />
                 </div>
             </aside>
-            <main className="flex-1 flex flex-col overflow-hidden p-6">
+            <main className="flex-1 flex flex-col overflow-hidden">
                  <div className="flex flex-col items-center justify-center h-full text-center">
                     <Skeleton className="h-16 w-16 rounded-full" />
                     <Skeleton className="h-6 w-48 mt-4" />
@@ -78,4 +78,3 @@ export default function EditorPage({
         </Suspense>
     );
 }
-

@@ -1,4 +1,7 @@
 
+'use client';
+
+import { usePathname } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,6 +13,10 @@ import { getProjectsForCurrentUser } from "@/lib/data";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { ProjectSwitcher } from "@/components/project-switcher";
+import { useEffect, useState } from "react";
+import { User } from "@/lib/auth";
+import { Project } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 async function loginAction() {
     'use server';
@@ -24,23 +31,50 @@ async function logoutAction() {
     redirect('/login');
 }
 
-export default async function AppLayout({ 
+export default function AppLayout({ 
     children,
 }: { 
     children: React.ReactNode,
 }) {
-    const userId = await getCurrentUserId();
-    const user = userId ? await findUserById(userId) : null;
+    const pathname = usePathname();
+    const [user, setUser] = useState<User | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchData() {
+            const id = await getCurrentUserId();
+            setUserId(id);
+            if (!id) {
+                redirect('/login');
+            } else {
+                const userData = await findUserById(id);
+                setUser(userData);
+                const projectsData = await getProjectsForCurrentUser();
+                setProjects(projectsData);
+
+                const selectedProjectCookie = cookies().get('selectedProject');
+                if (selectedProjectCookie) {
+                    try {
+                        setSelectedProject(JSON.parse(selectedProjectCookie.value));
+                    } catch (e) {
+                        console.error("Failed to parse selected project cookie", e)
+                    }
+                }
+            }
+            setLoading(false);
+        }
+        fetchData();
+    }, []);
+
+    if (loading) {
+        return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    }
+    
     const orgName = user ? `${user.email.split('@')[0]}'s Org` : "My Org";
     const avatarFallback = user ? user.email.charAt(0).toUpperCase() : "M";
-
-    if (!userId) {
-        return redirect('/login');
-    }
-
-    const projects = await getProjectsForCurrentUser();
-    const selectedProjectCookie = cookies().get('selectedProject');
-    const selectedProject = selectedProjectCookie ? JSON.parse(selectedProjectCookie.value) : null;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
@@ -69,13 +103,15 @@ export default async function AppLayout({
                     </form>
                 )}
             </header>
-            <div className="flex flex-1">
+            <div className="flex flex-1 overflow-hidden">
                 <aside className="hidden w-14 flex-col border-r bg-background sm:flex">
                     <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
                        <Nav projectId={selectedProject?.project_id} />
                     </nav>
                 </aside>
-                <main className="flex-1 overflow-auto p-4 md:p-8">
+                <main className={cn("flex-1 overflow-auto", {
+                    "p-4 md:p-8": !pathname.startsWith('/editor')
+                })}>
                     {children}
                 </main>
             </div>
