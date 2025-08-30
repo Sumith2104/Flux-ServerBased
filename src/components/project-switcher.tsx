@@ -16,7 +16,7 @@ import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import type { Project } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useSelectedProject } from "@/hooks/use-selected-project";
+import { selectProjectAction } from "@/app/actions";
 
 type ProjectSwitcherProps = {
   orgName: string;
@@ -25,14 +25,18 @@ type ProjectSwitcherProps = {
 };
 
 export function ProjectSwitcher({ orgName, projects, selectedProject }: ProjectSwitcherProps) {
-  const { setSelectedProject } = useSelectedProject();
-
+  
   const handleSelect = (project: Project | null) => {
-    setSelectedProject(project);
+    const formData = new FormData();
+    if (project) {
+        formData.append('project', JSON.stringify(project));
+    } else {
+        formData.append('project', '');
+    }
+    selectProjectAction(formData);
   };
   
-  const currentProject = selectedProject;
-  const headerTitle = currentProject ? `${orgName} / ${currentProject.display_name}` : orgName;
+  const headerTitle = selectedProject ? `${orgName} / ${selectedProject.display_name}` : orgName;
 
   return (
     <DropdownMenu>
@@ -41,8 +45,8 @@ export function ProjectSwitcher({ orgName, projects, selectedProject }: ProjectS
           variant="ghost"
           className="text-lg font-semibold px-2"
         >
-          {headerTitle}
-          <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground" />
+          <span className="truncate max-w-[200px] sm:max-w-[300px]">{headerTitle}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64" align="start">
@@ -51,7 +55,7 @@ export function ProjectSwitcher({ orgName, projects, selectedProject }: ProjectS
           <DropdownMenuItem onSelect={() => handleSelect(null)}>
             <div className="flex items-center w-full">
               <span className="flex-1">View All Projects</span>
-              {!currentProject && <Check className="ml-2 h-4 w-4" />}
+              {!selectedProject && <Check className="ml-2 h-4 w-4" />}
             </div>
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -64,8 +68,8 @@ export function ProjectSwitcher({ orgName, projects, selectedProject }: ProjectS
                     onSelect={() => handleSelect(project)}
                 >
                     <div className="flex items-center w-full">
-                        <span className="flex-1">{project.display_name}</span>
-                        {currentProject?.project_id === project.project_id && <Check className="ml-2 h-4 w-4" />}
+                        <span className="flex-1 truncate">{project.display_name}</span>
+                        {selectedProject?.project_id === project.project_id && <Check className="ml-2 h-4 w-4" />}
                     </div>
                 </DropdownMenuItem>
             ))}
