@@ -26,22 +26,13 @@ type AddColumnDialogProps = {
   tableName: string;
 };
 
-type ColumnType = 'text' | 'number' | 'date' | 'gen_random_uuid()' | 'now_date()' | 'now_time()';
-type Alignment = 'left' | 'center' | 'right';
-
-
 export function AddColumnDialog({ projectId, tableId, tableName }: AddColumnDialogProps) {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [columnName, setColumnName] = useState('');
-  const [columnType, setColumnType] = useState<ColumnType>('text');
-  const [alignment, setAlignment] = useState<Alignment>('left');
+  const [columnType, setColumnType] = useState('text');
 
   const handleAction = async (formData: FormData) => {
-    formData.set('columnName', columnName);
-    formData.set('columnType', columnType);
-    formData.set('alignment', alignment);
-
     const result = await addColumnAction(formData);
     if (result.success) {
       toast({
@@ -51,7 +42,6 @@ export function AddColumnDialog({ projectId, tableId, tableName }: AddColumnDial
       setIsOpen(false);
       setColumnName('');
       setColumnType('text');
-      setAlignment('left');
     } else {
       toast({
         variant: 'destructive',
@@ -73,7 +63,7 @@ export function AddColumnDialog({ projectId, tableId, tableName }: AddColumnDial
         <DialogHeader>
           <DialogTitle>Add New Column to `{tableName}`</DialogTitle>
           <DialogDescription>
-            Define the name, type, and alignment for the new column.
+            Define the name and type for the new column.
           </DialogDescription>
         </DialogHeader>
         <form action={handleAction}>
@@ -102,7 +92,7 @@ export function AddColumnDialog({ projectId, tableId, tableName }: AddColumnDial
               <Select
                 name="columnType"
                 value={columnType}
-                onValueChange={(value: ColumnType) => setColumnType(value)}
+                onValueChange={(value) => setColumnType(value)}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select a type" />
@@ -114,25 +104,6 @@ export function AddColumnDialog({ projectId, tableId, tableName }: AddColumnDial
                   <SelectItem value="gen_random_uuid()">UUID</SelectItem>
                   <SelectItem value="now_date()">Creation Date</SelectItem>
                   <SelectItem value="now_time()">Creation Time</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="alignment" className="text-right">
-                Alignment
-              </Label>
-              <Select
-                name="alignment"
-                value={alignment}
-                onValueChange={(value: Alignment) => setAlignment(value)}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select alignment" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="left">Left</SelectItem>
-                  <SelectItem value="center">Center</SelectItem>
-                  <SelectItem value="right">Right</SelectItem>
                 </SelectContent>
               </Select>
             </div>

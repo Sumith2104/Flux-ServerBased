@@ -48,7 +48,7 @@ export function AddRowDialog({ projectId, tableId, tableName, columns }: AddRowD
     }
   };
 
-  const visibleColumns = columns.filter(col => col.data_type !== 'gen_random_uuid()' && col.data_type !== 'now_date()' && col.data_type !== 'now_time()');
+  const visibleColumns = columns.filter(col => col.column_name !== 'id' && col.data_type !== 'gen_random_uuid()' && col.data_type !== 'now_date()' && col.data_type !== 'now_time()');
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -62,7 +62,7 @@ export function AddRowDialog({ projectId, tableId, tableName, columns }: AddRowD
         <DialogHeader>
           <DialogTitle>Add New Row to `{tableName}`</DialogTitle>
           <DialogDescription>
-            Fill in the details for the new row.
+            Fill in the details for the new row. The 'id' will be generated automatically.
           </DialogDescription>
         </DialogHeader>
         <form action={handleAction}>

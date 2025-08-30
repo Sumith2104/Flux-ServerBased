@@ -58,7 +58,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DeleteProgress } from './delete-progress';
-import { ScrollArea } from './ui/scroll-area';
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
@@ -113,8 +112,6 @@ export function EditorClient({
             headerName: col.column_name,
             minWidth: 150,
             flex: 1,
-            align: col.alignment || 'left',
-            headerAlign: col.alignment || 'left',
         }));
     }, [rawColumns]);
     
@@ -165,42 +162,40 @@ export function EditorClient({
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Search tables..." className="pl-8" />
                     </div>
-                    <ScrollArea className="flex-1">
-                        <nav className="px-2 space-y-1">
-                            {allTables.map((table) => (
-                                <div 
-                                    key={table.table_id} 
-                                    className={`group flex items-center justify-between rounded-md text-sm font-medium hover:bg-accent ${table.table_id === tableId ? 'bg-accent' : ''}`}
+                    <nav className="flex-1 overflow-y-auto px-2 space-y-1 py-2">
+                        {allTables.map((table) => (
+                            <div 
+                                key={table.table_id} 
+                                className={`group flex items-center justify-between rounded-md text-sm font-medium hover:bg-accent ${table.table_id === tableId ? 'bg-accent' : ''}`}
+                            >
+                                <Link 
+                                    href={`/editor?projectId=${projectId}&tableId=${table.table_id}&tableName=${table.table_name}`}
+                                    className="flex items-center gap-2 px-3 py-2 flex-grow"
                                 >
-                                    <Link 
-                                        href={`/editor?projectId=${projectId}&tableId=${table.table_id}&tableName=${table.table_name}`}
-                                        className="flex items-center gap-2 px-3 py-2 flex-grow"
-                                    >
-                                        <Table className="h-4 w-4" />
-                                        <span className="truncate">{table.table_name}</span>
-                                    </Link>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 flex-shrink-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                                <span className="sr-only">Table options</span>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem disabled>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                <span>Edit</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openDeleteTableDialog(table)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                <span>Delete</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            ))}
-                        </nav>
-                    </ScrollArea>
+                                    <Table className="h-4 w-4" />
+                                    <span className="truncate">{table.table_name}</span>
+                                </Link>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 flex-shrink-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Table options</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem disabled>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            <span>Edit</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => openDeleteTableDialog(table)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            <span>Delete</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        ))}
+                    </nav>
                     <div className="mt-auto p-2 border-t">
                         <Button asChild className="w-full">
                             <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
@@ -328,7 +323,6 @@ export function EditorClient({
                                                             <TableRow>
                                                                 <TableHead>Column Name</TableHead>
                                                                 <TableHead>Data Type</TableHead>
-                                                                <TableHead>Alignment</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
@@ -336,7 +330,6 @@ export function EditorClient({
                                                                 <TableRow key={col.column_id}>
                                                                     <TableCell className="font-mono">{col.column_name}</TableCell>
                                                                     <TableCell className="font-mono">{col.data_type}</TableCell>
-                                                                    <TableCell className="font-mono capitalize">{col.alignment || 'left'}</TableCell>
                                                                 </TableRow>
                                                             ))}
                                                         </TableBody>

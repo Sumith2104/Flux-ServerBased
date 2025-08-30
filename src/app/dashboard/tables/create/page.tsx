@@ -20,13 +20,11 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { DeleteProgress } from '@/components/delete-progress';
 
 type ColumnType = 'text' | 'number' | 'date' | 'gen_random_uuid()' | 'now_date()' | 'now_time()';
-type Alignment = 'left' | 'center' | 'right';
 
 type Column = {
     id: string;
     name: string;
     type: ColumnType;
-    alignment: Alignment;
 };
 
 export default function CreateTablePage() {
@@ -39,7 +37,7 @@ export default function CreateTablePage() {
     const [tableName, setTableName] = useState('');
     const [description, setDescription] = useState('');
     const [columns, setColumns] = useState<Column[]>([
-        { id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' },
+        { id: uuidv4(), name: 'id', type: 'gen_random_uuid()' },
     ]);
     const [csvFile, setCsvFile] = useState<File | null>(null);
     const [csvFileName, setCsvFileName] = useState<string | null>(null);
@@ -48,7 +46,7 @@ export default function CreateTablePage() {
 
 
     const addColumn = () => {
-        setColumns([...columns, { id: uuidv4(), name: '', type: 'text', alignment: 'left' }]);
+        setColumns([...columns, { id: uuidv4(), name: '', type: 'text' }]);
     };
 
     const removeColumn = (id: string) => {
@@ -77,11 +75,10 @@ export default function CreateTablePage() {
                         id: uuidv4(),
                         name: name,
                         type: 'text',
-                        alignment: 'left'
                     }));
 
                     if (!header.some(h => h.toLowerCase() === 'id')) {
-                        newColumns.unshift({ id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' });
+                        newColumns.unshift({ id: uuidv4(), name: 'id', type: 'gen_random_uuid()' });
                     }
                     setColumns(newColumns);
                 }
@@ -92,7 +89,7 @@ export default function CreateTablePage() {
     
     const handleTabChange = (value: string) => {
         setActiveTab(value);
-        setColumns([{ id: uuidv4(), name: 'id', type: 'gen_random_uuid()', alignment: 'left' }]);
+        setColumns([{ id: uuidv4(), name: 'id', type: 'gen_random_uuid()' }]);
         setCsvFile(null);
         setCsvFileName(null);
         setTableName('');
@@ -127,7 +124,7 @@ export default function CreateTablePage() {
         
         setIsSubmitting(true);
 
-        const columnsStr = columns.map(c => `${c.name}:${c.type}:${c.alignment}`).join(',');
+        const columnsStr = columns.map(c => `${c.name}:${c.type}`).join(',');
         formData.set('columns', columnsStr);
         formData.append('projectId', projectId);
         
@@ -256,22 +253,24 @@ export default function CreateTablePage() {
                                    <div>
                                         <Label>Columns</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Define the name, data type, and alignment for each column.
+                                            Define the name and data type for each column.
                                         </p>
                                    </div>
                                    <div className="space-y-4">
                                     {columns.map((col, index) => (
-                                        <div key={col.id} className="grid grid-cols-1 md:grid-cols-[1fr_150px_120px_auto] items-center gap-2">
+                                        <div key={col.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] items-center gap-2">
                                              <Input
                                                 placeholder="Column name"
                                                 value={col.name}
                                                 onChange={(e) => updateColumn(col.id, 'name', e.target.value)}
                                                 className="font-mono"
                                                 required
+                                                disabled={col.name === 'id'}
                                             />
                                             <Select 
                                                 value={col.type} 
                                                 onValueChange={(value: ColumnType) => updateColumn(col.id, 'type', value)}
+                                                disabled={col.name === 'id'}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Type" />
@@ -285,25 +284,12 @@ export default function CreateTablePage() {
                                                     <SelectItem value="now_time()">Creation Time</SelectItem>
                                                 </SelectContent>
                                             </Select>
-                                             <Select 
-                                                value={col.alignment} 
-                                                onValueChange={(value: Alignment) => updateColumn(col.id, 'alignment', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Alignment" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="left">Left</SelectItem>
-                                                    <SelectItem value="center">Center</SelectItem>
-                                                    <SelectItem value="right">Right</SelectItem>
-                                                </SelectContent>
-                                            </Select>
                                              <Button 
                                                 variant="destructive" 
                                                 size="icon" 
                                                 onClick={() => removeColumn(col.id)} 
                                                 type="button"
-                                                disabled={index === 0 && col.name === 'id'}
+                                                disabled={col.name === 'id'}
                                                 className="justify-self-end"
                                             >
                                                 <Trash2 className="h-4 w-4"/>
@@ -344,12 +330,12 @@ export default function CreateTablePage() {
                                             <div>
                                                 <Label>Columns Detected</Label>
                                                 <p className="text-sm text-muted-foreground">
-                                                    Adjust data types and alignment as needed.
+                                                    Adjust data types as needed.
                                                 </p>
                                             </div>
                                             <div className="space-y-4">
                                                 {columns.map((col) => (
-                                                    <div key={col.id} className="grid grid-cols-1 md:grid-cols-[1fr_150px_120px_auto] items-center gap-2">
+                                                    <div key={col.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] items-center gap-2">
                                                         <Input
                                                             value={col.name}
                                                             readOnly
@@ -358,6 +344,7 @@ export default function CreateTablePage() {
                                                         <Select 
                                                             value={col.type} 
                                                             onValueChange={(value: ColumnType) => updateColumn(col.id, 'type', value)}
+                                                            disabled={col.name === 'id'}
                                                         >
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Type" />
@@ -367,19 +354,6 @@ export default function CreateTablePage() {
                                                                 <SelectItem value="number">Number</SelectItem>
                                                                 <SelectItem value="date">Date</SelectItem>
                                                                 <SelectItem value="gen_random_uuid()">UUID</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <Select 
-                                                            value={col.alignment} 
-                                                            onValueChange={(value: Alignment) => updateColumn(col.id, 'alignment', value)}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Alignment" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="left">Left</SelectItem>
-                                                                <SelectItem value="center">Center</SelectItem>
-                                                                <SelectItem value="right">Right</SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                          <div className="w-10 h-10 justify-self-end" />

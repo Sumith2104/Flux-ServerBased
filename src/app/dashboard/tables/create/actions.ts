@@ -69,27 +69,30 @@ export async function createTableAction(formData: FormData) {
     }
 
     const columns = columnsStr.split(',').map(c => {
-      const [name, type, alignment] = c.split(':');
+      const [name, type] = c.split(':');
       if (!name || !type || !['text', 'number', 'date', 'gen_random_uuid()', 'now_date()', 'now_time()'].includes(type.trim())) {
           throw new Error(`Invalid column definition: ${c}`);
       }
-      return {id: uuidv4(), name: name.trim(), type: type.trim(), alignment: alignment.trim() || 'left'};
+      return {id: uuidv4(), name: name.trim(), type: type.trim()};
     });
 
     if (columns.length === 0) {
         return { error: 'You must define at least one column.' };
+    }
+     if (!columns.some(c => c.name === 'id' && c.type === 'gen_random_uuid()')) {
+        return { error: "A primary key 'id' column of type 'UUID' is required." };
     }
 
     // 2. Update columns.csv
     const columnsCsvPath = path.join(projectPath, 'columns.csv');
     let newColumnsCsvRows = '';
     for (const col of columns) {
-      newColumnsCsvRows += `\n${col.id},${tableId},${col.name},${col.type},${col.alignment}`;
+      newColumnsCsvRows += `\n${col.id},${tableId},${col.name},${col.type}`;
     }
 
     const columnsCsvContent = await getFileContent(columnsCsvPath);
     if (!columnsCsvContent.trim()) {
-        const header = 'column_id,table_id,column_name,data_type,alignment';
+        const header = 'column_id,table_id,column_name,data_type';
         await fs.writeFile(columnsCsvPath, header + newColumnsCsvRows, 'utf8');
     } else {
         await fs.appendFile(columnsCsvPath, newColumnsCsvRows, 'utf8');

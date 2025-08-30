@@ -83,7 +83,6 @@ export interface Column {
     table_id: string;
     column_name: string;
     data_type: string;
-    alignment?: 'left' | 'center' | 'right';
 }
 
 export async function getTablesForProject(projectId: string): Promise<Table[]> {
@@ -102,15 +101,8 @@ export async function getColumnsForTable(projectId: string, tableId: string): Pr
         throw new Error("User not authenticated");
     }
     const columnsCsvPath = path.join(DB_PATH, userId, projectId, 'columns.csv');
-    const allColumns = await readCsvFile(columnsCsvPath) as unknown as Column[];
-    
-    const tableColumns = allColumns.filter(col => col.table_id === tableId);
-    
-    // Fallback for old CSV format without alignment
-    return tableColumns.map(col => ({
-        ...col,
-        alignment: col.alignment || 'left'
-    }));
+    const allColumns = await readCsvFile(columnsCsvPath);
+    return allColumns.filter(col => col.table_id === tableId) as unknown as Column[];
 }
 
 export async function getTableData(projectId: string, tableName: string): Promise<Record<string, string>[]> {
