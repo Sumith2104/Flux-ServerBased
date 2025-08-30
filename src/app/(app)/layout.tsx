@@ -44,7 +44,12 @@ export default function AppLayout({
                     
                     const selectedProjectCookie = Cookies.get('selectedProject');
                     if (selectedProjectCookie) {
-                        setSelectedProject(JSON.parse(selectedProjectCookie));
+                        try {
+                           setSelectedProject(JSON.parse(selectedProjectCookie));
+                        } catch (e) {
+                            console.error("Failed to parse selected project cookie", e);
+                            setSelectedProject(null);
+                        }
                     } else {
                         setSelectedProject(null);
                     }
