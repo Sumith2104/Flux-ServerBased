@@ -23,3 +23,7 @@ ded7f137-08ee-4b03-84c8-2658c84aaa84,23e724fe-3c2f-4fca-afcc-74a6c4339eba,city,t
 ab64da28-447f-464e-beaf-cd5bbabaa535,23e724fe-3c2f-4fca-afcc-74a6c4339eba,country,text,left
 287486f3-523f-4623-ab95-9626ab7978ed,23e724fe-3c2f-4fca-afcc-74a6c4339eba,dob,date,left
 7665fcd3-6011-4ec5-ba77-f3f280e7175c,23e724fe-3c2f-4fca-afcc-74a6c4339eba,created_at,date,left
+2201b66e-33bd-4b0b-8d67-0b8403e48796,47164ab9-52ec-44c1-87ad-e23962463960,id,text,left
+fbcf2f46-46cb-42ef-b19f-95afc97749b5,47164ab9-52ec-44c1-87ad-e23962463960,name,text,left
+1305f16f-fd84-4060-9fbd-5848da0d1080,47164ab9-52ec-44c1-87ad-e23962463960,member_id,text,left
+822f64ad-2eaa-4580-a74b-0869847efdf1,47164ab9-52ec-44c1-87ad-e23962463960,join_date,text,left
