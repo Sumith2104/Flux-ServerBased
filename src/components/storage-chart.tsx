@@ -13,11 +13,19 @@ interface StorageChartProps {
 }
 
 const formatSize = (kb: number) => {
-    if (kb > 1000) {
+    if (kb > 1023) {
         return `${(kb / 1024).toFixed(2)} MB`;
     }
     return `${kb.toFixed(2)} KB`;
 }
+
+const formatAxisLabel = (value: number) => {
+    if (value > 1023) {
+        return `${(value / 1024).toFixed(0)} MB`;
+    }
+    return `${value} KB`;
+};
+
 
 const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
   if (active && payload && payload.length) {
@@ -66,7 +74,7 @@ export function StorageChart({ data }: StorageChartProps) {
                         >
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                             <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value} KB`} />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={formatAxisLabel} />
                             <Tooltip
                                 cursor={{ fill: 'hsl(var(--accent))' }}
                                 content={<CustomTooltip />}
