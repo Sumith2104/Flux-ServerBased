@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useFormStatus } from 'react-dom';
@@ -13,7 +14,7 @@ export function SubmitButton({ children, ...props }: SubmitButtonProps) {
   const { pending } = useFormStatus();
 
   return (
-    <Button {...props} type="submit" disabled={pending}>
+    <Button {...props} type="submit" disabled={props.disabled || pending}>
       {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
       {children}
     </Button>

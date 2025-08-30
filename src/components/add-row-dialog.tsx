@@ -87,6 +87,7 @@ export function AddRowDialog({ projectId, tableId, tableName, columns }: AddRowD
           </div>
 
           <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
             <SubmitButton type="submit">Add Row</SubmitButton>
           </DialogFooter>
         </form>

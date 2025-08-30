@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -8,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SubmitButton } from "./submit-button";
 
 export function QueryForm() {
     const [query, setQuery] = useState("");
