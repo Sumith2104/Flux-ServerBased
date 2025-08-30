@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DeleteProgress } from './delete-progress';
+import { ScrollArea } from './ui/scroll-area';
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
@@ -148,9 +149,9 @@ export function EditorClient({
 
     return (
         <>
-            <div className="flex w-full items-start">
+            <div className="flex w-full items-start h-full">
                 {/* Sidebar */}
-                <aside className="w-64 flex-shrink-0 border-r bg-background flex flex-col">
+                <aside className="w-64 flex-shrink-0 border-r bg-background flex flex-col h-full">
                     <div className="p-4">
                         <h2 className="text-lg font-semibold">Table Editor</h2>
                     </div>
@@ -164,41 +165,43 @@ export function EditorClient({
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Search tables..." className="pl-8" />
                     </div>
-                    <nav className="flex-1 px-2 space-y-1">
-                        {allTables.map((table) => (
-                             <div 
-                                key={table.table_id} 
-                                className={`group flex items-center justify-between rounded-md text-sm font-medium hover:bg-accent ${table.table_id === tableId ? 'bg-accent' : ''}`}
-                            >
-                                <Link 
-                                    href={`/editor?projectId=${projectId}&tableId=${table.table_id}&tableName=${table.table_name}`}
-                                    className="flex items-center gap-2 px-3 py-2 flex-grow"
+                    <ScrollArea className="flex-1">
+                        <nav className="px-2 space-y-1">
+                            {allTables.map((table) => (
+                                <div 
+                                    key={table.table_id} 
+                                    className={`group flex items-center justify-between rounded-md text-sm font-medium hover:bg-accent ${table.table_id === tableId ? 'bg-accent' : ''}`}
                                 >
-                                    <Table className="h-4 w-4" />
-                                    <span className="truncate">{table.table_name}</span>
-                                </Link>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 flex-shrink-0">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                            <span className="sr-only">Table options</span>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem disabled>
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            <span>Edit</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => openDeleteTableDialog(table)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            <span>Delete</span>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        ))}
-                    </nav>
-                     <div className="p-2 border-t">
+                                    <Link 
+                                        href={`/editor?projectId=${projectId}&tableId=${table.table_id}&tableName=${table.table_name}`}
+                                        className="flex items-center gap-2 px-3 py-2 flex-grow"
+                                    >
+                                        <Table className="h-4 w-4" />
+                                        <span className="truncate">{table.table_name}</span>
+                                    </Link>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 mr-1 opacity-0 group-hover:opacity-100 flex-shrink-0">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                                <span className="sr-only">Table options</span>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem disabled>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                <span>Edit</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => openDeleteTableDialog(table)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                <span>Delete</span>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            ))}
+                        </nav>
+                    </ScrollArea>
+                    <div className="mt-auto p-2 border-t">
                         <Button asChild className="w-full">
                             <Link href={projectId ? `/dashboard/tables/create?projectId=${projectId}` : '#'}>
                                 <Plus className="mr-2 h-4 w-4" />

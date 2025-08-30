@@ -73,8 +73,10 @@ export default function EditorPage({
     const tableName = searchParams?.tableName as string | undefined;
 
     return (
-        <Suspense fallback={<EditorSkeleton />}>
-            <Editor projectId={projectId} tableId={tableId} tableName={tableName} />
-        </Suspense>
+        <div className="h-[calc(100vh-theme(space.14)-1px)]">
+            <Suspense fallback={<EditorSkeleton />}>
+                <Editor projectId={projectId} tableId={tableId} tableName={tableName} />
+            </Suspense>
+        </div>
     );
 }
