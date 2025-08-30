@@ -70,10 +70,12 @@ export async function createTableAction(formData: FormData) {
 
     const columns = columnsStr.split(',').map(c => {
       const [name, type] = c.split(':');
-      if (!name || !type || !['text', 'number', 'date', 'gen_random_uuid()', 'now_date()', 'now_time()'].includes(type.trim())) {
+      if (!name || !type || !['text', 'number', 'date', 'gen_random_uuid()', 'now_date()', 'now_time()', 'UUID'].includes(type.trim())) {
           throw new Error(`Invalid column definition: ${c}`);
       }
-      return {id: uuidv4(), name: name.trim(), type: type.trim()};
+      // Normalize UUID type for consistency in the backend file.
+      const normalizedType = type.trim() === 'UUID' ? 'gen_random_uuid()' : type.trim();
+      return {id: uuidv4(), name: name.trim(), type: normalizedType};
     });
 
     if (columns.length === 0) {
