@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Table as DbTable, Column as DbColumn } from '@/lib/data';
 import { 
     Plus, 
@@ -15,12 +15,11 @@ import {
     Edit,
     Trash2,
     MoreHorizontal,
-    Upload,
     Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import type { GridColDef, GridRowSelectionModel, GridPaginationModel } from '@mui/x-data-grid';
 import { AddRowDialog } from '@/components/add-row-dialog';
 import { AddColumnDialog } from '@/components/add-column-dialog';
 import { EditRowDialog } from '@/components/edit-row-dialog';
@@ -49,7 +48,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
@@ -61,7 +59,7 @@ import { DeleteProgress } from './delete-progress';
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
-    loading: () => <Skeleton className="h-96 w-full" />,
+    loading: () => <Skeleton className="h-[600px] w-full" />,
 });
 
 interface EditorClientProps {
@@ -70,8 +68,8 @@ interface EditorClientProps {
     tableName?: string;
     allTables: DbTable[];
     currentTable: DbTable | null | undefined;
-    columns: DbColumn[];
-    rows: any[];
+    initialColumns: DbColumn[];
+    initialRows: any[];
 }
 
 export function EditorClient({
@@ -80,16 +78,46 @@ export function EditorClient({
     tableName,
     allTables,
     currentTable,
-    columns: rawColumns,
-    rows,
+    initialColumns,
 }: EditorClientProps) {
     const { toast } = useToast();
     const router = useRouter();
-    const [selectionModel, setSelectionModel] = React.useState<GridRowSelectionModel>([]);
-    const [isEditOpen, setIsEditOpen] = React.useState(false);
-    const [isDeleteTableAlertOpen, setIsDeleteTableAlertOpen] = React.useState(false);
-    const [tableToDelete, setTableToDelete] = React.useState<DbTable | null>(null);
-    const [isDeleting, setIsDeleting] = React.useState(false);
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isDeleteTableAlertOpen, setIsDeleteTableAlertOpen] = useState(false);
+    const [tableToDelete, setTableToDelete] = useState<DbTable | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // State for server-side pagination
+    const [rows, setRows] = useState<any[]>([]);
+    const [rowCount, setRowCount] = useState(0);
+    const [isTableLoading, setIsTableLoading] = useState(false);
+    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 100 });
+
+    const fetchTableData = useCallback(async (model: { page: number, pageSize: number }) => {
+        if (!tableId || !tableName) return;
+        setIsTableLoading(true);
+        try {
+            const response = await fetch(`/api/table-data?projectId=${projectId}&tableName=${tableName}&page=${model.page + 1}&pageSize=${model.pageSize}`);
+            if (!response.ok) throw new Error('Failed to fetch table data');
+            const data = await response.json();
+            setRows(data.rows);
+            setRowCount(data.totalRows);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load table data.' });
+        } finally {
+            setIsTableLoading(false);
+        }
+    }, [projectId, tableId, tableName, toast]);
+
+    useEffect(() => {
+        fetchTableData(paginationModel);
+    }, [fetchTableData, paginationModel]);
+
+    const handlePaginationModelChange = (model: GridPaginationModel) => {
+        setPaginationModel(model);
+    };
 
     const handleDeleteSelectedRows = async () => {
         if (!projectId || !tableId || !tableName || selectionModel.length === 0) return;
@@ -101,21 +129,23 @@ export function EditorClient({
         if (result.success) {
             toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
             setSelectionModel([]);
+            fetchTableData(paginationModel); // Refetch current page
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }
     };
     
-    const columns: GridColDef[] = React.useMemo(() => {
-        return rawColumns.map(col => ({
+    const columns: GridColDef[] = useMemo(() => {
+        return initialColumns.map(col => ({
             field: col.column_name,
             headerName: col.column_name,
             minWidth: 150,
             flex: 1,
+            sortable: false, // Sorting is a bit more complex with server-side pagination
         }));
-    }, [rawColumns]);
+    }, [initialColumns]);
     
-    const selectedRowData = React.useMemo(() => {
+    const selectedRowData = useMemo(() => {
         if (selectionModel.length !== 1) return null;
         const selectedId = selectionModel[0];
         return rows.find(row => row.id === selectedId) || null;
@@ -217,19 +247,19 @@ export function EditorClient({
                                 </div>
                                 <Separator orientation="vertical" className="h-6" />
                                  <div className="flex items-center gap-2">
-                                    {tableId && tableName && projectId && rawColumns && (
+                                    {tableId && tableName && projectId && initialColumns && (
                                         <>
                                             <AddRowDialog 
                                                 projectId={projectId}
                                                 tableId={tableId}
                                                 tableName={tableName}
-                                                columns={rawColumns}
+                                                columns={initialColumns}
                                             />
                                             <ImportCsvDialog
                                                 projectId={projectId}
                                                 tableId={tableId}
                                                 tableName={tableName}
-                                                columns={rawColumns}
+                                                columns={initialColumns}
                                             />
                                         </>
                                     )}
@@ -243,7 +273,7 @@ export function EditorClient({
                                             projectId={projectId}
                                             tableId={tableId}
                                             tableName={tableName}
-                                            columns={rawColumns}
+                                            columns={initialColumns}
                                             rowData={selectedRowData}
                                         />
                                     )}
@@ -295,9 +325,12 @@ export function EditorClient({
                                     </TabsList>
                                     <TabsContent value="data" className="mt-4">
                                         <DataTable 
-                                            tableId={tableId}
                                             columns={columns} 
                                             rows={rows} 
+                                            rowCount={rowCount}
+                                            loading={isTableLoading}
+                                            paginationModel={paginationModel}
+                                            onPaginationModelChange={handlePaginationModelChange}
                                             selectionModel={selectionModel}
                                             onRowSelectionModelChange={(newSelectionModel) => {
                                                 setSelectionModel(newSelectionModel);
@@ -326,7 +359,7 @@ export function EditorClient({
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {rawColumns.map(col => (
+                                                            {initialColumns.map(col => (
                                                                 <TableRow key={col.column_id}>
                                                                     <TableCell className="font-mono">{col.column_name}</TableCell>
                                                                     <TableCell className="font-mono">{col.data_type}</TableCell>

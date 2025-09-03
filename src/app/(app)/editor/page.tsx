@@ -2,7 +2,7 @@
 import { Suspense } from 'react';
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getTablesForProject, getColumnsForTable, getTableData } from '@/lib/data';
+import { getTablesForProject, getColumnsForTable } from '@/lib/data';
 import { EditorClient } from '@/components/editor-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -12,13 +12,12 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
     const currentTable = tableId ? allTables.find(t => t.table_id === tableId) : null;
 
     let columns: any[] = [];
-    let rows: any[] = [];
 
-    if (currentTable && tableId && tableName) {
+    if (currentTable && tableId) {
         columns = await getColumnsForTable(projectId, tableId);
-        rows = await getTableData(projectId, tableName);
     }
 
+    // Rows are now fetched on the client-side
     return (
         <EditorClient
             projectId={projectId}
@@ -26,8 +25,8 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
             tableName={tableName}
             allTables={allTables}
             currentTable={currentTable}
-            columns={columns}
-            rows={rows}
+            initialColumns={columns}
+            initialRows={[]} // Pass empty initial rows
         />
     );
 }

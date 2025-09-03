@@ -4,10 +4,13 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { getCurrentUserId } from '@/lib/auth';
+import { Readable } from 'stream';
+import { createReadStream } from 'fs';
+import { EOL } from 'os';
 
 const DB_PATH = path.join(process.cwd(), 'src', 'database');
 
-// Helper to parse CSV data
+// Helper to parse CSV data - now only used for smaller config files
 function parseCsv(data: string): Record<string, string>[] {
     if (!data) return [];
     const rows = data.trim().split('\n').filter(row => row.trim() !== '');
@@ -16,6 +19,7 @@ function parseCsv(data: string): Record<string, string>[] {
     const header = rows[0].split(',').map(h => h.trim());
     
     return rows.slice(1).map(row => {
+        // This is a simplified parser. A more robust one would handle quotes.
         const values = row.split(',');
         return header.reduce((obj, nextKey, index) => {
             obj[nextKey] = values[index]?.trim().replace(/^"|"$/g, '') || '';
@@ -24,8 +28,7 @@ function parseCsv(data: string): Record<string, string>[] {
     });
 }
 
-
-// Helper to read a CSV file
+// Helper to read a small CSV file
 async function readCsvFile(filePath: string) {
     try {
         const data = await fs.readFile(filePath, 'utf8');
@@ -37,7 +40,6 @@ async function readCsvFile(filePath: string) {
         throw error;
     }
 }
-
 
 // --- Project Data ---
 
@@ -51,7 +53,6 @@ export interface Project {
 export async function getProjectsForCurrentUser(): Promise<Project[]> {
     const userId = await getCurrentUserId();
     if (!userId) {
-        // Return empty array instead of throwing error to avoid breaking the UI for non-authed states
         return [];
     }
     const projectsCsvPath = path.join(DB_PATH, userId, 'projects.csv');
@@ -91,8 +92,7 @@ export async function getTablesForProject(projectId: string): Promise<Table[]> {
         throw new Error("User not authenticated");
     }
     const tablesCsvPath = path.join(DB_PATH, userId, projectId, 'tables.csv');
-    const tables = await readCsvFile(tablesCsvPath);
-    return tables as unknown as Table[];
+    return await readCsvFile(tablesCsvPath) as unknown as Table[];
 }
 
 export async function getColumnsForTable(projectId: string, tableId: string): Promise<Column[]> {
@@ -105,14 +105,111 @@ export async function getColumnsForTable(projectId: string, tableId: string): Pr
     return allColumns.filter(col => col.table_id === tableId) as unknown as Column[];
 }
 
-export async function getTableData(projectId: string, tableName: string): Promise<Record<string, string>[]> {
+
+interface PaginatedTableData {
+    rows: Record<string, string>[];
+    totalRows: number;
+}
+
+async function getCsvLineCount(filePath: string): Promise<number> {
+    try {
+        const stream = createReadStream(filePath, { encoding: 'utf-8' });
+        let count = 0;
+        for await (const chunk of stream) {
+            count += (chunk.match(/\n/g) || []).length;
+        }
+        // If the file is not empty and doesn't end with a newline, the last line isn't counted.
+        // We subtract 1 for the header row.
+        // A non-empty file has at least a header, so count should be at least 1.
+        return Math.max(0, count);
+    } catch (error: any) {
+        if (error.code === 'ENOENT') return 0;
+        throw error;
+    }
+}
+
+export async function getTableData(
+    projectId: string, 
+    tableName: string,
+    page: number = 1,
+    pageSize: number = 100
+): Promise<PaginatedTableData> {
     const userId = await getCurrentUserId();
     if (!userId) {
         throw new Error("User not authenticated");
     }
     const tableDataPath = path.join(DB_PATH, userId, projectId, `${tableName}.csv`);
-    return readCsvFile(tableDataPath);
+
+    try {
+        const totalRows = await getCsvLineCount(tableDataPath);
+        
+        if (totalRows === 0) {
+            return { rows: [], totalRows: 0 };
+        }
+
+        const stream = createReadStream(tableDataPath, { encoding: 'utf-8' });
+        const readable = Readable.from(stream);
+
+        let header: string[] = [];
+        let rows: Record<string, string>[] = [];
+        let buffer = '';
+        let lineCount = 0;
+        const startLine = (page - 1) * pageSize + 1;
+        const endLine = startLine + pageSize -1;
+
+        for await (const chunk of readable) {
+            buffer += chunk;
+            let lines = buffer.split(EOL);
+            buffer = lines.pop() || ''; // Keep last partial line in buffer
+
+            for (const line of lines) {
+                if (!line) continue;
+
+                if (lineCount === 0) {
+                    header = line.split(',').map(h => h.trim());
+                    lineCount++;
+                    continue;
+                }
+
+                if (lineCount >= startLine && lineCount <= endLine) {
+                    const values = line.split(',');
+                    const row = header.reduce((obj, nextKey, index) => {
+                        obj[nextKey] = values[index]?.trim().replace(/^"|"$/g, '') || '';
+                        return obj;
+                    }, {} as Record<string, string>);
+                    rows.push(row);
+                }
+                
+                lineCount++;
+
+                if (lineCount > endLine) {
+                    stream.destroy(); // Stop reading the file early
+                    break;
+                }
+            }
+        }
+        
+        // Process any remaining lines in buffer (if file doesn't end with EOL)
+        if (buffer && lineCount >= startLine && lineCount <= endLine) {
+             const values = buffer.split(',');
+             const row = header.reduce((obj, nextKey, index) => {
+                 obj[nextKey] = values[index]?.trim().replace(/^"|"$/g, '') || '';
+                 return obj;
+             }, {} as Record<string, string>);
+             rows.push(row);
+        }
+
+        return { rows, totalRows };
+
+    } catch (error: any) {
+        if (error.code === 'ENOENT') {
+            return { rows: [], totalRows: 0 };
+        }
+        console.error("Failed to read paginated table data:", error);
+        throw error;
+    }
 }
+
 
 // --- Analytics Data ---
 export interface ProjectAnalytics {
@@ -142,10 +239,9 @@ export async function getProjectAnalytics(projectId: string): Promise<ProjectAna
         const tableDataPath = path.join(projectPath, `${table.table_name}.csv`);
         try {
             const stats = await fs.stat(tableDataPath);
-            const tableData = await readCsvFile(tableDataPath);
+            const rowCount = await getCsvLineCount(tableDataPath);
 
             const sizeInKb = parseFloat((stats.size / 1024).toFixed(2));
-            const rowCount = tableData.length;
 
             totalSize += sizeInKb;
             totalRows += rowCount;

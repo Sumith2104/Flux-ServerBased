@@ -2,22 +2,34 @@
 'use client';
 
 import * as React from 'react';
-import { DataGrid, type GridColDef, type GridRowSelectionModel } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridPaginationModel } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
-import { useEffect, useState } from 'react';
 
 interface DataTableProps {
   columns: GridColDef[];
   rows: any[];
-  onRowSelectionModelChange?: (selectionModel: GridRowSelectionModel) => void;
+  rowCount: number;
+  loading: boolean;
+  paginationModel: GridPaginationModel;
+  onPaginationModelChange: (model: GridPaginationModel) => void;
   selectionModel?: GridRowSelectionModel;
-  tableId: string;
+  onRowSelectionModelChange?: (selectionModel: GridRowSelectionModel) => void;
 }
 
-export function DataTable({ columns, rows, onRowSelectionModelChange, selectionModel }: DataTableProps) {
+export function DataTable({ 
+  columns, 
+  rows,
+  rowCount,
+  loading,
+  paginationModel,
+  onPaginationModelChange,
+  selectionModel, 
+  onRowSelectionModelChange,
+}: DataTableProps) {
   return (
     <Paper
       sx={{
+        height: '70vh', // Give the table a fixed height
         width: '100%',
         '& .MuiDataGrid-root': {
           border: 'none',
@@ -25,15 +37,15 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
           backgroundColor: 'hsl(var(--card))',
         },
         '& .MuiDataGrid-cell': {
-          borderBottom: '1px solid hsl(var(--border))', // thinner row divider
+          borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaders': {
           backgroundColor: 'hsl(var(--card))',
-          borderBottom: '1px solid hsl(var(--border))', // keep consistent with row divider
+          borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaderTitle': {
           fontWeight: 'bold',
-          color: 'black',
+          color: 'hsl(var(--foreground))',
         },
         '& .MuiDataGrid-footerContainer': {
           borderTop: '1px solid hsl(var(--border))',
@@ -54,23 +66,26 @@ export function DataTable({ columns, rows, onRowSelectionModelChange, selectionM
         '& .MuiDataGrid-actionsCell .MuiIconButton-root': {
           color: 'hsl(var(--foreground))',
         },
+         '& .MuiDataGrid-overlay': {
+          backgroundColor: 'hsl(var(--card) / 0.8)',
+        },
       }}
     >
       <DataGrid
         rows={rows}
         columns={columns}
         getRowId={(row) => row.id}
-        initialState={{
-          pagination: {
-            paginationModel: { page: 0, pageSize: 10 },
-          },
-        }}
-        pageSizeOptions={[5, 10, 20, 30, 40, 50, 100, 500, 1000]}
+        pagination
+        paginationMode="server"
+        rowCount={rowCount}
+        loading={loading}
+        pageSizeOptions={[20, 50, 100, 250, 500]}
+        paginationModel={paginationModel}
+        onPaginationModelChange={onPaginationModelChange}
         checkboxSelection
         disableRowSelectionOnClick
         onRowSelectionModelChange={onRowSelectionModelChange}
         rowSelectionModel={selectionModel}
-        autoHeight
       />
     </Paper>
   );
