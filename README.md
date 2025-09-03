@@ -125,7 +125,3 @@ PORT=3000
 Got ideas or fixes? Open an issue or create a pull request — contributions are welcome!
 
 ---
-
-## 📄 License
-
-Fluxbase is released under the **MIT License**.
