@@ -1,6 +1,10 @@
 # ⚡ Fluxbase
 
-Fluxbase is your modern, self-hosted data and project management platform. It gives you a spreadsheet-like interface to organize, track, and manage your data — all in one place — with smooth performance and a clean, intuitive UI.
+
+Fluxbase is your modern, self-hosted project and data management tool. It gives you a smooth, spreadsheet-like interface to manage projects, organize data, and keep everything in one place — with performance and simplicity in mind.
+
+> ⚠ **Note:** Fluxbase is built to run **only on a dedicated server or your own computer**.  
+> It will not work properly on platforms like Vercel, Render, Railway, or inside Docker containers, because those environments don't provide reliable local file storage.
 
 ---
 
@@ -34,7 +38,13 @@ Fluxbase/
 ├── tsconfig.json        # TypeScript configuration
 └── README.md
 ```
+## 🚀 How to Get Started
 
+### Requirements
+
+- **Node.js v18+**
+- **npm** or **yarn**
+- A dedicated server or computer where you control file storage
 ---
 
 ## 🧩 Tech Stack
