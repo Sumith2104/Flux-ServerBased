@@ -40,7 +40,7 @@ export function DataTable({
           borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaders': {
-          backgroundColor: 'hsl(var(--card))',
+          backgroundColor: '#000',
           borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaderTitle': {
