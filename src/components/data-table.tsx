@@ -45,7 +45,7 @@ export function DataTable({
         },
         '& .MuiDataGrid-columnHeaderTitle': {
           fontWeight: 'bold',
-          color: 'hsl(var(--foreground))',
+          color: '#FFF',
         },
         '& .MuiDataGrid-footerContainer': {
           borderTop: '1px solid hsl(var(--border))',
