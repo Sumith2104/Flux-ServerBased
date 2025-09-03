@@ -38,13 +38,7 @@ Fluxbase/
 ├── tsconfig.json        # TypeScript configuration
 └── README.md
 ```
-## 🚀 How to Get Started
 
-### Requirements
-
-- **Node.js v18+**
-- **npm** or **yarn**
-- A dedicated server or computer where you control file storage
 ---
 
 ## 🧩 Tech Stack
@@ -73,13 +67,19 @@ Fluxbase is built with a modern, production-ready stack:
 
 ## 🚀 Getting Started
 
-### 1️⃣ Prerequisites
+### Requirements
+
+- **Node.js v18+**
+- **npm** or **yarn**
+- A dedicated server or computer where you control file storage
+
+### Prerequisites
 
 - **Node.js v18+**
 - **npm** or **yarn**
 - A computer or server to run the app
 
-### 2️⃣ Installation
+### Installation
 
 ```bash
 git clone https://github.com/yourusername/fluxbase.git
@@ -87,7 +87,7 @@ cd fluxbase
 npm install
 ```
 
-### 3️⃣ Local Development
+### Local Development
 
 ```bash
 npm run dev
@@ -95,7 +95,7 @@ npm run dev
 
 Open your browser and go to **http://localhost:3000**.
 
-### 4️⃣ Production Server
+### Production Server
 
 ```bash
 npm run build
@@ -111,7 +111,7 @@ pm2 start npm --name "fluxbase" -- run start
 
 (Optional) Configure NGINX or Caddy to serve Fluxbase under HTTPS.
 
-### 5️⃣ Environment Variables
+### Environment Variables
 
 Create `.env.local` in the root folder:
 
