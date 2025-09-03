@@ -73,12 +73,6 @@ Fluxbase is built with a modern, production-ready stack:
 - **npm** or **yarn**
 - A dedicated server or computer where you control file storage
 
-### Prerequisites
-
-- **Node.js v18+**
-- **npm** or **yarn**
-- A computer or server to run the app
-
 ### Installation
 
 ```bash
