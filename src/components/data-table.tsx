@@ -40,12 +40,12 @@ export function DataTable({
           borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaders': {
-          backgroundColor: '#000',
+          backgroundColor: '#FFF',
           borderBottom: '1px solid hsl(var(--border))',
         },
         '& .MuiDataGrid-columnHeaderTitle': {
           fontWeight: 'bold',
-          color: '#FFF',
+          color: '#000',
         },
         '& .MuiDataGrid-footerContainer': {
           borderTop: '1px solid hsl(var(--border))',
