@@ -12,7 +12,7 @@ Fluxbase is your modern, self-hosted project and data management tool. It gives 
 Fluxbase is lightweight but benefits from stable, persistent storage and a decent processor.
 Here’s what we recommend:
 
-###⚡ Recommended for Production (Dedicated Server / VPS)
+### Recommended for Production (Dedicated Server / VPS)
 
 - CPU: Quad-core or better (Intel Xeon, AMD Ryzen, or similar)
 - RAM: 4–8 GB (more if you have many users/projects)
