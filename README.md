@@ -7,6 +7,19 @@ Fluxbase is your modern, self-hosted project and data management tool. It gives 
 > It will not work properly on platforms like Vercel, Render, Railway, or inside Docker containers, because those environments don't provide reliable local file storage.
 
 ---
+## 🖥️ Recommended Hardware
+
+Fluxbase is lightweight but benefits from stable, persistent storage and a decent processor.
+Here’s what we recommend:
+
+###⚡ Recommended for Production (Dedicated Server / VPS)
+
+- CPU: Quad-core or better (Intel Xeon, AMD Ryzen, or similar)
+- RAM: 4–8 GB (more if you have many users/projects)
+- Storage: 20+ GB SSD (fast read/write improves performance)
+- OS: Ubuntu 22.04 LTS or similar Linux distro (most reliable for servers)
+- Backup: External storage or automated snapshot backup recommended
+---
 
 ## ✨ Features
 
@@ -76,7 +89,7 @@ Fluxbase is built with a modern, production-ready stack:
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/fluxbase.git
+git clone https://github.com/SumithU2104/Fluxbase.git
 cd fluxbase
 npm install
 ```
@@ -100,7 +113,7 @@ Keep it running in the background:
 
 ```bash
 npm install -g pm2
-pm2 start npm --name "fluxbase" -- run start
+pm2 start npm --name "Fluxbase" -- run start
 ```
 
 (Optional) Configure NGINX or Caddy to serve Fluxbase under HTTPS.
