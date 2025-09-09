@@ -113,15 +113,16 @@ interface PaginatedTableData {
 
 async function getCsvLineCount(filePath: string): Promise<number> {
     try {
-        const stream = createReadStream(filePath, { encoding: 'utf-8' });
-        let count = 0;
-        for await (const chunk of stream) {
-            count += (chunk.match(/\n/g) || []).length;
+        const fileContent = await fs.readFile(filePath, 'utf-8');
+        if (fileContent.trim() === '') {
+            return 0; // The file is empty
         }
-        // If the file is not empty and doesn't end with a newline, the last line isn't counted.
-        // We subtract 1 for the header row.
-        // A non-empty file has at least a header, so count should be at least 1.
-        return Math.max(0, count);
+        // Split by newline and filter out empty lines that might result from trailing newlines
+        const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+        // If there's content, there's at least a header, so we subtract that.
+        // A file with just a header has 1 line, so (1 - 1) = 0 data rows.
+        // A file with header + 1 data row has 2 lines, so (2 - 1) = 1 data row.
+        return Math.max(0, lines.length - 1);
     } catch (error: any) {
         if (error.code === 'ENOENT') return 0;
         throw error;
