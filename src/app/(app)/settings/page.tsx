@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { BackButton } from "@/components/back-button"
-import { SubmitButton } from "@/components/submit-button"
 import { ProjectContext } from '@/contexts/project-context';
 import {
     AlertDialog,
@@ -30,16 +29,22 @@ export default function SettingsPage() {
     const { project: selectedProject, setProject } = useContext(ProjectContext);
     const { toast } = useToast();
     const router = useRouter();
+    const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
     const handleDeleteProject = async () => {
         if (!selectedProject) {
             toast({ variant: 'destructive', title: 'Error', description: 'No project selected.' });
             return;
         }
+        if (deleteConfirmation !== `delete my project ${selectedProject.display_name}`) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Confirmation text does not match.' });
+            return;
+        }
         const result = await deleteProjectAction(selectedProject.project_id);
         if (result.success) {
             toast({ title: 'Success', description: `Project '${selectedProject.display_name}' has been deleted.` });
             setProject(null); // Clear from context and local storage
+            setDeleteConfirmation('');
             router.push('/dashboard/projects');
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete project.' });
@@ -106,7 +111,7 @@ export default function SettingsPage() {
                                 This will permanently delete the '{selectedProject?.display_name || '...'}' project, including all its tables and data.
                             </p>
                         </div>
-                        <AlertDialog>
+                        <AlertDialog onOpenChange={(open) => !open && setDeleteConfirmation('')}>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" disabled={!selectedProject}>Delete Project</Button>
                             </AlertDialogTrigger>
@@ -114,13 +119,28 @@ export default function SettingsPage() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the 
-                                        <strong> {selectedProject?.display_name}</strong> project and all associated data.
+                                        This action cannot be undone. To confirm, please type{' '}
+                                        <strong className="text-foreground">delete my project {selectedProject?.display_name}</strong> in the box below.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
+                                <div className="py-2">
+                                     <Input
+                                        id="delete-confirm"
+                                        value={deleteConfirmation}
+                                        onChange={(e) => setDeleteConfirmation(e.target.value)}
+                                        placeholder={`delete my project ${selectedProject?.display_name}`}
+                                        className="font-mono"
+                                    />
+                                </div>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive hover:bg-destructive/90">Continue</AlertDialogAction>
+                                    <AlertDialogAction 
+                                        onClick={handleDeleteProject} 
+                                        disabled={deleteConfirmation !== `delete my project ${selectedProject?.display_name}`}
+                                        className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                        Continue
+                                    </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>

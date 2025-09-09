@@ -1,4 +1,0 @@
-column_id,table_id,column_name,data_type
-0853bab6-215b-4323-9b2e-0035a709aeb8,bedea2d5-e414-4aed-8ee8-9be8e8cc990d,id,gen_random_uuid()
-219c3da2-b71c-4032-80a0-6b5c77326730,bedea2d5-e414-4aed-8ee8-9be8e8cc990d,name,text
-bdc1e5ae-ea94-4593-8b3d-13751b9674c1,bedea2d5-e414-4aed-8ee8-9be8e8cc990d,phone,number
