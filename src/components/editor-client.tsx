@@ -132,7 +132,7 @@ export function EditorClient({
         if (result.success) {
             toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
             setSelectionModel([]);
-            fetchTableData(paginationModel); // Refresh data
+            router.refresh();
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }
@@ -144,7 +144,7 @@ export function EditorClient({
             headerName: col.column_name,
             minWidth: 150,
             flex: 1,
-            sortable: false, // Sorting is a bit more complex with server-side pagination
+            sortable: false, 
         }));
     }, [initialColumns]);
     
