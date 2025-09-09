@@ -12,22 +12,21 @@ const DB_PATH = path.join(process.cwd(), 'src', 'database');
 
 // Helper to parse CSV data
 function parseCsv(data: string): Record<string, string>[] {
-  const lines = data.trim().split('\n');
-  if (lines.length < 2) {
-    return []; // Not enough data for header and rows
-  }
+    if (!data) return [];
+    const lines = data.trim().split('\n');
+    if (lines.length < 2) return [];
 
-  const header = lines[0].split(',').map(h => h.trim());
-  const rows = lines.slice(1);
+    const header = lines[0].split(',').map(h => h.trim());
+    const rows = lines.slice(1);
 
-  return rows.map(line => {
-    const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    const entry: Record<string, string> = {};
-    header.forEach((key, index) => {
-      entry[key] = values[index];
+    return rows.map(line => {
+        const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        const entry: Record<string, string> = {};
+        header.forEach((key, index) => {
+            entry[key] = values[index];
+        });
+        return entry;
     });
-    return entry;
-  });
 }
 
 
@@ -211,3 +210,5 @@ export async function getProjectAnalytics(projectId: string): Promise<ProjectAna
         tables: tableAnalytics,
     };
 }
+
+    

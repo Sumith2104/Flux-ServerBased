@@ -132,7 +132,7 @@ export function EditorClient({
         if (result.success) {
             toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
             setSelectionModel([]);
-            router.refresh();
+            fetchTableData(paginationModel); // Refresh data
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }
@@ -418,3 +418,5 @@ export function EditorClient({
         </>
     );
 }
+
+    
