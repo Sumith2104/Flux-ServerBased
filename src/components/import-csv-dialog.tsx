@@ -111,12 +111,13 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
           Import
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Import Data into `{tableName}`</DialogTitle>
            {!isSubmitting && (
             <DialogDescription>
-              Upload a CSV file to add new rows. The file must have a header that matches the table structure exactly.
+              Upload a CSV file to add new rows. The file must have a header that matches the table
+              structure exactly.
             </DialogDescription>
            )}
         </DialogHeader>
@@ -132,28 +133,31 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
                   <AlertTitle>Required CSV Structure</AlertTitle>
                   <AlertDescription>
                       <p className="mb-2">For a successful import, please ensure your CSV file follows these rules:</p>
-                      <ul className="list-disc pl-5 space-y-1 text-xs">
+                      <ul className="list-disc pl-5 space-y-1 text-xs text-muted-foreground">
                           <li>The first line must be a header row with column names.</li>
-                          <li>The header must exactly match the table columns: <code className="font-mono bg-muted p-1 rounded-sm">{expectedHeader}</code></li>
+                          <li>The header must exactly match the table columns: <code className="font-mono bg-muted text-foreground p-1 rounded-sm">{expectedHeader}</code></li>
                           <li>All fields should be wrapped in double quotes (").</li>
                           <li>Fields should not contain newline characters.</li>
                           <li>The file should be UTF-8 encoded.</li>
                       </ul>
                   </AlertDescription>
               </Alert>
-              <div>
-                <Label htmlFor="csvFile" className="sr-only">
-                  CSV File
-                </Label>
-                <Input
-                  id="csvFile"
-                  name="csvFile"
-                  type="file"
-                  accept=".csv"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                />
+              <div className="flex items-center gap-4">
+                  <Input
+                    id="csvFile"
+                    name="csvFile"
+                    type="file"
+                    accept=".csv"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    Choose File
+                  </Button>
+                   <span className="text-sm text-muted-foreground">
+                      {csvFile ? csvFile.name : "No file chosen"}
+                    </span>
               </div>
             </div>
 
