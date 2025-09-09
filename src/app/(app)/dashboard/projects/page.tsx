@@ -57,7 +57,7 @@ export default function SelectProjectPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-theme(space.14))] bg-background p-4">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] bg-background p-4">
         <div className="w-full max-w-4xl">
             <Card>
                 <CardHeader>
