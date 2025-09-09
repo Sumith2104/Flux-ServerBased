@@ -18,8 +18,8 @@ export default function LoginPage() {
   async function handleLogin(formData: FormData) {
     const result = await loginAction(formData);
     if (result.success) {
-      router.push('/dashboard');
-      router.refresh(); // Ensure layout re-renders with user data
+      // Redirect to the new project selection page
+      router.push('/dashboard/projects');
     } else {
       toast({
         variant: 'destructive',

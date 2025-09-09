@@ -56,7 +56,7 @@ export async function loginAction(formData: FormData) {
   
   await login(user.id);
   
-  // Clear selected project on login to force project selection.
+  // Clear selected project cookie on login to start fresh
   cookies().delete('selectedProject');
 
   return { success: true, userId: user.id };
@@ -132,5 +132,5 @@ export async function selectProjectAction(formData: FormData) {
     } else {
         cookies().delete('selectedProject');
     }
-    redirect('/dashboard');
+    // No longer redirecting from here, client-side will handle it.
 }

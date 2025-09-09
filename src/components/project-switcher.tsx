@@ -14,9 +14,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import type { Project } from '@/lib/data';
-import { selectProjectAction } from '@/app/actions';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useContext } from 'react';
+import { ProjectContext } from '@/contexts/project-context';
 
 type ProjectSwitcherProps = {
   headerTitle: string;
@@ -32,16 +33,15 @@ export function ProjectSwitcher({
   selectedProject,
 }: ProjectSwitcherProps) {
   const router = useRouter();
+  const { setProject } = useContext(ProjectContext);
 
-  const handleSelect = async (project: Project | null) => {
-    const formData = new FormData();
+  const handleSelect = (project: Project | null) => {
+    setProject(project);
     if (project) {
-      formData.append('project', JSON.stringify(project));
+        router.push('/dashboard');
     } else {
-      formData.append('project', '');
+        router.push('/dashboard/projects');
     }
-    await selectProjectAction(formData);
-    router.refresh();
   };
 
   return (
@@ -59,8 +59,7 @@ export function ProjectSwitcher({
           <DropdownMenuLabel>{orgName}</DropdownMenuLabel>
           <DropdownMenuItem onSelect={() => handleSelect(null)}>
             <div className="flex items-center w-full">
-              <span className="flex-1">View All Projects</span>
-              {!selectedProject && <Check className="ml-2 h-4 w-4" />}
+              <span className="flex-1">Switch Project</span>
             </div>
           </DropdownMenuItem>
         </DropdownMenuGroup>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from "next/navigation";
@@ -9,26 +10,21 @@ import { getCurrentUserId, User } from "@/lib/auth";
 import { findUserById } from "@/lib/auth-actions";
 import { getProjectsForCurrentUser, Project } from "@/lib/data";
 import { ProjectSwitcher } from "@/components/project-switcher";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "./actions";
 import { Skeleton } from "@/components/ui/skeleton";
-import Cookies from "js-cookie";
-import { redirect } from "next/navigation";
+import { ProjectProvider, ProjectContext } from "@/contexts/project-context";
 
-export default function AppLayout({ 
-    children,
-}: { 
-    children: React.ReactNode,
-}) {
+function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
 
     const [user, setUser] = useState<User | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
     const [projects, setProjects] = useState<Project[]>([]);
-    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
+    const { project: selectedProject } = useContext(ProjectContext);
 
     useEffect(() => {
         async function fetchData() {
@@ -42,19 +38,6 @@ export default function AppLayout({
                     setUser(userData);
                     const projectsData = await getProjectsForCurrentUser();
                     setProjects(projectsData);
-                    
-                    const selectedProjectCookie = Cookies.get('selectedProject');
-                    if (selectedProjectCookie) {
-                        try {
-                           setSelectedProject(JSON.parse(selectedProjectCookie));
-                        } catch (e) {
-                            console.error("Failed to parse selected project cookie", e);
-                            Cookies.remove('selectedProject');
-                            setSelectedProject(null);
-                        }
-                    } else {
-                        setSelectedProject(null);
-                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch layout data:", error);
@@ -64,6 +47,18 @@ export default function AppLayout({
         }
         fetchData();
     }, [pathname]);
+
+    // Redirect logic
+    useEffect(() => {
+        if (loading || !userId) return;
+
+        const isProjectSelectionPage = pathname.startsWith('/dashboard/projects');
+        
+        if (!selectedProject && !isProjectSelectionPage) {
+            router.push('/dashboard/projects');
+        }
+
+    }, [loading, userId, selectedProject, pathname, router]);
 
     const isEditorPage = pathname.startsWith('/editor');
 
@@ -95,7 +90,6 @@ export default function AppLayout({
     }
     
     if (!loading && !userId && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
-        // Using router.push on the client-side to avoid hard navigation during render
         if (typeof window !== 'undefined') {
             router.push('/login');
         }
@@ -150,5 +144,13 @@ export default function AppLayout({
                 </main>
             </div>
         </div>
+    );
+}
+
+export default function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
+    return (
+        <ProjectProvider>
+            <AppLayoutContent>{children}</AppLayoutContent>
+        </ProjectProvider>
     );
 }

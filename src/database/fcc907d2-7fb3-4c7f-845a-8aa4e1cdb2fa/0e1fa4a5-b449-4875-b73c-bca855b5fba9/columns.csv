@@ -1,6 +1,0 @@
-column_id,table_id,column_name,data_type
-e8fb7567-84dd-4217-8462-c545a42d68b1,b9b77950-2d4c-4880-904a-eb1dd8357858,id,gen_random_uuid()
-ba8a1518-8244-415b-9711-8c8587d4ff37,b9b77950-2d4c-4880-904a-eb1dd8357858,Name,text
-8779d569-bc14-4823-87e0-8b54160992b2,b9b77950-2d4c-4880-904a-eb1dd8357858,phno,number
-2974958e-4f75-4b2e-8dcf-f50efd1f4994,b9b77950-2d4c-4880-904a-eb1dd8357858,created_on,now_date()
-af344f4b-aaa0-49b7-b3d8-9fbbaad24ea9,b9b77950-2d4c-4880-904a-eb1dd8357858,created_at,now_time()

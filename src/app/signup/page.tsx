@@ -19,8 +19,7 @@ export default function SignupPage() {
     async function handleSignup(formData: FormData) {
         const result = await signupAction(formData);
         if (result.success) {
-            router.push('/dashboard');
-            router.refresh();
+            router.push('/dashboard/projects');
         } else {
             toast({
                 variant: 'destructive',
