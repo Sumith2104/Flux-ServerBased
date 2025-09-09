@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import fs from 'fs/promises';
@@ -211,3 +212,4 @@ export async function getProjectAnalytics(projectId: string): Promise<ProjectAna
         tables: tableAnalytics,
     };
 }
+
