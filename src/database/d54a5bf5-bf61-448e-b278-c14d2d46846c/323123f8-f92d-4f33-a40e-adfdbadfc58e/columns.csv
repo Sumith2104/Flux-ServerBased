@@ -1,3 +1,3 @@
 column_id,table_id,column_name,data_type
-2ec61a96-c82c-4900-b6f6-591fdd6f3b60,6e6c97a3-5a90-4904-9c07-0b291a9a6872,id,gen_random_uuid()
-bbc6c0c2-c83a-49de-8554-2bce80562448,6e6c97a3-5a90-4904-9c07-0b291a9a6872,name,text
+9b33919c-4fd6-4957-a8f8-ed9c7727c8c4,f57087fd-d119-4b28-9c12-e862759dd96c,id,gen_random_uuid()
+c7f90b10-8a01-4fce-9165-b27068ec3b6a,f57087fd-d119-4b28-9c12-e862759dd96c,name,text

@@ -113,8 +113,10 @@ export function EditorClient({
     }, [projectId, tableId, tableName, toast]);
 
     useEffect(() => {
-        fetchTableData(paginationModel);
-    }, [fetchTableData, paginationModel]);
+        if (tableId && tableName) {
+            fetchTableData(paginationModel);
+        }
+    }, [tableId, tableName, fetchTableData, paginationModel]);
 
     const handlePaginationModelChange = (model: GridPaginationModel) => {
         setPaginationModel(model);
@@ -130,7 +132,7 @@ export function EditorClient({
         if (result.success) {
             toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
             setSelectionModel([]);
-            fetchTableData(paginationModel); // Refetch current page
+            router.refresh();
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }

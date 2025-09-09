@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SubmitButton } from './submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 type AddColumnDialogProps = {
   projectId: string;
@@ -28,6 +29,7 @@ type AddColumnDialogProps = {
 
 export function AddColumnDialog({ projectId, tableId, tableName }: AddColumnDialogProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [columnName, setColumnName] = useState('');
   const [columnType, setColumnType] = useState('text');
@@ -42,6 +44,7 @@ export function AddColumnDialog({ projectId, tableId, tableName }: AddColumnDial
       setIsOpen(false);
       setColumnName('');
       setColumnType('text');
+      router.refresh();
     } else {
       toast({
         variant: 'destructive',
