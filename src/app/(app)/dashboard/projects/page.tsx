@@ -38,7 +38,7 @@ export default function SelectProjectPage() {
 
   if (loading) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] bg-background p-4">
             <div className="w-full max-w-4xl">
                  <Card>
                     <CardHeader>
