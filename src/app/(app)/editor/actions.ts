@@ -310,8 +310,8 @@ export async function deleteTableAction(projectId: string, tableId: string, tabl
             await writeCsvFile(columnsCsvPath, newColumnsData);
         }
 
-        revalidatePath(`/editor`);
-        revalidatePath(`/dashboard`); // To update analytics
+        revalidatePath(`/dashboard?projectId=${projectId}`);
+        revalidatePath(`/editor?projectId=${projectId}`);
         return { success: true };
 
     } catch (error) {

@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useState, useContext } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -5,8 +9,56 @@ import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { BackButton } from "@/components/back-button"
 import { SubmitButton } from "@/components/submit-button"
+import { ProjectContext } from '@/contexts/project-context';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteProjectAction, clearOrganizationAction } from './actions';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { logoutAction } from '../actions';
 
 export default function SettingsPage() {
+    const { project: selectedProject, setProject } = useContext(ProjectContext);
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const handleDeleteProject = async () => {
+        if (!selectedProject) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No project selected.' });
+            return;
+        }
+        const result = await deleteProjectAction(selectedProject.project_id);
+        if (result.success) {
+            toast({ title: 'Success', description: `Project '${selectedProject.display_name}' has been deleted.` });
+            setProject(null); // Clear from context and local storage
+            router.push('/dashboard/projects');
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete project.' });
+        }
+    };
+
+    const handleClearOrganization = async () => {
+        const result = await clearOrganizationAction();
+        if (result.success) {
+            toast({ title: 'Success', description: 'Your organization data has been cleared.' });
+            // Log the user out and redirect to the signup page
+            await logoutAction();
+            router.push('/signup');
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to clear organization data.' });
+        }
+    };
+
+
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center gap-4">
@@ -14,51 +66,87 @@ export default function SettingsPage() {
                 <div>
                     <h1 className="text-3xl font-bold">Settings</h1>
                     <p className="text-muted-foreground">
-                        Manage project settings and view logs.
+                        Manage project and organization settings.
                     </p>
                 </div>
             </div>
             <Card>
                 <CardHeader>
                     <CardTitle>Project Configuration</CardTitle>
-                    <CardDescription>Adjust settings for the current project.</CardDescription>
+                    <CardDescription>Adjust settings for the current project. This section is for demonstration and is not functional.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="project-name">Project Name</Label>
-                        <Input id="project-name" defaultValue="Q3 Sales Report" />
+                        <Input id="project-name" defaultValue={selectedProject?.display_name || ''} disabled />
                     </div>
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
-                            <Label htmlFor="public-access">Enable Public Access</Label>
+                            <Label htmlFor="public-access" className="cursor-not-allowed">Enable Public Access</Label>
                             <p className="text-sm text-muted-foreground">Allow anyone with the link to view this project.</p>
                         </div>
-                        <Switch id="public-access" />
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div>
-                            <Label htmlFor="ai-assist">Enable AI Assistance</Label>
-                             <p className="text-sm text-muted-foreground">Use AI to generate SQL, insights, and more.</p>
-                        </div>
-                        <Switch id="ai-assist" defaultChecked />
+                        <Switch id="public-access" disabled/>
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <SubmitButton>Save Changes</SubmitButton>
+                    <Button disabled>Save Changes</Button>
                 </CardFooter>
             </Card>
-            <Card>
+
+            <Card className="border-destructive">
                 <CardHeader>
-                    <CardTitle>Event Logs</CardTitle>
-                    <CardDescription>A simple log display of recent activities.</CardDescription>
+                    <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                    <CardDescription>These actions are permanent and cannot be undone.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="font-mono text-sm space-y-2 bg-secondary p-4 rounded-md max-h-60 overflow-y-auto">
-                        <p><span className="text-primary">[INFO]</span> User logged in.</p>
-                        <p><span className="text-primary">[INFO]</span> Opened project 'Q3 Sales Report'.</p>
-                        <p><span className="text-primary">[SUCCESS]</span> Ran AI query: 'total sales'.</p>
-                        <p><span className="text-muted-foreground">[WARN]</span> High memory usage detected.</p>
-                        <p><span className="text-destructive">[ERROR]</span> Failed to connect to database.</p>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div>
+                            <Label htmlFor="delete-project">Delete this Project</Label>
+                            <p className="text-sm text-muted-foreground">
+                                This will permanently delete the '{selectedProject?.display_name || '...'}' project, including all its tables and data.
+                            </p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={!selectedProject}>Delete Project</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the 
+                                        <strong> {selectedProject?.display_name}</strong> project and all associated data.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive hover:bg-destructive/90">Continue</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                     <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div>
+                            <Label htmlFor="clear-org">Clear Organization</Label>
+                             <p className="text-sm text-muted-foreground">This will permanently delete all projects and data associated with your account.</p>
+                        </div>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" >Clear Organization Data</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This is your final confirmation. This action will permanently delete your entire account, all projects, and all data. This cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleClearOrganization} className="bg-destructive hover:bg-destructive/90">I understand, delete everything</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </CardContent>
             </Card>
