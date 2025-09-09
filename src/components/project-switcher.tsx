@@ -32,7 +32,8 @@ export function ProjectSwitcher({ headerTitle, orgName, projects, selectedProjec
     formData.append('project', project ? JSON.stringify(project) : '');
     await selectProjectAction(formData);
 
-    // 🔄 Refresh layout so selected project updates immediately
+    // 🔄 Force a hard navigation to the dashboard to ensure layout state is reset
+    router.push('/dashboard');
     router.refresh();
   };
 
