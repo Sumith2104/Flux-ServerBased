@@ -1,0 +1,3 @@
+column_id,table_id,column_name,data_type
+7e0f444f-ddac-4fbb-a03c-1b4be916353d,020c7025-f9ac-4b21-bfec-40aeec1cb266,id,gen_random_uuid()
+b689273a-8eae-4030-92fa-0fe0c66cf943,020c7025-f9ac-4b21-bfec-40aeec1cb266,name,text

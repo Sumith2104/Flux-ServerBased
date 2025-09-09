@@ -79,7 +79,7 @@ export function DataTable({
         paginationMode="server"
         rowCount={rowCount}
         loading={loading}
-        pageSizeOptions={[20, 50, 100, 250, 500]}
+        pageSizeOptions={[20, 50, 100]}
         paginationModel={paginationModel}
         onPaginationModelChange={onPaginationModelChange}
         checkboxSelection
