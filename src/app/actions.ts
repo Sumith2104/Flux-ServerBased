@@ -56,6 +56,9 @@ export async function loginAction(formData: FormData) {
   
   await login(user.id);
   
+  // Clear selected project on login to force project selection.
+  cookies().delete('selectedProject');
+
   return { success: true, userId: user.id };
 }
 
