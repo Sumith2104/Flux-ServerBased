@@ -1,25 +1,32 @@
 
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signupAction } from '../actions';
-import { redirect } from 'next/navigation';
 import { SubmitButton } from '@/components/submit-button';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function SignupPage() {
+    const router = useRouter();
+    const { toast } = useToast();
 
     async function handleSignup(formData: FormData) {
-        'use server';
         const result = await signupAction(formData);
         if (result.success) {
-            redirect('/dashboard');
+            router.push('/dashboard');
+            router.refresh();
         } else {
-            // In a real app, you'd show the error to the user
-            console.error(result.error);
-            redirect('/signup?error=' + encodeURIComponent(result.error || ''));
+            toast({
+                variant: 'destructive',
+                title: 'Signup Failed',
+                description: result.error,
+            });
         }
     }
 

@@ -1,24 +1,31 @@
 
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { loginAction } from '@/app/actions';
-import { redirect } from 'next/navigation';
 import { SubmitButton } from '@/components/submit-button';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   
   async function handleLogin(formData: FormData) {
-    'use server';
     const result = await loginAction(formData);
     if (result.success) {
-      redirect('/dashboard');
+      router.push('/dashboard');
+      router.refresh(); // Ensure layout re-renders with user data
     } else {
-      // In a real app, you'd show the error to the user
-      console.error(result.error);
-      redirect('/login?error=' + result.error);
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: result.error,
+      });
     }
   }
 
