@@ -14,9 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import type { Project } from "@/lib/data";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
 import { selectProjectAction } from "@/app/actions";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ProjectSwitcherProps = {
   headerTitle: string;
@@ -26,24 +26,21 @@ type ProjectSwitcherProps = {
 };
 
 export function ProjectSwitcher({ headerTitle, orgName, projects, selectedProject }: ProjectSwitcherProps) {
-  
-  const handleSelect = (project: Project | null) => {
+  const router = useRouter();
+
+  const handleSelect = async (project: Project | null) => {
     const formData = new FormData();
-    if (project) {
-        formData.append('project', JSON.stringify(project));
-    } else {
-        formData.append('project', '');
-    }
-    selectProjectAction(formData);
+    formData.append('project', project ? JSON.stringify(project) : '');
+    await selectProjectAction(formData);
+
+    // 🔄 Refresh layout so selected project updates immediately
+    router.refresh();
   };
-  
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="text-lg font-semibold px-2"
-        >
+        <Button variant="ghost" className="text-lg font-semibold px-2">
           <span className="truncate max-w-[200px] sm:max-w-[300px]">{headerTitle}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
         </Button>
@@ -60,18 +57,18 @@ export function ProjectSwitcher({ headerTitle, orgName, projects, selectedProjec
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-            <DropdownMenuLabel>Projects</DropdownMenuLabel>
-            {projects.map((project) => (
-                <DropdownMenuItem
-                    key={project.project_id}
-                    onSelect={() => handleSelect(project)}
-                >
-                    <div className="flex items-center w-full">
-                        <span className="flex-1 truncate">{project.display_name}</span>
-                        {selectedProject?.project_id === project.project_id && <Check className="ml-2 h-4 w-4" />}
-                    </div>
-                </DropdownMenuItem>
-            ))}
+          <DropdownMenuLabel>Projects</DropdownMenuLabel>
+          {projects.map((project) => (
+            <DropdownMenuItem
+              key={project.project_id}
+              onSelect={() => handleSelect(project)}
+            >
+              <div className="flex items-center w-full">
+                <span className="flex-1 truncate">{project.display_name}</span>
+                {selectedProject?.project_id === project.project_id && <Check className="ml-2 h-4 w-4" />}
+              </div>
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
