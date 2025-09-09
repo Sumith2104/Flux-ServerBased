@@ -138,65 +138,16 @@ export async function getTableData(
     const tableDataPath = path.join(DB_PATH, userId, projectId, `${tableName}.csv`);
 
     try {
-        const totalRows = await getCsvLineCount(tableDataPath);
-        
-        if (totalRows === 0) {
-            return { rows: [], totalRows: 0 };
-        }
+        const fileContent = await fs.readFile(tableDataPath, 'utf8');
+        const allRows = parseCsv(fileContent);
 
-        const stream = createReadStream(tableDataPath, { encoding: 'utf-8' });
-        const readable = Readable.from(stream);
+        const totalRows = allRows.length;
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
 
-        let header: string[] = [];
-        let rows: Record<string, string>[] = [];
-        let buffer = '';
-        let lineCount = 0;
-        const startLine = (page - 1) * pageSize + 1;
-        const endLine = startLine + pageSize -1;
+        const paginatedRows = allRows.slice(startIndex, endIndex);
 
-        for await (const chunk of readable) {
-            buffer += chunk;
-            let lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Keep last partial line in buffer
-
-            for (const line of lines) {
-                if (!line) continue;
-
-                if (lineCount === 0) {
-                    header = line.split(',').map(h => h.trim());
-                    lineCount++;
-                    continue;
-                }
-
-                if (lineCount >= startLine && lineCount <= endLine) {
-                    const values = line.split(',');
-                    const row = header.reduce((obj, nextKey, index) => {
-                        obj[nextKey] = values[index]?.trim().replace(/^"|"$/g, '') || '';
-                        return obj;
-                    }, {} as Record<string, string>);
-                    rows.push(row);
-                }
-                
-                lineCount++;
-
-                if (lineCount > endLine) {
-                    stream.destroy(); // Stop reading the file early
-                    break;
-                }
-            }
-        }
-        
-        // Process any remaining lines in buffer (if file doesn't end with EOL)
-        if (buffer && lineCount >= startLine && lineCount <= endLine) {
-             const values = buffer.split(',');
-             const row = header.reduce((obj, nextKey, index) => {
-                 obj[nextKey] = values[index]?.trim().replace(/^"|"$/g, '') || '';
-                 return obj;
-             }, {} as Record<string, string>);
-             rows.push(row);
-        }
-
-        return { rows, totalRows };
+        return { rows: paginatedRows, totalRows: totalRows };
 
     } catch (error: any) {
         if (error.code === 'ENOENT') {
