@@ -102,6 +102,6 @@ export default function SelectProjectPage() {
                 </CardContent>
             </Card>
         </div>
-    );
+    </div>
+  );
 }
-
