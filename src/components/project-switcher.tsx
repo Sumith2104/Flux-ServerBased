@@ -1,6 +1,7 @@
-"use client";
 
-import * as React from "react";
+'use client';
+
+import * as React from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,13 +10,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
   DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
-import type { Project } from "@/lib/data";
-import { selectProjectAction } from "@/app/actions";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
+import type { Project } from '@/lib/data';
+import { selectProjectAction } from '@/app/actions';
+import Link from 'next/link';
 
 type ProjectSwitcherProps = {
   headerTitle: string;
@@ -24,24 +24,32 @@ type ProjectSwitcherProps = {
   selectedProject: Project | null;
 };
 
-export function ProjectSwitcher({ headerTitle, orgName, projects, selectedProject }: ProjectSwitcherProps) {
-  const router = useRouter();
-
+export function ProjectSwitcher({
+  headerTitle,
+  orgName,
+  projects,
+  selectedProject,
+}: ProjectSwitcherProps) {
   const handleSelect = async (project: Project | null) => {
     const formData = new FormData();
-    formData.append('project', project ? JSON.stringify(project) : '');
+    if (project) {
+      formData.append('project', JSON.stringify(project));
+    } else {
+      formData.append('project', '');
+    }
     await selectProjectAction(formData);
 
-    // 🔄 Force a hard navigation to the dashboard to ensure layout state is reset
-    router.push('/dashboard');
-    router.refresh();
+    // Force a full page reload to ensure all components get the new state
+    window.location.href = '/dashboard';
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="text-lg font-semibold px-2">
-          <span className="truncate max-w-[200px] sm:max-w-[300px]">{headerTitle}</span>
+          <span className="truncate max-w-[200px] sm:max-w-[300px]">
+            {headerTitle}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
@@ -65,7 +73,9 @@ export function ProjectSwitcher({ headerTitle, orgName, projects, selectedProjec
             >
               <div className="flex items-center w-full">
                 <span className="flex-1 truncate">{project.display_name}</span>
-                {selectedProject?.project_id === project.project_id && <Check className="ml-2 h-4 w-4" />}
+                {selectedProject?.project_id === project.project_id && (
+                  <Check className="ml-2 h-4 w-4" />
+                )}
               </div>
             </DropdownMenuItem>
           ))}
