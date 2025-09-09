@@ -16,6 +16,7 @@ import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import type { Project } from '@/lib/data';
 import { selectProjectAction } from '@/app/actions';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 type ProjectSwitcherProps = {
   headerTitle: string;
@@ -30,6 +31,8 @@ export function ProjectSwitcher({
   projects,
   selectedProject,
 }: ProjectSwitcherProps) {
+  const router = useRouter();
+
   const handleSelect = async (project: Project | null) => {
     const formData = new FormData();
     if (project) {
@@ -38,9 +41,7 @@ export function ProjectSwitcher({
       formData.append('project', '');
     }
     await selectProjectAction(formData);
-
-    // Force a full page reload to ensure all components get the new state
-    window.location.href = '/dashboard';
+    router.refresh();
   };
 
   return (

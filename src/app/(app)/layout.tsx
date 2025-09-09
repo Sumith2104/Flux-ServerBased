@@ -11,7 +11,7 @@ import { getProjectsForCurrentUser, Project } from "@/lib/data";
 import { ProjectSwitcher } from "@/components/project-switcher";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { loginAction, logoutAction } from "./actions";
+import { logoutAction } from "./actions";
 import { Skeleton } from "@/components/ui/skeleton";
 import Cookies from "js-cookie";
 import { redirect } from "next/navigation";
@@ -131,9 +131,9 @@ export default function AppLayout({
                         </form>
                     </div>
                 ) : (
-                    <form action={loginAction}>
-                        <Button variant="outline" size="sm">Login</Button>
-                    </form>
+                     <Button asChild variant="outline" size="sm">
+                        <Link href="/login">Login</Link>
+                    </Button>
                 )}
             </header>
             <div className="flex flex-1 overflow-hidden">
