@@ -1,21 +1,19 @@
-
 'use client';
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentUserId, User } from "@/lib/auth";
 import { findUserById } from "@/lib/auth-actions";
 import { getProjectsForCurrentUser, Project } from "@/lib/data";
 import { ProjectSwitcher } from "@/components/project-switcher";
-import { useEffect, useState }from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { loginAction, logoutAction } from "./actions";
 import { Skeleton } from "@/components/ui/skeleton";
 import Cookies from "js-cookie";
-
 
 export default function AppLayout({ 
     children,
@@ -23,6 +21,8 @@ export default function AppLayout({
     children: React.ReactNode,
 }) {
     const pathname = usePathname();
+    const router = useRouter();
+
     const [user, setUser] = useState<User | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -94,13 +94,18 @@ export default function AppLayout({
     }
     
     if (!loading && !userId && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+        // Using router.push on the client-side to avoid hard navigation during render
+        if (typeof window !== 'undefined') {
+            router.push('/login');
+        }
         return <div className="flex items-center justify-center h-screen">Redirecting to login...</div>;
     }
 
-
     const orgName = user ? `${user.email.split('@')[0]}'s Org` : "My Org";
     const avatarFallback = user ? user.email.charAt(0).toUpperCase() : "M";
-    const headerTitle = selectedProject ? `${orgName} / ${selectedProject.display_name}` : orgName;
+    const headerTitle = selectedProject 
+        ? `${orgName} / ${selectedProject.display_name}`
+        : orgName;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">

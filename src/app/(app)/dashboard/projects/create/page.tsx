@@ -1,4 +1,5 @@
 
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ export default function CreateProjectPage() {
         if (result.success) {
             redirect(`/dashboard`);
         } else {
+            // In a real app, you'd want to show the error to the user
             console.error(result.error);
             redirect('/dashboard/projects/create?error=' + encodeURIComponent(result.error || ''));
         }
