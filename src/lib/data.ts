@@ -10,23 +10,26 @@ import { createReadStream } from 'fs';
 
 const DB_PATH = path.join(process.cwd(), 'src', 'database');
 
-// Helper to parse CSV data - now only used for smaller config files
+// Helper to parse CSV data
 function parseCsv(data: string): Record<string, string>[] {
-    if (!data) return [];
-    const rows = data.trim().split('\n').filter(row => row.trim() !== '');
-    if (rows.length < 2) return [];
+  const lines = data.trim().split('\n');
+  if (lines.length < 2) {
+    return []; // Not enough data for header and rows
+  }
 
-    const header = rows[0].split(',').map(h => h.trim());
-    
-    return rows.slice(1).map(row => {
-        // This is a simplified parser. A more robust one would handle quotes.
-        const values = row.split(',');
-        return header.reduce((obj, nextKey, index) => {
-            obj[nextKey] = values[index]?.trim().replace(/^"|"$/g, '') || '';
-            return obj;
-        }, {} as Record<string, string>);
+  const header = lines[0].split(',').map(h => h.trim());
+  const rows = lines.slice(1);
+
+  return rows.map(line => {
+    const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    const entry: Record<string, string> = {};
+    header.forEach((key, index) => {
+      entry[key] = values[index];
     });
+    return entry;
+  });
 }
+
 
 // Helper to read a small CSV file
 async function readCsvFile(filePath: string) {
@@ -95,7 +98,7 @@ export async function getTablesForProject(projectId: string): Promise<Table[]> {
     return await readCsvFile(tablesCsvPath) as unknown as Table[];
 }
 
-export async function getColumnsForTable(projectId: string, tableId: string): Promise<Column[]> {
+export async function getColumnsForTable(projectId:string, tableId: string): Promise<Column[]> {
     const userId = await getCurrentUserId();
     if (!userId) {
         throw new Error("User not authenticated");
@@ -109,21 +112,6 @@ export async function getColumnsForTable(projectId: string, tableId: string): Pr
 interface PaginatedTableData {
     rows: Record<string, string>[];
     totalRows: number;
-}
-
-async function getCsvLineCount(filePath: string): Promise<number> {
-    try {
-        const fileContent = await fs.readFile(filePath, 'utf-8');
-        // Split by newline and filter out empty lines that might result from trailing newlines
-        const lines = fileContent.split(/\r?\n/).filter(line => line.trim() !== '');
-        // If there's content, there's at least a header, so we subtract that.
-        // A file with just a header has 1 line, so (1 - 1) = 0 data rows.
-        // A file with header + 1 data row has 2 lines, so (2 - 1) = 1 data row.
-        return Math.max(0, lines.length > 0 ? lines.length - 1 : 0);
-    } catch (error: any) {
-        if (error.code === 'ENOENT') return 0;
-        throw error;
-    }
 }
 
 export async function getTableData(
@@ -171,6 +159,17 @@ export interface ProjectAnalytics {
     }[];
 }
 
+async function getCsvLineCount(filePath: string): Promise<number> {
+    try {
+        const fileContent = await fs.readFile(filePath, 'utf-8');
+        const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+        return Math.max(0, lines.length > 1 ? lines.length - 1 : 0);
+    } catch (error: any) {
+        if (error.code === 'ENOENT') return 0;
+        throw error;
+    }
+}
+
 export async function getProjectAnalytics(projectId: string): Promise<ProjectAnalytics> {
     const userId = await getCurrentUserId();
     if (!userId) {
@@ -212,4 +211,3 @@ export async function getProjectAnalytics(projectId: string): Promise<ProjectAna
         tables: tableAnalytics,
     };
 }
-
