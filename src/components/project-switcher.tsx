@@ -19,12 +19,13 @@ import Link from "next/link";
 import { selectProjectAction } from "@/app/actions";
 
 type ProjectSwitcherProps = {
+  headerTitle: string;
   orgName: string;
   projects: Project[];
   selectedProject: Project | null;
 };
 
-export function ProjectSwitcher({ orgName, projects, selectedProject }: ProjectSwitcherProps) {
+export function ProjectSwitcher({ headerTitle, orgName, projects, selectedProject }: ProjectSwitcherProps) {
   
   const handleSelect = (project: Project | null) => {
     const formData = new FormData();
@@ -36,8 +37,6 @@ export function ProjectSwitcher({ orgName, projects, selectedProject }: ProjectS
     selectProjectAction(formData);
   };
   
-  const headerTitle = selectedProject ? `${orgName} / ${selectedProject.display_name}` : orgName;
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

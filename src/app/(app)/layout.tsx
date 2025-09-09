@@ -100,6 +100,7 @@ export default function AppLayout({
 
     const orgName = user ? `${user.email.split('@')[0]}'s Org` : "My Org";
     const avatarFallback = user ? user.email.charAt(0).toUpperCase() : "M";
+    const headerTitle = selectedProject ? `${orgName} / ${selectedProject.display_name}` : orgName;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
@@ -109,6 +110,7 @@ export default function AppLayout({
                         <AvatarFallback>{avatarFallback}</AvatarFallback>
                     </Avatar>
                      <ProjectSwitcher 
+                        headerTitle={headerTitle}
                         orgName={orgName}
                         projects={projects}
                         selectedProject={selectedProject}
