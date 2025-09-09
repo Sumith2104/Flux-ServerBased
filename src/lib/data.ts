@@ -6,7 +6,6 @@ import path from 'path';
 import { getCurrentUserId } from '@/lib/auth';
 import { Readable } from 'stream';
 import { createReadStream } from 'fs';
-import { EOL } from 'os';
 
 const DB_PATH = path.join(process.cwd(), 'src', 'database');
 
@@ -114,15 +113,12 @@ interface PaginatedTableData {
 async function getCsvLineCount(filePath: string): Promise<number> {
     try {
         const fileContent = await fs.readFile(filePath, 'utf-8');
-        if (fileContent.trim() === '') {
-            return 0; // The file is empty
-        }
         // Split by newline and filter out empty lines that might result from trailing newlines
         const lines = fileContent.split(/\r?\n/).filter(line => line.trim() !== '');
         // If there's content, there's at least a header, so we subtract that.
         // A file with just a header has 1 line, so (1 - 1) = 0 data rows.
         // A file with header + 1 data row has 2 lines, so (2 - 1) = 1 data row.
-        return Math.max(0, lines.length - 1);
+        return Math.max(0, lines.length > 0 ? lines.length - 1 : 0);
     } catch (error: any) {
         if (error.code === 'ENOENT') return 0;
         throw error;
@@ -160,7 +156,7 @@ export async function getTableData(
 
         for await (const chunk of readable) {
             buffer += chunk;
-            let lines = buffer.split(EOL);
+            let lines = buffer.split('\n');
             buffer = lines.pop() || ''; // Keep last partial line in buffer
 
             for (const line of lines) {
