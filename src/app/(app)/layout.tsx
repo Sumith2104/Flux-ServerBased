@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { loginAction, logoutAction } from "./actions";
 import { Skeleton } from "@/components/ui/skeleton";
 import Cookies from "js-cookie";
+import { redirect } from "next/navigation";
 
 export default function AppLayout({ 
     children,
