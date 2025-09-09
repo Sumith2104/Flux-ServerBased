@@ -24,7 +24,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const [userId, setUserId] = useState<string | null>(null);
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
-    const { project: selectedProject } = useContext(ProjectContext);
+    const { project: selectedProject, setProject } = useContext(ProjectContext);
 
     useEffect(() => {
         async function fetchData() {
@@ -38,6 +38,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     setUser(userData);
                     const projectsData = await getProjectsForCurrentUser();
                     setProjects(projectsData);
+
+                    // Validation: If a project is selected in context/localStorage,
+                    // but it doesn't exist in the fetched projects list, clear it.
+                    if (selectedProject && !projectsData.some(p => p.project_id === selectedProject.project_id)) {
+                        setProject(null);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch layout data:", error);
@@ -46,7 +52,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             }
         }
         fetchData();
-    }, [pathname]);
+    }, [pathname, selectedProject, setProject]);
 
     // Redirect logic
     useEffect(() => {
