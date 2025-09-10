@@ -23,12 +23,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
     const [projects, setProjects] = useState<Project[]>([]);
-    const [loading, setLoading] = useState(true);
-    const { project: selectedProject, setProject } = useContext(ProjectContext);
+    const [userLoading, setUserLoading] = useState(true);
+    const { project: selectedProject, setProject, loading: projectContextLoading } = useContext(ProjectContext);
 
     useEffect(() => {
         async function fetchData() {
-            setLoading(true);
+            setUserLoading(true);
             try {
                 const id = await getCurrentUserId();
                 setUserId(id);
@@ -48,7 +48,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             } catch (error) {
                 console.error("Failed to fetch layout data:", error);
             } finally {
-                setLoading(false);
+                setUserLoading(false);
             }
         }
         fetchData();
@@ -57,19 +57,30 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
     // Redirect logic
     useEffect(() => {
-        if (loading || !userId) return;
-
+        // Wait for both user data and project context to be loaded
+        if (userLoading || projectContextLoading) return;
+        
+        // If there's no logged-in user, redirect to login (unless already on an auth page)
+        if (!userId) {
+             if (!pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+                router.push('/login');
+             }
+             return;
+        }
+        
         const isProjectSelectionPage = pathname.startsWith('/dashboard/projects');
         
+        // If user is logged-in but no project is selected, redirect to project selection page
         if (!selectedProject && !isProjectSelectionPage) {
             router.push('/dashboard/projects');
         }
 
-    }, [loading, userId, selectedProject, pathname, router]);
+    }, [userLoading, projectContextLoading, userId, selectedProject, pathname, router]);
 
     const isEditorPage = pathname.startsWith('/editor');
+    const isLoading = userLoading || projectContextLoading;
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex min-h-screen w-full flex-col bg-background">
                 <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
@@ -96,10 +107,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         );
     }
     
-    if (!loading && !userId && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
-        if (typeof window !== 'undefined') {
-            router.push('/login');
-        }
+    // This check is mostly for safety; the useEffect above should handle the redirect.
+    if (!isLoading && !userId && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
         return <div className="flex items-center justify-center h-screen">Redirecting to login...</div>;
     }
 
