@@ -56,6 +56,7 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
     const tableEdges: Edge[] = [];
     const pkConstraints = new Map<string, Set<string>>();
 
+    // First, map out all primary keys for quick lookup
     constraints.filter(c => c.type === 'PRIMARY KEY').forEach(c => {
         if (!pkConstraints.has(c.table_id)) {
             pkConstraints.set(c.table_id, new Set());
@@ -65,6 +66,7 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
         });
     });
 
+    // Create a node for each table
     tables.forEach((table, index) => {
       const tableColumns = columns.filter((c) => c.table_id === table.table_id);
       const pks = pkConstraints.get(table.table_id) || new Set<string>();
@@ -80,20 +82,19 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
       });
     });
 
+    // Create an edge for each foreign key constraint
     constraints
-      .filter((c) => c.type === 'FOREIGN KEY')
-      .forEach((c, index) => {
-        if (c.referenced_table_id) {
-            tableEdges.push({
-                id: `e-${c.constraint_id}`,
-                source: c.table_id,
-                target: c.referenced_table_id,
-                type: 'smoothstep',
-                animated: true,
-                markerEnd: { type: 'arrowclosed' },
-                style: { stroke: '#60a5fa' }, // blue-400
-          });
-        }
+      .filter((c) => c.type === 'FOREIGN KEY' && c.referenced_table_id)
+      .forEach((c) => {
+        tableEdges.push({
+            id: `e-${c.constraint_id}`,
+            source: c.table_id,
+            target: c.referenced_table_id!,
+            type: 'smoothstep',
+            animated: true,
+            markerEnd: { type: 'arrowclosed' },
+            style: { stroke: '#60a5fa' }, // blue-400
+        });
       });
 
     return { nodes: tableNodes, edges: tableEdges };
