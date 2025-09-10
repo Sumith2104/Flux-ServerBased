@@ -52,7 +52,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             }
         }
         fetchData();
-    }, [pathname, selectedProject, setProject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [setProject]);
 
     // Redirect logic
     useEffect(() => {
