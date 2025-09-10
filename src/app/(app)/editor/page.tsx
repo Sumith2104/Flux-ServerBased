@@ -2,7 +2,7 @@
 import { Suspense } from 'react';
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getTablesForProject, getColumnsForTable } from '@/lib/data';
+import { getTablesForProject, getColumnsForTable, getConstraintsForTable, getConstraintsForProject } from '@/lib/data';
 import { EditorClient } from '@/components/editor-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -12,9 +12,14 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
     const currentTable = tableId ? allTables.find(t => t.table_id === tableId) : null;
 
     let columns: any[] = [];
+    let constraints: any[] = [];
+    let allProjectConstraints: any[] = [];
+
 
     if (currentTable && tableId) {
         columns = await getColumnsForTable(projectId, tableId);
+        constraints = await getConstraintsForTable(projectId, tableId);
+        allProjectConstraints = await getConstraintsForProject(projectId);
     }
 
     // Rows are now fetched on the client-side
@@ -26,6 +31,8 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
             allTables={allTables}
             currentTable={currentTable}
             initialColumns={columns}
+            initialConstraints={constraints}
+            allProjectConstraints={allProjectConstraints}
             initialRows={[]} // Pass empty initial rows
         />
     );
@@ -77,5 +84,3 @@ export default function EditorPage({
         </Suspense>
     );
 }
-
-    

@@ -20,7 +20,8 @@ function parseCsv(data: string): Record<string, string>[] {
     const rows = lines.slice(1);
 
     return rows.map(line => {
-        const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        // This regex handles comma-separated values, including quoted strings that contain commas
+        const values = (line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || []).map(v => v.trim().replace(/^"|"$/g, ''));
         const entry: Record<string, string> = {};
         header.forEach((key, index) => {
             entry[key] = values[index];
@@ -87,6 +88,35 @@ export interface Column {
     column_name: string;
     data_type: string;
 }
+
+// --- Constraint Data ---
+export type ConstraintType = 'PRIMARY KEY' | 'FOREIGN KEY';
+export type ReferentialAction = 'CASCADE' | 'SET NULL' | 'RESTRICT';
+
+export interface Constraint {
+    constraint_id: string;
+    table_id: string;
+    type: ConstraintType;
+    column_names: string; // Comma-separated for composite keys
+    // Foreign Key specific fields
+    referenced_table_id?: string;
+    referenced_column_names?: string; // Comma-separated for composite keys
+    on_delete?: ReferentialAction;
+    on_update?: ReferentialAction;
+}
+
+export async function getConstraintsForProject(projectId: string): Promise<Constraint[]> {
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error("User not authenticated");
+    const constraintsCsvPath = path.join(DB_PATH, userId, projectId, 'constraints.csv');
+    return await readCsvFile(constraintsCsvPath) as unknown as Constraint[];
+}
+
+export async function getConstraintsForTable(projectId: string, tableId: string): Promise<Constraint[]> {
+    const allConstraints = await getConstraintsForProject(projectId);
+    return allConstraints.filter(c => c.table_id === tableId);
+}
+
 
 export async function getTablesForProject(projectId: string): Promise<Table[]> {
     const userId = await getCurrentUserId();
@@ -210,5 +240,3 @@ export async function getProjectAnalytics(projectId: string): Promise<ProjectAna
         tables: tableAnalytics,
     };
 }
-
-    

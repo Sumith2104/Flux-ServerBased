@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Table as DbTable, Column as DbColumn } from '@/lib/data';
+import type { Table as DbTable, Column as DbColumn, Constraint as DbConstraint } from '@/lib/data';
 import { 
     Plus, 
     Table,
@@ -15,7 +15,9 @@ import {
     Edit,
     Trash2,
     MoreHorizontal,
-    Loader2
+    KeyRound,
+    GitCommitHorizontal,
+    Link2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +26,7 @@ import { AddRowDialog } from '@/components/add-row-dialog';
 import { AddColumnDialog } from '@/components/add-column-dialog';
 import { EditRowDialog } from '@/components/edit-row-dialog';
 import { ImportCsvDialog } from '@/components/import-csv-dialog';
+import { AddConstraintDialog } from '@/components/add-constraint-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -57,6 +60,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DeleteProgress } from './delete-progress';
+import { Badge } from './ui/badge';
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
@@ -70,6 +74,8 @@ interface EditorClientProps {
     allTables: DbTable[];
     currentTable: DbTable | null | undefined;
     initialColumns: DbColumn[];
+    initialConstraints: DbConstraint[];
+    allProjectConstraints: DbConstraint[];
     initialRows: any[];
 }
 
@@ -80,6 +86,8 @@ export function EditorClient({
     allTables,
     currentTable,
     initialColumns,
+    initialConstraints,
+    allProjectConstraints,
 }: EditorClientProps) {
     const { toast } = useToast();
     const router = useRouter();
@@ -176,6 +184,17 @@ export function EditorClient({
         setTableToDelete(table);
         setIsDeleteTableAlertOpen(true);
     };
+
+    const pkColumns = useMemo(() => {
+        const pk = initialConstraints.find(c => c.type === 'PRIMARY KEY');
+        return pk ? new Set(pk.column_names.split(',')) : new Set();
+    }, [initialConstraints]);
+
+    const getReferencedTable = (constraint: DbConstraint) => {
+        if (constraint.type !== 'FOREIGN KEY') return null;
+        const table = allTables.find(t => t.table_id === constraint.referenced_table_id);
+        return table || null;
+    }
 
     return (
         <>
@@ -340,16 +359,12 @@ export function EditorClient({
                                             }}
                                         />
                                     </TabsContent>
-                                    <TabsContent value="structure" className="mt-4">
+                                    <TabsContent value="structure" className="mt-4 space-y-6">
                                         <Card>
                                             <CardHeader>
                                                 <CardTitle>Table Structure</CardTitle>
                                                 <CardDescription>
-                                                    {currentTable.description ? (
-                                                        currentTable.description
-                                                    ) : (
-                                                        `This is the schema for the '${currentTable.table_name}' table.`
-                                                    )}
+                                                    {currentTable.description || `This is the schema for the '${currentTable.table_name}' table.`}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent>
@@ -359,6 +374,7 @@ export function EditorClient({
                                                             <TableRow>
                                                                 <TableHead>Column Name</TableHead>
                                                                 <TableHead>Data Type</TableHead>
+                                                                <TableHead>Constraints</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
@@ -366,6 +382,9 @@ export function EditorClient({
                                                                 <TableRow key={col.column_id}>
                                                                     <TableCell className="font-mono">{col.column_name}</TableCell>
                                                                     <TableCell className="font-mono">{col.data_type}</TableCell>
+                                                                    <TableCell>
+                                                                        {pkColumns.has(col.column_name) && <Badge variant="secondary" className="mr-2">PK</Badge>}
+                                                                    </TableCell>
                                                                 </TableRow>
                                                             ))}
                                                         </TableBody>
@@ -377,6 +396,50 @@ export function EditorClient({
                                                     projectId={projectId}
                                                     tableId={tableId}
                                                     tableName={tableName}
+                                                />
+                                            </CardFooter>
+                                        </Card>
+                                         <Card>
+                                            <CardHeader>
+                                                <CardTitle>Keys & Relationships</CardTitle>
+                                                <CardDescription>
+                                                   Primary and Foreign key constraints for this table.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                 {initialConstraints.length > 0 ? (
+                                                    <div className="space-y-4">
+                                                        {initialConstraints.map(c => (
+                                                            <div key={c.constraint_id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
+                                                                <div className="flex items-center gap-4">
+                                                                    {c.type === 'PRIMARY KEY' ? <KeyRound className="h-5 w-5 text-yellow-500" /> : <Link2 className="h-5 w-5 text-blue-500" />}
+                                                                    <div className="flex flex-col">
+                                                                        <span className="font-semibold font-mono">{c.column_names}</span>
+                                                                        <span className="text-sm text-muted-foreground">
+                                                                            {c.type === 'PRIMARY KEY' ? 'Primary Key' : 
+                                                                             `→ ${getReferencedTable(c)?.table_name}.${c.referenced_column_names}`
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                 <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                                                                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                                                </Button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                 ) : (
+                                                    <p className="text-sm text-muted-foreground">No constraints defined for this table.</p>
+                                                 )}
+                                            </CardContent>
+                                            <CardFooter>
+                                                <AddConstraintDialog
+                                                    projectId={projectId}
+                                                    tableId={tableId}
+                                                    tableName={tableName}
+                                                    allTables={allTables}
+                                                    columns={initialColumns}
+                                                    allProjectConstraints={allProjectConstraints}
                                                 />
                                             </CardFooter>
                                         </Card>
@@ -418,5 +481,3 @@ export function EditorClient({
         </>
     );
 }
-
-    
