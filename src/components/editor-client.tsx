@@ -507,9 +507,9 @@ export function EditorClient({
                                                                         </span>
                                                                     </div>
                                                                 </div>
-                                                                 <AlertDialog>
+                                                                 <AlertDialog onOpenChange={(open) => !open && setConstraintToDelete(null)}>
                                                                     <AlertDialogTrigger asChild>
-                                                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConstraintToDelete(c)}>
                                                                             <Trash2 className="h-4 w-4" />
                                                                         </Button>
                                                                     </AlertDialogTrigger>
@@ -523,14 +523,7 @@ export function EditorClient({
                                                                         <AlertDialogFooter>
                                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                                             <AlertDialogAction
-                                                                                onClick={() => {
-                                                                                    const formData = new FormData();
-                                                                                    formData.append('projectId', projectId);
-                                                                                    formData.append('tableId', tableId);
-                                                                                    formData.append('tableName', tableName);
-                                                                                    formData.append('constraintId', c.constraint_id);
-                                                                                    handleDeleteConstraint(formData);
-                                                                                }}
+                                                                                onClick={handleDeleteConstraint}
                                                                                 className="bg-destructive hover:bg-destructive/90"
                                                                             >
                                                                                 Delete Constraint
