@@ -77,7 +77,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
     }, [userLoading, projectContextLoading, userId, selectedProject, pathname, router]);
 
-    const isEditorPage = pathname.startsWith('/editor');
+    const isEditorOrDbPage = pathname.startsWith('/editor') || pathname.startsWith('/database');
     const isLoading = userLoading || projectContextLoading;
 
     if (isLoading) {
@@ -153,8 +153,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     </nav>
                 </aside>
                 <main className={cn("flex-1 overflow-auto", {
-                    "p-0": isEditorPage,
-                    "p-4 md:p-8": !isEditorPage,
+                    "p-0": isEditorOrDbPage,
+                    "p-4 md:p-8": !isEditorOrDbPage,
                 })}>
                     {children}
                 </main>

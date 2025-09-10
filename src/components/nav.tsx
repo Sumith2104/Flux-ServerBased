@@ -9,7 +9,8 @@ import {
     Code, 
     Folder, 
     Settings as SettingsIcon,
-    Table
+    Table,
+    Database
 } from "lucide-react"
 import {
     Tooltip,
@@ -22,6 +23,7 @@ import {
 const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/editor", label: "Table Editor", icon: Table },
+    { href: "/database", label: "Database", icon: Database },
     { href: "/query", label: "AI SQL Translator", icon: BrainCircuit },
     { href: "/api", label: "API Generation", icon: Code },
     { href: "/storage", label: "Storage", icon: Folder },
@@ -34,7 +36,7 @@ export function Nav({ projectId }: { projectId?: string | null }) {
     return (
         <TooltipProvider>
             {navItems.map((item) => {
-                const isProjectSpecific = ["/editor", "/api", "/storage", "/settings", "/query"].includes(item.href);
+                const isProjectSpecific = ["/editor", "/api", "/storage", "/settings", "/query", "/database"].includes(item.href);
                 const isDisabled = isProjectSpecific && !projectId;
                 let finalHref = item.href;
 
