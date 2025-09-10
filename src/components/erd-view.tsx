@@ -88,12 +88,12 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
       .forEach((c) => {
         tableEdges.push({
             id: `e-${c.constraint_id}`,
-            source: c.table_id,
-            target: c.referenced_table_id!,
+            source: c.table_id, // The table with the foreign key
+            target: c.referenced_table_id!, // The table being referenced
             type: 'smoothstep',
             animated: true,
-            markerEnd: { type: 'arrowclosed' },
-            style: { stroke: '#60a5fa' }, // blue-400
+            markerEnd: { type: 'arrowclosed', color: '#60a5fa' },
+            style: { stroke: '#60a5fa', strokeWidth: 1.5 }, // blue-400
         });
       });
 
