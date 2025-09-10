@@ -1,0 +1,7 @@
+column_id,table_id,column_name,data_type
+182e44ae-128b-4b73-a2d5-08eabb3856e0,84477d9f-0dcb-4455-be48-8a015ca0471c,id,gen_random_uuid()
+7a95972f-8d7d-44ad-b3ac-3fcfaf060a94,84477d9f-0dcb-4455-be48-8a015ca0471c,name,text
+cea207e9-be6d-4707-a301-f6e05d5d9363,84477d9f-0dcb-4455-be48-8a015ca0471c,email,text
+e2e0bf83-e2c3-4fc2-ab0b-35a2ce1b67d5,84477d9f-0dcb-4455-be48-8a015ca0471c,created_at,now_time()
+7480103f-0409-49b8-be8f-6b05a89ddbc9,84477d9f-0dcb-4455-be48-8a015ca0471c,phno,number
+efb79087-97e1-4c0a-a530-d22e402542c2,84477d9f-0dcb-4455-be48-8a015ca0471c,gymid,text

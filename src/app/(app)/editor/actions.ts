@@ -367,6 +367,138 @@ export async function addColumnAction(formData: FormData) {
   }
 }
 
+export async function editColumnAction(formData: FormData) {
+    const projectId = formData.get('projectId') as string;
+    const tableId = formData.get('tableId') as string;
+    const tableName = formData.get('tableName') as string;
+    const columnId = formData.get('columnId') as string;
+    const oldColumnName = formData.get('oldColumnName') as string;
+    const newColumnName = formData.get('newColumnName') as string;
+    const userId = await getCurrentUserId();
+
+    if (!projectId || !tableId || !tableName || !columnId || !oldColumnName || !newColumnName || !userId) {
+        return { error: 'Missing required fields.' };
+    }
+     if (oldColumnName === 'id') {
+        return { error: "The 'id' column cannot be renamed." };
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(newColumnName)) {
+        return { error: 'Column name can only contain letters, numbers, and underscores.' };
+    }
+
+    try {
+        const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
+        
+        // 1. Update columns.csv
+        const columnsCsvPath = path.join(projectPath, 'columns.csv');
+        const columnsData = await readCsvFile(columnsCsvPath);
+        const colIdIndex = columnsData[0].indexOf('column_id');
+        const colNameIndex = columnsData[0].indexOf('column_name');
+        
+        const newColumnsData = columnsData.map(row => {
+            if (row[colIdIndex] === columnId) {
+                row[colNameIndex] = newColumnName;
+            }
+            return row;
+        });
+        await writeCsvFile(columnsCsvPath, newColumnsData);
+        
+        // 2. Update data file header
+        const dataFilePath = path.join(projectPath, `${tableName}.csv`);
+        const data = await readCsvFile(dataFilePath);
+
+        if (data.length > 0) {
+            const headerIndex = data[0].indexOf(oldColumnName);
+            if (headerIndex > -1) {
+                data[0][headerIndex] = newColumnName;
+                await writeCsvFile(dataFilePath, data);
+            }
+        }
+        
+        // 3. Update constraints.csv
+        const constraintsCsvPath = path.join(projectPath, 'constraints.csv');
+         if (await fileExists(constraintsCsvPath)) {
+            let constraintsData = await readCsvFile(constraintsCsvPath);
+            const tableIdIndex = constraintsData[0].indexOf('table_id');
+            const colNamesIndex = constraintsData[0].indexOf('column_names');
+            
+            const newConstraintsData = constraintsData.map(row => {
+                 if (row[tableIdIndex] === tableId) {
+                    const columns = row[colNamesIndex].split(',');
+                    const updatedColumns = columns.map(c => c === oldColumnName ? newColumnName : c).join(',');
+                    row[colNamesIndex] = updatedColumns;
+                }
+                return row;
+            });
+            await writeCsvFile(constraintsCsvPath, newConstraintsData);
+        }
+
+        revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to edit column:', error);
+        return { error: `An unexpected error occurred: ${(error as Error).message}` };
+    }
+}
+
+
+export async function deleteColumnAction(formData: FormData) {
+    const projectId = formData.get('projectId') as string;
+    const tableId = formData.get('tableId') as string;
+    const tableName = formData.get('tableName') as string;
+    const columnId = formData.get('columnId') as string;
+    const columnName = formData.get('columnName') as string;
+    const userId = await getCurrentUserId();
+    
+    if (!projectId || !tableId || !tableName || !columnId || !columnName || !userId) {
+        return { error: 'Missing required fields.' };
+    }
+
+    if (columnName === 'id') {
+        return { error: "The 'id' column cannot be deleted." };
+    }
+
+    try {
+        const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
+
+        // Constraint check
+        const constraints = await getConstraintsForProject(projectId);
+        const isUsedInConstraint = constraints.some(c => c.table_id === tableId && c.column_names.split(',').includes(columnName));
+        if (isUsedInConstraint) {
+            return { error: `Cannot delete column '${columnName}' because it is used in a primary or foreign key constraint. Please remove the constraint first.` };
+        }
+
+        // 1. Update columns.csv
+        const columnsCsvPath = path.join(projectPath, 'columns.csv');
+        const columnsData = await readCsvFile(columnsCsvPath);
+        const colIdIndex = columnsData[0].indexOf('column_id');
+        const newColumnsData = columnsData.filter((row, i) => i === 0 || row[colIdIndex] !== columnId);
+        await writeCsvFile(columnsCsvPath, newColumnsData);
+        
+        // 2. Update data file (remove column from header and all rows)
+        const dataFilePath = path.join(projectPath, `${tableName}.csv`);
+        const data = await readCsvFile(dataFilePath);
+
+        if (data.length > 0) {
+            const headerIndex = data[0].indexOf(columnName);
+            if (headerIndex > -1) {
+                const newData = data.map(row => {
+                    row.splice(headerIndex, 1);
+                    return row;
+                });
+                await writeCsvFile(dataFilePath, newData);
+            }
+        }
+        
+        revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to delete column:', error);
+        return { error: `An unexpected error occurred: ${(error as Error).message}` };
+    }
+}
+
+
 export async function addConstraintAction(formData: FormData) {
     const projectId = formData.get('projectId') as string;
     const tableId = formData.get('tableId') as string;

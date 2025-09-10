@@ -24,6 +24,7 @@ import type { GridColDef, GridRowSelectionModel, GridPaginationModel } from '@mu
 import { AddRowDialog } from '@/components/add-row-dialog';
 import { AddColumnDialog } from '@/components/add-column-dialog';
 import { EditRowDialog } from '@/components/edit-row-dialog';
+import { EditColumnDialog } from '@/components/edit-column-dialog';
 import { ImportCsvDialog } from '@/components/import-csv-dialog';
 import { AddConstraintDialog } from '@/components/add-constraint-dialog';
 import { Separator } from '@/components/ui/separator';
@@ -38,7 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteRowAction, deleteTableAction } from '@/app/(app)/editor/actions';
+import { deleteRowAction, deleteTableAction, deleteColumnAction } from '@/app/(app)/editor/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import {
@@ -56,6 +57,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DeleteProgress } from './delete-progress';
@@ -91,9 +93,12 @@ export function EditorClient({
     const { toast } = useToast();
     const router = useRouter();
     const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
-    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isEditRowOpen, setIsEditRowOpen] = useState(false);
+    const [isEditColumnOpen, setIsEditColumnOpen] = useState(false);
     const [isDeleteTableAlertOpen, setIsDeleteTableAlertOpen] = useState(false);
     const [tableToDelete, setTableToDelete] = useState<DbTable | null>(null);
+    const [columnToEdit, setColumnToEdit] = useState<DbColumn | null>(null);
+    const [columnToDelete, setColumnToDelete] = useState<DbColumn | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
     // State for server-side pagination
@@ -184,6 +189,37 @@ export function EditorClient({
         setTableToDelete(table);
         setIsDeleteTableAlertOpen(true);
     };
+
+    const handleOpenEditColumnDialog = (column: DbColumn) => {
+        setColumnToEdit(column);
+        setIsEditColumnOpen(true);
+    };
+
+    const handleOpenDeleteColumnDialog = (column: DbColumn) => {
+        setColumnToDelete(column);
+    };
+
+    const handleDeleteColumn = async () => {
+        if (!columnToDelete || !projectId || !tableId || !tableName) return;
+    
+        const formData = new FormData();
+        formData.append('projectId', projectId);
+        formData.append('tableId', tableId);
+        formData.append('tableName', tableName);
+        formData.append('columnId', columnToDelete.column_id);
+        formData.append('columnName', columnToDelete.column_name);
+
+        const result = await deleteColumnAction(formData);
+
+        if (result.success) {
+            toast({ title: 'Success', description: `Column '${columnToDelete.column_name}' deleted successfully.` });
+            router.refresh();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error, duration: 8000 });
+        }
+        setColumnToDelete(null);
+    };
+
 
     const pkColumns = useMemo(() => {
         const pk = initialConstraints.find(c => c.type === 'PRIMARY KEY');
@@ -285,13 +321,13 @@ export function EditorClient({
                                             />
                                         </>
                                     )}
-                                    <Button variant="outline" size="sm" disabled={selectionModel.length !== 1} onClick={() => setIsEditOpen(true)}>
+                                    <Button variant="outline" size="sm" disabled={selectionModel.length !== 1} onClick={() => setIsEditRowOpen(true)}>
                                         <Edit className="mr-2 h-4 w-4" /> Edit
                                     </Button>
                                     {selectedRowData && tableId && tableName && (
                                         <EditRowDialog
-                                            isOpen={isEditOpen}
-                                            setIsOpen={setIsEditOpen}
+                                            isOpen={isEditRowOpen}
+                                            setIsOpen={setIsEditRowOpen}
                                             projectId={projectId}
                                             tableId={tableId}
                                             tableName={tableName}
@@ -375,6 +411,7 @@ export function EditorClient({
                                                                 <TableHead>Column Name</TableHead>
                                                                 <TableHead>Data Type</TableHead>
                                                                 <TableHead>Constraints</TableHead>
+                                                                <TableHead className="text-right">Actions</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
@@ -384,6 +421,25 @@ export function EditorClient({
                                                                     <TableCell className="font-mono">{col.data_type}</TableCell>
                                                                     <TableCell>
                                                                         {pkColumns.has(col.column_name) && <Badge variant="secondary" className="mr-2">PK</Badge>}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <DropdownMenu>
+                                                                            <DropdownMenuTrigger asChild>
+                                                                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={col.column_name === 'id'}>
+                                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                                    <span className="sr-only">Column options</span>
+                                                                                </Button>
+                                                                            </DropdownMenuTrigger>
+                                                                            <DropdownMenuContent>
+                                                                                <DropdownMenuItem onClick={() => handleOpenEditColumnDialog(col)}>
+                                                                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                                                                </DropdownMenuItem>
+                                                                                <DropdownMenuSeparator />
+                                                                                <DropdownMenuItem onClick={() => handleOpenDeleteColumnDialog(col)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                                                </DropdownMenuItem>
+                                                                            </DropdownMenuContent>
+                                                                        </DropdownMenu>
                                                                     </TableCell>
                                                                 </TableRow>
                                                             ))}
@@ -461,6 +517,35 @@ export function EditorClient({
                     )}
                 </main>
             </div>
+            
+            {columnToEdit && (
+                <EditColumnDialog
+                    isOpen={isEditColumnOpen}
+                    setIsOpen={setIsEditColumnOpen}
+                    projectId={projectId}
+                    tableId={tableId!}
+                    tableName={tableName!}
+                    column={columnToEdit}
+                />
+            )}
+
+            <AlertDialog open={!!columnToDelete} onOpenChange={(open) => !open && setColumnToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the 
+                            <strong> {columnToDelete?.column_name}</strong> column and all of its data.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setColumnToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteColumn} className="bg-destructive hover:bg-destructive/90">
+                            Delete Column
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             
             <AlertDialog open={isDeleteTableAlertOpen} onOpenChange={setIsDeleteTableAlertOpen}>
                 <AlertDialogContent>

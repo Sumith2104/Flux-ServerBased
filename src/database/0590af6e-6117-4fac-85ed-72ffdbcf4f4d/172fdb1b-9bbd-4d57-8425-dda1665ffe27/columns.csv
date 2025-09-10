@@ -1,0 +1,6 @@
+column_id,table_id,column_name,data_type
+aec4f7f6-572b-4308-bdb5-a8ea9a1d673b,747970f9-c61e-4d00-a6dc-d7133db6c4a5,id,gen_random_uuid()
+555de36c-5f17-4b19-87b0-b4e4bd146744,747970f9-c61e-4d00-a6dc-d7133db6c4a5,gymid,text
+8d0bfe2f-2f2a-49f0-b035-d648f93496f1,747970f9-c61e-4d00-a6dc-d7133db6c4a5,gymname,text
+2e5d9964-b2dd-46c6-b858-522abd727c33,eae31942-13f6-412e-ac93-583a32170aa3,id,gen_random_uuid()
+5592ecbd-2f23-4633-b58d-cca2437d0344,eae31942-13f6-412e-ac93-583a32170aa3,namr,text
