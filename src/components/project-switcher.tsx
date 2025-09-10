@@ -37,11 +37,8 @@ export function ProjectSwitcher({
 
   const handleSelect = (project: Project | null) => {
     setProject(project);
-    if (project) {
-        router.push('/dashboard');
-    } else {
-        router.push('/dashboard/projects');
-    }
+    // The main app layout will handle the redirect automatically
+    // based on the context change, so we remove the router.push calls.
   };
 
   return (
