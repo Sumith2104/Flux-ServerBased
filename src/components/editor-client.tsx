@@ -77,7 +77,6 @@ interface EditorClientProps {
     initialColumns: DbColumn[];
     initialConstraints: DbConstraint[];
     allProjectConstraints: DbConstraint[];
-    initialRows: any[];
 }
 
 export function EditorClient({
@@ -100,6 +99,7 @@ export function EditorClient({
     const [columnToEdit, setColumnToEdit] = useState<DbColumn | null>(null);
     const [columnToDelete, setColumnToDelete] = useState<DbColumn | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [activeTab, setActiveTab] = useState('data');
 
     // State for server-side pagination
     const [rows, setRows] = useState<any[]>([]);
@@ -128,7 +128,8 @@ export function EditorClient({
         if (tableId && tableName) {
             fetchTableData(paginationModel);
         }
-    }, [tableId, tableName, fetchTableData, paginationModel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tableId, tableName, paginationModel.page, paginationModel.pageSize]);
 
     const handlePaginationModelChange = (model: GridPaginationModel) => {
         setPaginationModel(model);
@@ -382,7 +383,7 @@ export function EditorClient({
                             </header>
 
                             <div className="p-6 overflow-y-auto">
-                                <Tabs defaultValue="data" className="w-full">
+                                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                                     <TabsList>
                                         <TabsTrigger value="data">Data</TabsTrigger>
                                         <TabsTrigger value="structure">Structure</TabsTrigger>
