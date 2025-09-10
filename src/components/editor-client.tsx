@@ -39,7 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteRowAction, deleteTableAction, deleteColumnAction } from '@/app/(app)/editor/actions';
+import { deleteRowAction, deleteTableAction, deleteColumnAction, deleteConstraintAction } from '@/app/(app)/editor/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import {
@@ -98,6 +98,7 @@ export function EditorClient({
     const [tableToDelete, setTableToDelete] = useState<DbTable | null>(null);
     const [columnToEdit, setColumnToEdit] = useState<DbColumn | null>(null);
     const [columnToDelete, setColumnToDelete] = useState<DbColumn | null>(null);
+    const [constraintToDelete, setConstraintToDelete] = useState<DbConstraint | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [activeTab, setActiveTab] = useState('data');
 
@@ -235,6 +236,27 @@ export function EditorClient({
         const table = allTables.find(t => t.table_id === constraint.referenced_table_id);
         return table || null;
     }
+
+    const handleDeleteConstraint = async () => {
+        if (!constraintToDelete || !projectId || !tableId || !tableName) return;
+
+        const formData = new FormData();
+        formData.append('projectId', projectId);
+        formData.append('tableId', tableId);
+        formData.append('tableName', tableName);
+        formData.append('constraintId', constraintToDelete.constraint_id);
+
+        const result = await deleteConstraintAction(formData);
+
+        if (result.success) {
+            toast({ title: 'Success', description: 'Constraint deleted successfully.' });
+            router.refresh(); // Refresh to get the latest constraints
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete constraint.' });
+        }
+        setConstraintToDelete(null);
+    };
+
 
     return (
         <>
@@ -485,9 +507,37 @@ export function EditorClient({
                                                                         </span>
                                                                     </div>
                                                                 </div>
-                                                                 <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
-                                                                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                                                </Button>
+                                                                 <AlertDialog>
+                                                                    <AlertDialogTrigger asChild>
+                                                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </AlertDialogTrigger>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader>
+                                                                            <AlertDialogTitle>Are you sure you want to delete this constraint?</AlertDialogTitle>
+                                                                            <AlertDialogDescription>
+                                                                                This action cannot be undone. This will permanently delete the constraint on <strong>{c.column_names}</strong>.
+                                                                            </AlertDialogDescription>
+                                                                        </AlertDialogHeader>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                            <AlertDialogAction
+                                                                                onClick={() => {
+                                                                                    const formData = new FormData();
+                                                                                    formData.append('projectId', projectId);
+                                                                                    formData.append('tableId', tableId);
+                                                                                    formData.append('tableName', tableName);
+                                                                                    formData.append('constraintId', c.constraint_id);
+                                                                                    handleDeleteConstraint(formData);
+                                                                                }}
+                                                                                className="bg-destructive hover:bg-destructive/90"
+                                                                            >
+                                                                                Delete Constraint
+                                                                            </AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
                                                             </div>
                                                         ))}
                                                     </div>

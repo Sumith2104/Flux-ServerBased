@@ -546,6 +546,39 @@ export async function addConstraintAction(formData: FormData) {
     }
 }
 
+export async function deleteConstraintAction(formData: FormData) {
+    const projectId = formData.get('projectId') as string;
+    const tableId = formData.get('tableId') as string;
+    const tableName = formData.get('tableName') as string;
+    const constraintId = formData.get('constraintId') as string;
+    const userId = await getCurrentUserId();
+
+    if (!projectId || !tableId || !tableName || !constraintId || !userId) {
+        return { error: 'Missing required fields.' };
+    }
+    
+    try {
+        const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
+        const constraintsCsvPath = path.join(projectPath, 'constraints.csv');
+
+        const constraintsData = await readCsvFile(constraintsCsvPath);
+        if (constraintsData.length === 0) return { success: true };
+
+        const constraintIdIndex = constraintsData[0].indexOf('constraint_id');
+        const newConstraintsData = constraintsData.filter((row, i) => i === 0 || row[constraintIdIndex] !== constraintId);
+        
+        await writeCsvFile(constraintsCsvPath, newConstraintsData);
+
+        revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
+        return { success: true };
+
+    } catch (error) {
+        console.error('Failed to delete constraint:', error);
+        return { error: `An unexpected error occurred: ${(error as Error).message}` };
+    }
+}
+
+
 export async function deleteTableAction(projectId: string, tableId: string, tableName: string) {
     const userId = await getCurrentUserId();
     if (!projectId || !tableId || !tableName || !userId) {
