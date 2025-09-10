@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { type Column } from '@/lib/data';
 import { SubmitButton } from './submit-button';
 import type React from 'react';
-import { useRouter } from 'next/navigation';
 
 type EditRowDialogProps = {
   isOpen: boolean;
@@ -27,6 +26,7 @@ type EditRowDialogProps = {
   tableName: string;
   columns: Column[];
   rowData: Record<string, any>;
+  onRowUpdated: () => void;
 };
 
 export function EditRowDialog({
@@ -37,9 +37,9 @@ export function EditRowDialog({
   tableName,
   columns,
   rowData,
+  onRowUpdated,
 }: EditRowDialogProps) {
   const { toast } = useToast();
-  const router = useRouter();
 
   const handleAction = async (formData: FormData) => {
     const result = await editRowAction(formData);
@@ -49,7 +49,7 @@ export function EditRowDialog({
         description: 'Row updated successfully.',
       });
       setIsOpen(false);
-      router.refresh();
+      onRowUpdated();
     } else {
       toast({
         variant: 'destructive',

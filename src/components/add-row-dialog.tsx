@@ -19,18 +19,17 @@ import { useToast } from '@/hooks/use-toast';
 import { type Column } from '@/lib/data';
 import { SubmitButton } from './submit-button';
 import { useState }from 'react';
-import { useRouter } from 'next/navigation';
 
 type AddRowDialogProps = {
   projectId: string;
   tableId: string;
   tableName: string;
   columns: Column[];
+  onRowAdded: () => void;
 };
 
-export function AddRowDialog({ projectId, tableId, tableName, columns }: AddRowDialogProps) {
+export function AddRowDialog({ projectId, tableId, tableName, columns, onRowAdded }: AddRowDialogProps) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleAction = async (formData: FormData) => {
@@ -41,7 +40,7 @@ export function AddRowDialog({ projectId, tableId, tableName, columns }: AddRowD
         description: 'Row added successfully.',
       });
       setIsOpen(false);
-      router.refresh();
+      onRowAdded();
     } else {
       toast({
         variant: 'destructive',

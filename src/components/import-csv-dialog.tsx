@@ -27,11 +27,11 @@ type ImportCsvDialogProps = {
   tableId: string;
   tableName: string;
   columns: Column[];
+  onImportSuccess: () => void;
 };
 
-export function ImportCsvDialog({ projectId, tableId, tableName, columns }: ImportCsvDialogProps) {
+export function ImportCsvDialog({ projectId, tableId, tableName, columns, onImportSuccess }: ImportCsvDialogProps) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,7 +78,7 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns }: Impo
         setIsOpen(false);
         setCsvFile(null);
         if(fileInputRef.current) fileInputRef.current.value = '';
-        router.refresh(); // Re-fetch data for the page
+        onImportSuccess();
       } else {
         toast({
           variant: 'destructive',

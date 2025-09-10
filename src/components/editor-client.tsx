@@ -134,6 +134,10 @@ export function EditorClient({
         setPaginationModel(model);
     };
 
+    const refreshData = useCallback(() => {
+        fetchTableData(paginationModel);
+    }, [fetchTableData, paginationModel]);
+
     const handleDeleteSelectedRows = async () => {
         if (!projectId || !tableId || !tableName || selectionModel.length === 0) return;
         
@@ -143,8 +147,7 @@ export function EditorClient({
         if (result.success) {
             toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
             setSelectionModel([]);
-            // Manually refetch data instead of full page refresh for better UX
-            fetchTableData(paginationModel);
+            refreshData();
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }
@@ -312,12 +315,14 @@ export function EditorClient({
                                                 tableId={tableId}
                                                 tableName={tableName}
                                                 columns={initialColumns}
+                                                onRowAdded={refreshData}
                                             />
                                             <ImportCsvDialog
                                                 projectId={projectId}
                                                 tableId={tableId}
                                                 tableName={tableName}
                                                 columns={initialColumns}
+                                                onImportSuccess={refreshData}
                                             />
                                         </>
                                     )}
@@ -333,6 +338,7 @@ export function EditorClient({
                                             tableName={tableName}
                                             columns={initialColumns}
                                             rowData={selectedRowData}
+                                            onRowUpdated={refreshData}
                                         />
                                     )}
 
