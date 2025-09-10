@@ -8,10 +8,12 @@ import ReactFlow, {
   Background,
   type Node,
   type Edge,
+  Handle,
+  Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { type Table, type Column, type Constraint } from '@/lib/data';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Link2 } from 'lucide-react';
 
 interface ErdViewProps {
   tables: Table[];
@@ -23,7 +25,7 @@ const nodeWidth = 250;
 const nodeHeaderHeight = 40;
 const rowHeight = 28;
 
-const CustomNode = ({ data }: { data: { name: string; columns: Column[], pks: Set<string> } }) => {
+const CustomNode = ({ data }: { data: { name: string; columns: Column[], pks: Set<string>, fks: Set<string> } }) => {
   return (
     <div className="rounded-md border-2 border-primary/50 bg-card shadow-md font-sans w-full">
       <div className="bg-primary/20 p-2 rounded-t-md">
@@ -31,9 +33,27 @@ const CustomNode = ({ data }: { data: { name: string; columns: Column[], pks: Se
       </div>
       <div className="p-2 space-y-1">
         {data.columns.map((col) => (
-          <div key={col.column_id} className="flex items-center justify-between text-xs text-muted-foreground">
+          <div key={col.column_id} className="relative flex items-center justify-between text-xs text-muted-foreground">
+             {data.fks.has(col.column_name) && (
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={`${col.table_id}-${col.column_name}`}
+                    style={{ background: '#3b82f6', top: '50%' }}
+                />
+             )}
+             {data.pks.has(col.column_name) && (
+                 <Handle
+                    type="target"
+                    position={Position.Left}
+                    id={`${col.table_id}-${col.column_name}`}
+                    style={{ background: '#ca8a04', top: '50%' }}
+                />
+             )}
             <div className='flex items-center gap-2'>
               {data.pks.has(col.column_name) && <KeyRound className="h-3 w-3 text-yellow-500" />}
+              {data.fks.has(col.column_name) && <Link2 className="h-3 w-3 text-blue-500" />}
+
               <span className={data.pks.has(col.column_name) ? 'font-semibold text-foreground' : ''}>
                 {col.column_name}
               </span>
@@ -55,14 +75,16 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
     const tableNodes: Node[] = [];
     const tableEdges: Edge[] = [];
     const pkConstraints = new Map<string, Set<string>>();
+    const fkConstraints = new Map<string, Set<string>>();
 
-    // First, map out all primary keys for quick lookup
-    constraints.filter(c => c.type === 'PRIMARY KEY').forEach(c => {
-        if (!pkConstraints.has(c.table_id)) {
-            pkConstraints.set(c.table_id, new Set());
+    // First, map out all primary and foreign keys for quick lookup
+    constraints.forEach(c => {
+        const keyMap = c.type === 'PRIMARY KEY' ? pkConstraints : fkConstraints;
+        if (!keyMap.has(c.table_id)) {
+            keyMap.set(c.table_id, new Set());
         }
         c.column_names.split(',').forEach(colName => {
-            pkConstraints.get(c.table_id)!.add(colName);
+            keyMap.get(c.table_id)!.add(colName);
         });
     });
 
@@ -70,13 +92,14 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
     tables.forEach((table, index) => {
       const tableColumns = columns.filter((c) => c.table_id === table.table_id);
       const pks = pkConstraints.get(table.table_id) || new Set<string>();
+      const fks = fkConstraints.get(table.table_id) || new Set<string>();
 
       const nodeHeight = nodeHeaderHeight + (tableColumns.length * rowHeight) + 16;
       
       tableNodes.push({
         id: table.table_id,
         type: 'custom',
-        data: { name: table.table_name, columns: tableColumns, pks },
+        data: { name: table.table_name, columns: tableColumns, pks, fks },
         position: { x: (index % 4) * (nodeWidth + 100), y: Math.floor(index / 4) * 400 },
         style: { width: nodeWidth, height: nodeHeight },
       });
@@ -84,16 +107,18 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
 
     // Create an edge for each foreign key constraint
     constraints
-      .filter((c) => c.type === 'FOREIGN KEY' && c.referenced_table_id)
+      .filter((c) => c.type === 'FOREIGN KEY' && c.referenced_table_id && c.referenced_column_names)
       .forEach((c) => {
         tableEdges.push({
             id: `e-${c.constraint_id}`,
-            source: c.table_id, // The table with the foreign key
-            target: c.referenced_table_id!, // The table being referenced
+            source: c.table_id,
+            target: c.referenced_table_id!,
+            sourceHandle: `${c.table_id}-${c.column_names}`,
+            targetHandle: `${c.referenced_table_id}-${c.referenced_column_names}`,
             type: 'smoothstep',
             animated: true,
             markerEnd: { type: 'arrowclosed', color: '#60a5fa' },
-            style: { stroke: '#60a5fa', strokeWidth: 1.5 }, // blue-400
+            style: { stroke: '#60a5fa', strokeWidth: 1.5 },
         });
       });
 

@@ -1,0 +1,2 @@
+constraint_id,table_id,type,column_names,referenced_table_id,referenced_column_names,on_delete,on_update
+6581c714-8aab-4f9d-ba08-1f5fa66b3e73,0d526dfc-0981-436c-9dc0-5427c0df2e1f,FOREIGN KEY,"user_id","9ba17734-fc1b-44b8-9c62-a7c840506cb1","id","CASCADE",
