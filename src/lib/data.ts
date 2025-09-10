@@ -5,8 +5,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { getCurrentUserId } from '@/lib/auth';
-import { Readable } from 'stream';
-import { createReadStream } from 'fs';
 
 const DB_PATH = path.join(process.cwd(), 'src', 'database');
 

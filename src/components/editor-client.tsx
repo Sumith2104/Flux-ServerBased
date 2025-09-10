@@ -16,7 +16,6 @@ import {
     Trash2,
     MoreHorizontal,
     KeyRound,
-    GitCommitHorizontal,
     Link2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -135,15 +134,16 @@ export function EditorClient({
         
         setIsDeleting(true);
         const result = await deleteRowAction(projectId, tableId, tableName, selectionModel as string[]);
-        setIsDeleting(false);
         
         if (result.success) {
             toast({ title: 'Success', description: `${result.deletedCount} row(s) deleted successfully.` });
             setSelectionModel([]);
-            router.refresh();
+            // Manually refetch data instead of full page refresh for better UX
+            fetchTableData(paginationModel);
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || `Failed to delete rows.` });
         }
+        setIsDeleting(false);
     };
     
     const columns: GridColDef[] = useMemo(() => {
@@ -300,7 +300,7 @@ export function EditorClient({
                                         />
                                     )}
 
-                                    <AlertDialog onOpenChange={() => isDeleting && setIsDeleting(false)}>
+                                    <AlertDialog onOpenChange={(open) => { if(!open) setIsDeleting(false) }}>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" size="sm" disabled={selectionModel.length === 0}>
                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectionModel.length})
@@ -439,7 +439,6 @@ export function EditorClient({
                                                     tableName={tableName}
                                                     allTables={allTables}
                                                     columns={initialColumns}
-                                                    allProjectConstraints={allProjectConstraints}
                                                 />
                                             </CardFooter>
                                         </Card>

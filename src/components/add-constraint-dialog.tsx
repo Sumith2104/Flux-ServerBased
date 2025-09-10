@@ -15,7 +15,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
-import { Label } from './ui/label';
 import { addConstraintAction } from '@/app/(app)/editor/actions';
 import { useToast } from '@/hooks/use-toast';
 import { SubmitButton } from './submit-button';
@@ -31,7 +30,6 @@ type AddConstraintDialogProps = {
   tableName: string;
   columns: Column[];
   allTables: Table[];
-  allProjectConstraints: Constraint[];
 };
 
 const formSchema = z.object({

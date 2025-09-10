@@ -74,15 +74,16 @@ async function validatePrimaryKey(projectId: string, tableId: string, newRow: Re
     }
 }
 
-async function validateForeignKey(projectId: string, newRow: Record<string, any>) {
-    const fkConstraints = (await getConstraintsForProject(projectId)).filter(c => c.type === 'FOREIGN KEY');
+async function validateForeignKey(projectId: string, tableId: string, newRow: Record<string, any>) {
+    const fkConstraints = (await getConstraintsForTable(projectId, tableId)).filter(c => c.type === 'FOREIGN KEY');
+
     if (fkConstraints.length === 0) return;
     
     for (const constraint of fkConstraints) {
         const fkColumns = constraint.column_names.split(',');
         const fkValue = fkColumns.map(col => newRow[col]).join('-');
 
-        // Skip validation if FK value is null or empty
+        // Skip validation if FK value is null or empty for any column in the key
         if (!fkValue || fkColumns.some(col => !newRow[col])) continue;
 
         const referencedTable = (await getTablesForProject(projectId)).find(t => t.table_id === constraint.referenced_table_id);
@@ -97,7 +98,7 @@ async function validateForeignKey(projectId: string, newRow: Record<string, any>
         });
 
         if (!referenceExists) {
-            throw new Error(`Foreign key violation: The value '${fkValue.replace(/-/g, ', ')}' does not exist in the referenced table '${referencedTable.table_name}'.`);
+            throw new Error(`Foreign key violation on table '${referencedTable.table_name}': The value '${fkValue.replace(/-/g, ', ')}' for column '${constraint.column_names}' does not exist in the referenced table.`);
         }
     }
 }
@@ -141,10 +142,15 @@ export async function addRowAction(formData: FormData) {
     }
     
     await validatePrimaryKey(projectId, tableId, newRowObject, existingRows);
-    await validateForeignKey(projectId, newRowObject);
+    await validateForeignKey(projectId, tableId, newRowObject);
 
     const data = await readCsvFile(dataFilePath);
     const header = data.length > 0 ? data[0] : columns.map(c => c.column_name);
+    
+    // Ensure header exists if file is empty
+    if (data.length === 0) {
+        data.push(header);
+    }
 
     const newRowValues = header.map(h => newRowObject[h] || '');
     
@@ -181,11 +187,13 @@ export async function editRowAction(formData: FormData) {
         if(col.column_name !== 'id') {
             const value = formData.get(col.column_name) as string | null;
             newRowObject[col.column_name] = value || '';
+        } else {
+             newRowObject['id'] = rowId;
         }
     });
     
     await validatePrimaryKey(projectId, tableId, newRowObject, existingRows, rowId);
-    await validateForeignKey(projectId, newRowObject);
+    await validateForeignKey(projectId, tableId, newRowObject);
 
     const data = await readCsvFile(dataFilePath);
     const header = data[0];
@@ -210,34 +218,66 @@ export async function editRowAction(formData: FormData) {
   }
 }
 
-async function handleCascadingDeletes(projectId: string, tableId: string, rowIds: string[]) {
+async function handleCascadingDeletes(projectId: string, tableId: string, rowIdsToDelete: Set<string>) {
     const userId = await getCurrentUserId();
     if (!userId) throw new Error("User not authenticated");
     const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
 
     const allTables = await getTablesForProject(projectId);
-    const allColumns = await getConstraintsForProject(projectId).then(c => c.map(c => getColumnsForTable(projectId, c.table_id)));
-    const fkConstraints = (await getConstraintsForProject(projectId)).filter(c => c.type === 'FOREIGN KEY' && c.referenced_table_id === tableId);
+    const allConstraints = await getConstraintsForProject(projectId);
+    const fkConstraints = allConstraints.filter(c => c.type === 'FOREIGN KEY' && c.referenced_table_id === tableId);
 
     for (const constraint of fkConstraints) {
+        const childTable = allTables.find(t => t.table_id === constraint.table_id);
+        if (!childTable) continue;
+        
+        const childDataPath = path.join(projectPath, `${childTable.table_name}.csv`);
+        const childData = await readCsvFile(childDataPath);
+        if (childData.length < 2) continue; // No data to process
+
+        const childHeader = childData[0];
+        const childFkColNames = (constraint.column_names || '').split(',');
+        // For simplicity, we assume the referenced column is the parent's 'id' which is what our UI supports.
+        // A more robust solution would use `constraint.referenced_column_names`
+        const parentIdIndex = 0; // Assuming 'id' is the first column for simplicity, which isn't robust.
+                                 // Let's find the actual index.
+        const parentTableColumns = await getColumnsForTable(projectId, tableId);
+        const parentTableData = await readCsvFile(path.join(projectPath, `${(allTables.find(t=>t.table_id === tableId))?.table_name}.csv`));
+        const parentHeader = parentTableData.length > 0 ? parentTableData[0] : parentTableColumns.map(c=>c.column_name);
+
+        const parentRefColName = constraint.referenced_column_names!;
+        const parentPkIndex = parentHeader.indexOf(parentRefColName);
+
+
+        const childFkColIndex = childHeader.indexOf(childFkColNames[0]); // Assuming single column FK for now
+
+        if (childFkColIndex === -1) continue;
+
         if (constraint.on_delete === 'CASCADE') {
-            const childTable = allTables.find(t => t.table_id === constraint.table_id);
-            if (!childTable) continue;
-
-            const childDataPath = path.join(projectPath, `${childTable.table_name}.csv`);
-            const childData = await readCsvFile(childDataPath);
-            if (childData.length === 0) continue;
-
-            const childHeader = childData[0];
-            const childFkColNames = (constraint.column_names || '').split(',');
-            const childFkColIndices = childFkColNames.map(name => childHeader.indexOf(name));
-            
-            const rowsToKeep = childData.slice(1).filter(row => {
-                const fkValue = childFkColIndices.map(i => row[i]).join(',');
-                return !rowIds.includes(fkValue); // simplified check, assumes single column PKs in parent
+             const rowsToKeep = childData.filter((row, index) => {
+                if(index === 0) return true; // header
+                const fkValue = row[childFkColIndex];
+                return !rowIdsToDelete.has(fkValue);
             });
-
-            await writeCsvFile(childDataPath, [childHeader, ...rowsToKeep]);
+            await writeCsvFile(childDataPath, rowsToKeep);
+        } else if (constraint.on_delete === 'SET NULL') {
+            const updatedData = childData.map((row, index) => {
+                if (index === 0) return row; // header
+                const fkValue = row[childFkColIndex];
+                 if (rowIdsToDelete.has(fkValue)) {
+                    row[childFkColIndex] = ''; // Set to null/empty string
+                }
+                return row;
+            });
+            await writeCsvFile(childDataPath, updatedData);
+        } else if (constraint.on_delete === 'RESTRICT') {
+            const hasDependency = childData.slice(1).some(row => {
+                 const fkValue = row[childFkColIndex];
+                 return rowIdsToDelete.has(fkValue);
+            });
+             if (hasDependency) {
+                throw new Error(`Cannot delete from table '${(allTables.find(t=>t.table_id === tableId))?.table_name}'. It is referenced by table '${childTable.table_name}'.`);
+            }
         }
     }
 }
@@ -249,7 +289,9 @@ export async function deleteRowAction(projectId: string, tableId: string, tableN
     }
 
     try {
-        await handleCascadingDeletes(projectId, tableId, rowIds);
+        const rowIdsToDelete = new Set(rowIds);
+        
+        await handleCascadingDeletes(projectId, tableId, rowIdsToDelete);
         
         const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
         const dataFilePath = path.join(projectPath, `${tableName}.csv`);
@@ -261,10 +303,12 @@ export async function deleteRowAction(projectId: string, tableId: string, tableN
         const idColumnIndex = header.indexOf('id');
         if (idColumnIndex === -1) return { error: "Cannot delete row(s): 'id' column not found." };
         
-        const rowIdsToDelete = new Set(rowIds);
-        const rowsToKeep = data.slice(1).filter(row => !rowIdsToDelete.has(row[idColumnIndex]));
-
-        await writeCsvFile(dataFilePath, [header, ...rowsToKeep]);
+        const rowsToKeep = data.filter((row, index) => {
+            if (index === 0) return true; // Keep header
+            return !rowIdsToDelete.has(row[idColumnIndex]);
+        });
+        
+        await writeCsvFile(dataFilePath, rowsToKeep);
 
         revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
         return { success: true, deletedCount: rowIds.length };
@@ -389,7 +433,8 @@ export async function deleteTableAction(projectId: string, tableId: string, tabl
         const tablesCsvPath = path.join(projectPath, 'tables.csv');
         let tablesData = await readCsvFile(tablesCsvPath);
         if(tablesData.length > 0) {
-            const newTablesData = tablesData.filter(row => row[0] !== tableId);
+            const tableIdIndex = tablesData[0].indexOf('table_id');
+            const newTablesData = tablesData.filter((row, i) => i === 0 || row[tableIdIndex] !== tableId);
             await writeCsvFile(tablesCsvPath, newTablesData);
         }
 
@@ -397,16 +442,21 @@ export async function deleteTableAction(projectId: string, tableId: string, tabl
         const columnsCsvPath = path.join(projectPath, 'columns.csv');
         let columnsData = await readCsvFile(columnsCsvPath);
         if(columnsData.length > 0) {
-            const newColumnsData = columnsData.filter(row => row[1] !== tableId);
+            const tableIdIndex = columnsData[0].indexOf('table_id');
+            const newColumnsData = columnsData.filter((row, i) => i === 0 || row[tableIdIndex] !== tableId);
             await writeCsvFile(columnsCsvPath, newColumnsData);
         }
 
         // 4. Remove constraints from constraints.csv
         const constraintsCsvPath = path.join(projectPath, 'constraints.csv');
-        let constraintsData = await readCsvFile(constraintsCsvPath);
-        if(constraintsData.length > 0) {
-            const newConstraintsData = constraintsData.filter(row => row[1] !== tableId && row[4] !== tableId);
-            await writeCsvFile(constraintsCsvPath, newConstraintsData);
+        if (await fileExists(constraintsCsvPath)) {
+            let constraintsData = await readCsvFile(constraintsCsvPath);
+            if(constraintsData.length > 0) {
+                const tableIdIndex = constraintsData[0].indexOf('table_id');
+                const refTableIdIndex = constraintsData[0].indexOf('referenced_table_id');
+                const newConstraintsData = constraintsData.filter((row, i) => i === 0 || (row[tableIdIndex] !== tableId && row[refTableIdIndex] !== tableId));
+                await writeCsvFile(constraintsCsvPath, newConstraintsData);
+            }
         }
 
 
@@ -417,16 +467,5 @@ export async function deleteTableAction(projectId: string, tableId: string, tabl
     } catch (error) {
         console.error('Failed to delete table:', error);
         return { error: `An unexpected error occurred: ${(error as Error).message}` };
-    }
-}
-
-async function getFileContent(filePath: string): Promise<string> {
-    try {
-        return await fs.readFile(filePath, 'utf8');
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return ''; 
-        }
-        throw error;
     }
 }

@@ -1,3 +1,0 @@
-column_id,table_id,column_name,data_type
-9b33919c-4fd6-4957-a8f8-ed9c7727c8c4,f57087fd-d119-4b28-9c12-e862759dd96c,id,gen_random_uuid()
-c7f90b10-8a01-4fce-9165-b27068ec3b6a,f57087fd-d119-4b28-9c12-e862759dd96c,name,text
