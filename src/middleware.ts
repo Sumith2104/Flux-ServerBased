@@ -12,13 +12,13 @@ export async function middleware(request: NextRequest) {
   if (userId) {
     // and tries to access an auth page (login/signup), redirect to dashboard.
     if (isAuthPage) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/dashboard/projects', request.url));
     }
   } 
   // If user is not logged in...
   else {
     // and tries to access a protected page, redirect to login.
-    // The root page `/` should be accessible.
+    // The root page `/` should be accessible to all.
     if (!isAuthPage && pathname !== '/') {
       return NextResponse.redirect(new URL('/login', request.url));
     }

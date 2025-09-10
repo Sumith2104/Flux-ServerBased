@@ -1,2 +1,0 @@
-constraint_id,table_id,type,column_names,referenced_table_id,referenced_column_names,on_delete,on_update
-2c6d9561-53a8-44bf-9093-a5b39c1d1296,84477d9f-0dcb-4455-be48-8a015ca0471c,PRIMARY KEY,"id",,,,
