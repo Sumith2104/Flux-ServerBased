@@ -74,7 +74,7 @@ export default function CreateTablePage() {
                     let newColumns: Column[] = header.map(name => ({
                         id: uuidv4(),
                         name: name,
-                        type: 'text',
+                        type: name.toLowerCase() === 'id' ? 'gen_random_uuid()' : 'text',
                     }));
 
                     if (!header.some(h => h.toLowerCase() === 'id')) {
