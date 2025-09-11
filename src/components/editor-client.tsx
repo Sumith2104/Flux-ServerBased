@@ -39,7 +39,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteRowAction, deleteTableAction, deleteColumnAction, deleteConstraintAction, getTableData } from '@/app/(app)/editor/actions';
+import { deleteRowAction, deleteTableAction, deleteColumnAction, deleteConstraintAction } from '@/app/(app)/editor/actions';
+import { getTableData } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import {
@@ -648,3 +649,5 @@ export function EditorClient({
         </>
     );
 }
+
+    
