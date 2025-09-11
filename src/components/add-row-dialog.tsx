@@ -16,9 +16,10 @@ import { Label } from './ui/label';
 import { Plus } from 'lucide-react';
 import { addRowAction } from '@/app/(app)/editor/actions';
 import { useToast } from '@/hooks/use-toast';
-import { type Column } from '@/lib/data';
+import { type Column, type Constraint, type Table as DbTable } from '@/lib/data';
 import { SubmitButton } from './submit-button';
 import { useState }from 'react';
+import { ForeignKeySelect } from './foreign-key-select';
 
 type AddRowDialogProps = {
   projectId: string;
@@ -26,9 +27,21 @@ type AddRowDialogProps = {
   tableName: string;
   columns: Column[];
   onRowAdded: () => void;
+  foreignKeyData: Record<string, any[]>;
+  allTables: DbTable[];
+  constraints: Constraint[];
 };
 
-export function AddRowDialog({ projectId, tableId, tableName, columns, onRowAdded }: AddRowDialogProps) {
+export function AddRowDialog({
+  projectId,
+  tableId,
+  tableName,
+  columns,
+  onRowAdded,
+  foreignKeyData,
+  allTables,
+  constraints
+}: AddRowDialogProps) {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -49,6 +62,44 @@ export function AddRowDialog({ projectId, tableId, tableName, columns, onRowAdde
       });
     }
   };
+
+  const fkConstraints = constraints.filter(c => c.type === 'FOREIGN KEY');
+
+  const renderInput = (col: Column) => {
+    const fkConstraint = fkConstraints.find(c => c.column_names === col.column_name);
+    if (fkConstraint && foreignKeyData[col.column_name]) {
+        const refTable = allTables.find(t => t.table_id === fkConstraint.referenced_table_id);
+        const refColumn = fkConstraint.referenced_column_names || 'id';
+
+        let displayColumn = 'name'; // default
+        // A simple heuristic to find a good display column
+        const firstRow = foreignKeyData[col.column_name][0];
+        if (firstRow) {
+            if ('name' in firstRow) displayColumn = 'name';
+            else if ('title' in firstRow) displayColumn = 'title';
+            else if ('label' in firstRow) displayColumn = 'label';
+            else if ('email' in firstRow) displayColumn = 'email';
+        }
+
+        return (
+            <ForeignKeySelect
+                name={col.column_name}
+                data={foreignKeyData[col.column_name]}
+                refTable={refTable}
+                valueColumn={refColumn}
+                displayColumn={displayColumn}
+            />
+        )
+    }
+    return (
+        <Input
+            id={col.column_name}
+            name={col.column_name}
+            className="col-span-3"
+            type={col.data_type === 'number' ? 'number' : col.data_type === 'date' ? 'date' : 'text'}
+        />
+    )
+  }
 
   const visibleColumns = columns.filter(col => col.column_name !== 'id' && col.data_type !== 'gen_random_uuid()' && col.data_type !== 'now_date()' && col.data_type !== 'now_time()');
 
@@ -78,12 +129,7 @@ export function AddRowDialog({ projectId, tableId, tableName, columns, onRowAdde
                 <Label htmlFor={col.column_name} className="text-right">
                   {col.column_name}
                 </Label>
-                <Input
-                  id={col.column_name}
-                  name={col.column_name}
-                  className="col-span-3"
-                  type={col.data_type === 'number' ? 'number' : col.data_type === 'date' ? 'date' : 'text'}
-                />
+                {renderInput(col)}
               </div>
             ))}
           </div>

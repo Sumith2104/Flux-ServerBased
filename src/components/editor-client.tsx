@@ -39,7 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteRowAction, deleteTableAction, deleteColumnAction, deleteConstraintAction } from '@/app/(app)/editor/actions';
+import { deleteRowAction, deleteTableAction, deleteColumnAction, deleteConstraintAction, getTableData } from '@/app/(app)/editor/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import {
@@ -102,11 +102,12 @@ export function EditorClient({
     const [isDeleting, setIsDeleting] = useState(false);
     const [activeTab, setActiveTab] = useState('data');
 
-    // State for server-side pagination
     const [rows, setRows] = useState<any[]>([]);
     const [rowCount, setRowCount] = useState(0);
     const [isTableLoading, setIsTableLoading] = useState(false);
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 100 });
+    const [foreignKeyData, setForeignKeyData] = useState<Record<string, any[]>>({});
+
 
     const fetchTableData = useCallback(async (model: { page: number, pageSize: number }) => {
         if (!tableId || !tableName) return;
@@ -129,8 +130,33 @@ export function EditorClient({
         if (tableId && tableName) {
             fetchTableData(paginationModel);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tableId, tableName, paginationModel.page, paginationModel.pageSize]);
+    }, [tableId, tableName, fetchTableData, paginationModel]);
+
+     useEffect(() => {
+        async function fetchFkData() {
+            if (!initialColumns.length) return;
+
+            const fkData: Record<string, any[]> = {};
+            const fkConstraints = initialConstraints.filter(c => c.type === 'FOREIGN KEY');
+
+            for (const col of initialColumns) {
+                const constraint = fkConstraints.find(c => c.column_names === col.column_name);
+                if (constraint && constraint.referenced_table_id) {
+                    const refTable = allTables.find(t => t.table_id === constraint.referenced_table_id);
+                    if (refTable) {
+                        try {
+                            const { rows } = await getTableData(projectId, refTable.table_name, 1, 1000); // Fetch up to 1000 rows for dropdown
+                            fkData[col.column_name] = rows;
+                        } catch (error) {
+                            console.error(`Failed to fetch data for FK column ${col.column_name}`, error);
+                        }
+                    }
+                }
+            }
+            setForeignKeyData(fkData);
+        }
+        fetchFkData();
+    }, [initialColumns, initialConstraints, allTables, projectId]);
 
     const handlePaginationModelChange = (model: GridPaginationModel) => {
         setPaginationModel(model);
@@ -250,11 +276,12 @@ export function EditorClient({
 
         if (result.success) {
             toast({ title: 'Success', description: 'Constraint deleted successfully.' });
-            router.refresh(); // Refresh to get the latest constraints
+            setConstraintToDelete(null);
+            router.refresh();
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete constraint.' });
+            setConstraintToDelete(null);
         }
-        setConstraintToDelete(null);
     };
 
 
@@ -339,6 +366,9 @@ export function EditorClient({
                                                 tableName={tableName}
                                                 columns={initialColumns}
                                                 onRowAdded={refreshData}
+                                                foreignKeyData={foreignKeyData}
+                                                allTables={allTables}
+                                                constraints={initialConstraints}
                                             />
                                             <ImportCsvDialog
                                                 projectId={projectId}
@@ -362,6 +392,9 @@ export function EditorClient({
                                             columns={initialColumns}
                                             rowData={selectedRowData}
                                             onRowUpdated={refreshData}
+                                            foreignKeyData={foreignKeyData}
+                                            allTables={allTables}
+                                            constraints={initialConstraints}
                                         />
                                     )}
 
@@ -507,7 +540,7 @@ export function EditorClient({
                                                                         </span>
                                                                     </div>
                                                                 </div>
-                                                                 <AlertDialog onOpenChange={(open) => !open && setConstraintToDelete(null)}>
+                                                                 <AlertDialog open={constraintToDelete?.constraint_id === c.constraint_id} onOpenChange={(open) => !open && setConstraintToDelete(null)}>
                                                                     <AlertDialogTrigger asChild>
                                                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConstraintToDelete(c)}>
                                                                             <Trash2 className="h-4 w-4" />

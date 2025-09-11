@@ -14,9 +14,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { editRowAction } from '@/app/(app)/editor/actions';
 import { useToast } from '@/hooks/use-toast';
-import { type Column } from '@/lib/data';
+import { type Column, type Constraint, type Table as DbTable } from '@/lib/data';
 import { SubmitButton } from './submit-button';
 import type React from 'react';
+import { ForeignKeySelect } from './foreign-key-select';
 
 type EditRowDialogProps = {
   isOpen: boolean;
@@ -27,6 +28,9 @@ type EditRowDialogProps = {
   columns: Column[];
   rowData: Record<string, any>;
   onRowUpdated: () => void;
+  foreignKeyData: Record<string, any[]>;
+  allTables: DbTable[];
+  constraints: Constraint[];
 };
 
 export function EditRowDialog({
@@ -38,6 +42,9 @@ export function EditRowDialog({
   columns,
   rowData,
   onRowUpdated,
+  foreignKeyData,
+  allTables,
+  constraints,
 }: EditRowDialogProps) {
   const { toast } = useToast();
 
@@ -58,6 +65,53 @@ export function EditRowDialog({
       });
     }
   };
+
+  const fkConstraints = constraints.filter(c => c.type === 'FOREIGN KEY');
+
+  const renderInput = (col: Column) => {
+    const fkConstraint = fkConstraints.find(c => c.column_names === col.column_name);
+
+    if (fkConstraint && foreignKeyData[col.column_name]) {
+        const refTable = allTables.find(t => t.table_id === fkConstraint.referenced_table_id);
+        const refColumn = fkConstraint.referenced_column_names || 'id';
+
+        let displayColumn = 'name'; // default
+        const firstRow = foreignKeyData[col.column_name][0];
+        if (firstRow) {
+            if ('name' in firstRow) displayColumn = 'name';
+            else if ('title' in firstRow) displayColumn = 'title';
+            else if ('label' in firstRow) displayColumn = 'label';
+            else if ('email' in firstRow) displayColumn = 'email';
+        }
+
+        return (
+             <ForeignKeySelect
+                name={col.column_name}
+                data={foreignKeyData[col.column_name]}
+                refTable={refTable}
+                valueColumn={refColumn}
+                displayColumn={displayColumn}
+                defaultValue={rowData[col.column_name]}
+            />
+        )
+    }
+
+     return (
+        <Input
+            id={col.column_name}
+            name={col.column_name}
+            className="col-span-3"
+            type={
+            col.data_type === 'number'
+                ? 'number'
+                : col.data_type === 'date'
+                ? 'date'
+                : 'text'
+            }
+            defaultValue={rowData[col.column_name] || ''}
+        />
+     )
+  }
 
   const visibleColumns = columns.filter(
     (col) => col.column_name !== 'id' && col.data_type !== 'gen_random_uuid()'
@@ -87,19 +141,7 @@ export function EditRowDialog({
                 <Label htmlFor={col.column_name} className="text-right">
                   {col.column_name}
                 </Label>
-                <Input
-                  id={col.column_name}
-                  name={col.column_name}
-                  className="col-span-3"
-                  type={
-                    col.data_type === 'number'
-                      ? 'number'
-                      : col.data_type === 'date'
-                      ? 'date'
-                      : 'text'
-                  }
-                  defaultValue={rowData[col.column_name] || ''}
-                />
+                {renderInput(col)}
               </div>
             ))}
           </div>
