@@ -27,9 +27,10 @@ export async function getCurrentUserId(): Promise<string | null> {
  * @param userId The ID of the user to log in.
  */
 export async function login(userId: string) {
+    const isSecure = process.env.NEXT_PUBLIC_SECURE_COOKIES === 'true';
     cookies().set('session', userId, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure,
         maxAge: 60 * 60 * 24 * 7, // 1 week
         path: '/',
       });
