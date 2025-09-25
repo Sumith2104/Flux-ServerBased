@@ -294,17 +294,25 @@ const handleInsertQuery = async (ast: Insert, projectId: string) => {
     const table = allTables.find(t => t.table_name === tableName);
     if (!table) throw new Error(`Table '${tableName}' not found.`);
 
-    const columns = ast.columns;
+    let columnsToInsert: string[];
     const valuesNode = ast.values[0];
 
-    if (!columns || !valuesNode || valuesNode.type !== 'value_list') {
-        throw new Error("Invalid INSERT format. Specify columns and values.");
+    if (!valuesNode || valuesNode.type !== 'value_list') {
+        throw new Error("Invalid INSERT format. VALUES clause is missing or invalid.");
+    }
+
+    if (ast.columns) {
+        columnsToInsert = ast.columns;
+    } else {
+        // If no columns are specified, we must get them from the table schema
+        const schemaColumns = await getColumnsForTable(projectId, table.table_id);
+        columnsToInsert = schemaColumns.map(c => c.column_name);
     }
     
     const values = valuesNode.value.map(v => v.value);
 
-    if (columns.length !== values.length) {
-        throw new Error("Number of columns does not match number of values.");
+    if (columnsToInsert.length !== values.length) {
+        throw new Error(`Number of columns (${columnsToInsert.length}) does not match number of values (${values.length}).`);
     }
 
     const formData = new FormData();
@@ -312,7 +320,7 @@ const handleInsertQuery = async (ast: Insert, projectId: string) => {
     formData.append('tableId', table.table_id);
     formData.append('tableName', tableName);
 
-    columns.forEach((col, index) => {
+    columnsToInsert.forEach((col, index) => {
         formData.append(col, String(values[index]));
     });
 
