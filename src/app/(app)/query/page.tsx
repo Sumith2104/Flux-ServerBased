@@ -9,59 +9,54 @@ import { SqlEditor } from '@/components/sql-editor';
 import { QueryResults } from '@/components/query-results';
 import { BackButton } from '@/components/back-button';
 import { ProjectContext } from '@/contexts/project-context';
-import { getTablesForProject, getColumnsForTable, Table as DbTable, Column as DbColumn } from '@/lib/data';
-import { generateSQL } from '@/ai/flows/generate-sql';
 import { useToast } from '@/hooks/use-toast';
 
 export default function QueryPage() {
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [generatedSql, setGeneratedSql] = useState('');
+  const [query, setQuery] = useState('SELECT * FROM your_table_name LIMIT 100;');
+  const [results, setResults] = useState<{ rows: any[], columns: string[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [schema, setSchema] = useState('');
   const { project } = useContext(ProjectContext);
   const { toast } = useToast();
-
-  useEffect(() => {
-    async function fetchSchema() {
-      if (!project) return;
-
-      try {
-        const tables = await getTablesForProject(project.project_id);
-        let fullSchema = '';
-        for (const table of tables) {
-          const columns = await getColumnsForTable(project.project_id, table.table_id);
-          const columnDefs = columns.map(c => `${c.column_name} ${c.data_type}`).join(', ');
-          fullSchema += `Table ${table.table_name} (${columnDefs});\n`;
-        }
-        setSchema(fullSchema);
-      } catch (error) {
-        console.error("Failed to fetch table schema:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not load table schemas.' });
-      }
-    }
-
-    fetchSchema();
-  }, [project, toast]);
 
   const handleRunQuery = async () => {
     if (!query.trim()) {
       toast({ variant: 'destructive', title: 'Error', description: 'Query cannot be empty.' });
       return;
     }
-    if (!schema) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Table schema is not loaded yet. Please wait and try again.' });
+    if (!project) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No project selected.' });
       return;
     }
     
     setIsGenerating(true);
-    setGeneratedSql('');
+    setResults(null);
+    setError(null);
     try {
-      const result = await generateSQL({ userInput: query, tableSchema: schema });
-      setGeneratedSql(result.sqlQuery);
-    } catch (error) {
-      console.error("Failed to generate SQL:", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate SQL from your query.' });
+      const response = await fetch('/api/execute-sql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId: project.project_id,
+          query: query,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'An unknown error occurred.');
+      }
+      
+      setResults(result);
+
+    } catch (e: any) {
+      console.error("Failed to execute SQL:", e);
+      setError(e.message);
+      toast({ variant: 'destructive', title: 'Execution Error', description: e.message });
     } finally {
       setIsGenerating(false);
     }
@@ -92,7 +87,8 @@ export default function QueryPage() {
             {/* Bottom part for the results */}
             <div className="flex-grow flex flex-col h-[50%]">
                 <QueryResults
-                  generatedSql={generatedSql}
+                  results={results}
+                  error={error}
                   isGenerating={isGenerating}
                 />
             </div>
