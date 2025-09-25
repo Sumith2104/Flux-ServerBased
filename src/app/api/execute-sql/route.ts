@@ -1,8 +1,9 @@
 
 import { NextResponse } from 'next/server';
 import { getTableData, getTablesForProject, getColumnsForTable } from '@/lib/data';
+import { createTableAction } from '@/app/(app)/dashboard/tables/create/actions';
 import { getCurrentUserId } from '@/lib/auth';
-import { Parser, AST } from 'node-sql-parser';
+import { Parser, AST, Create } from 'node-sql-parser';
 
 export const maxDuration = 60; // 1 minute
 
@@ -163,6 +164,93 @@ const performJoin = (
     return joinedRows;
 };
 
+const handleSelectQuery = async (ast: AST, projectId: string) => {
+    if (ast.type?.toUpperCase() !== 'SELECT') {
+        throw new Error("Invalid AST type passed to handleSelectQuery.");
+    }
+    
+    const from = ast.from;
+    if (!from || from.length === 0) throw new Error("FROM clause is required.");
+    
+    const mainTableDef = from[0];
+    const { rows: mainTableData } = await getTableData(projectId, mainTableDef.table, 1, 1000000);
+
+    let processedRows = mainTableData;
+    
+    if (from.length > 1) {
+        let currentLeftTable = mainTableData;
+        for (let i = 1; i < from.length; i++) {
+            const joinDef = from[i];
+            const { rows: rightTableData } = await getTableData(projectId, joinDef.table, 1, 1000000);
+            currentLeftTable = performJoin(currentLeftTable, rightTableData, joinDef.on, joinDef.join);
+        }
+        processedRows = currentLeftTable;
+    }
+
+    const filteredRows = processedRows.filter(row => evaluateWhereClause(ast.where, row));
+    const sortedRows = applyOrderBy(filteredRows, ast.orderby);
+    const limit = ast.limit ? ast.limit.value[0].value : 100;
+    let finalRows = sortedRows.slice(0, limit);
+
+    let resultColumns: string[];
+    if (ast.columns.length === 1 && ast.columns[0].expr.column === '*') {
+        resultColumns = finalRows.length > 0 ? Object.keys(finalRows[0]) : [];
+    } else {
+        resultColumns = ast.columns.map((c: any) => c.as || c.expr.column);
+        finalRows = finalRows.map(row => {
+            const projectedRow: Record<string, any> = {};
+            ast.columns.forEach((c: any) => {
+                const colName = c.expr.column;
+                projectedRow[c.as || colName] = row[colName];
+            });
+            return projectedRow;
+        });
+    }
+
+    return { rows: finalRows, columns: resultColumns };
+};
+
+const handleCreateQuery = async (ast: Create, projectId: string) => {
+    if (ast.keyword !== 'table' || !ast.table) {
+        throw new Error("Only CREATE TABLE statements are supported.");
+    }
+    
+    const tableName = ast.table[0].table;
+    const columns = ast.create_definitions?.map(def => {
+        if (def.resource !== 'column') return null;
+        
+        let dataType = def.definition.dataType.toLowerCase();
+        // Translate special types to our internal format
+        if (dataType === 'uuid') {
+           dataType = 'gen_random_uuid()';
+        } else if (dataType === 'timestamptz' || dataType === 'timestamp') {
+           dataType = 'now_date()'; // Or map to a generic 'datetime' if needed
+        }
+
+        return `${def.column.column}:${dataType}`;
+    }).filter(Boolean).join(',');
+
+    if (!columns) {
+        throw new Error("CREATE TABLE statement must include column definitions.");
+    }
+    
+    const formData = new FormData();
+    formData.append('tableName', tableName);
+    formData.append('projectId', projectId);
+    formData.append('columns', columns);
+    formData.append('description', 'Created via SQL Editor');
+
+    const result = await createTableAction(formData);
+
+    if (!result.success) {
+        throw new Error(result.error || 'Failed to create table via server action.');
+    }
+
+    return { 
+        rows: [{ success: true, message: `Table '${tableName}' created successfully.`, tableId: result.tableId }],
+        columns: ['success', 'message', 'tableId']
+    };
+};
 
 export async function POST(request: Request) {
   try {
@@ -176,68 +264,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required body parameters: projectId and query' }, { status: 400 });
     }
     
-    let ast: AST | AST[];
+    // The parser doesn't understand "UUID", so we replace it with a standard type it does know.
+    // We'll handle the special "UUID" meaning in our own logic.
+    const sanitizedQuery = query.replace(/\bUUID\b/gi, 'TEXT');
+
+    let astArray: AST[] | AST;
     try {
-        ast = sqlParser.astify(query);
+        astArray = sqlParser.astify(sanitizedQuery);
     } catch (e: any) {
+        // Provide the original parser error for better debugging
         return NextResponse.json({ error: `SQL Parse Error: ${e.message}` }, { status: 400 });
     }
     
-    const selectAst = Array.isArray(ast) ? ast[0] : ast;
-    if (selectAst.type?.toUpperCase() !== 'SELECT') {
-        throw new Error("Only SELECT queries are supported at this time.");
+    const ast = Array.isArray(astArray) ? astArray[0] : astArray;
+
+    switch (ast.type?.toUpperCase()) {
+        case 'SELECT':
+            const selectResults = await handleSelectQuery(ast, projectId);
+            return NextResponse.json(selectResults);
+        
+        case 'CREATE':
+            const createResults = await handleCreateQuery(ast as Create, projectId);
+            return NextResponse.json(createResults);
+
+        default:
+            throw new Error(`Unsupported SQL command: ${ast.type}. Only SELECT and CREATE TABLE are currently supported.`);
     }
-    
-    // --- Data Fetching ---
-    const from = selectAst.from;
-    if (!from || from.length === 0) throw new Error("FROM clause is required.");
-    
-    const mainTableDef = from[0];
-    const { rows: mainTableData } = await getTableData(projectId, mainTableDef.table, 1, 1000000); // Fetch all for now
-
-    let processedRows = mainTableData;
-    
-    // --- Join Processing ---
-    if (from.length > 1) {
-        let currentLeftTable = mainTableData;
-        for (let i = 1; i < from.length; i++) {
-            const joinDef = from[i];
-            const { rows: rightTableData } = await getTableData(projectId, joinDef.table, 1, 1000000);
-            currentLeftTable = performJoin(currentLeftTable, rightTableData, joinDef.on, joinDef.join);
-        }
-        processedRows = currentLeftTable;
-    }
-
-    // --- Filtering (WHERE) ---
-    const filteredRows = processedRows.filter(row => evaluateWhereClause(selectAst.where, row));
-
-    // --- Sorting (ORDER BY) ---
-    const sortedRows = applyOrderBy(filteredRows, selectAst.orderby);
-
-    // --- Pagination (LIMIT) ---
-    const limit = selectAst.limit ? selectAst.limit.value[0].value : 100; // default 100
-    let finalRows = sortedRows.slice(0, limit);
-
-    // --- Column Projection (SELECT) ---
-    let resultColumns: string[];
-    if (selectAst.columns.length === 1 && selectAst.columns[0].expr.column === '*') {
-        resultColumns = finalRows.length > 0 ? Object.keys(finalRows[0]) : [];
-    } else {
-        resultColumns = selectAst.columns.map((c: any) => c.as || c.expr.column);
-        finalRows = finalRows.map(row => {
-            const projectedRow: Record<string, any> = {};
-            selectAst.columns.forEach((c: any) => {
-                const colName = c.expr.column;
-                projectedRow[c.as || colName] = row[colName];
-            });
-            return projectedRow;
-        });
-    }
-
-    return NextResponse.json({ rows: finalRows, columns: resultColumns });
 
   } catch (error: any) {
     console.error('Failed to execute SQL:', error);
     return NextResponse.json({ error: `Query Execution Error: ${error.message}` }, { status: 500 });
   }
 }
+    
