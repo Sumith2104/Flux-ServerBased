@@ -220,11 +220,37 @@ const handleCreateQuery = async (ast: Create, projectId: string) => {
         if (def.resource !== 'column') return null;
         
         let dataType = def.definition.dataType.toLowerCase();
-        // Translate special types to our internal format
-        if (dataType === 'uuid' || dataType === 'varchar') { // The sanitized type
-           dataType = 'gen_random_uuid()';
-        } else if (dataType === 'timestamptz' || dataType === 'timestamp') {
-           dataType = 'now_date()'; // Or map to a generic 'datetime' if needed
+        
+        // This is a simplified mapping. A real system would need more nuance.
+        switch(dataType) {
+            case 'uuid':
+                dataType = 'gen_random_uuid()';
+                break;
+            case 'text':
+            case 'char':
+            case 'varchar':
+                dataType = 'text';
+                break;
+            case 'timestamptz':
+            case 'timestamp':
+            case 'date':
+                dataType = 'date';
+                break;
+            case 'int':
+            case 'integer':
+            case 'smallint':
+            case 'bigint':
+            case 'decimal':
+            case 'numeric':
+            case 'float':
+            case 'double':
+                dataType = 'number';
+                break;
+             case 'boolean':
+                dataType = 'text'; // Storing booleans as text 'true'/'false' for simplicity in CSV
+                break;
+            default:
+                 dataType = 'text'; // Default to text for unrecognized types
         }
 
         return `${def.column.column}:${dataType}`;
@@ -264,16 +290,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required body parameters: projectId and query' }, { status: 400 });
     }
     
-    // The parser doesn't understand "UUID", "TEXT", or "TIMESTAMPTZ", so we replace them with a standard type it does know.
+    // The parser doesn't understand "UUID", so we replace it with a standard type it does know.
     // We'll handle the special meaning in our own logic.
-    const sanitizedQuery = query
-        .replace(/\bUUID\b/gi, 'VARCHAR')
-        .replace(/\bTEXT\b/gi, 'VARCHAR')
-        .replace(/\bTIMESTAMPTZ\b/gi, 'TIMESTAMP');
+    const sanitizedQuery = query.replace(/\bUUID\b/gi, 'CHAR');
 
     let astArray: AST[] | AST;
     try {
-        astArray = sqlParser.astify(sanitizedQuery);
+        // Remove comments before parsing
+        const queryWithoutComments = sanitizedQuery.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+        astArray = sqlParser.astify(queryWithoutComments);
     } catch (e: any) {
         // Provide the original parser error for better debugging
         return NextResponse.json({ error: `SQL Parse Error: ${e.message}` }, { status: 400 });
@@ -296,7 +321,7 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Failed to execute SQL:', error);
-    return NextResponse.json({ error: `Query Execution Error: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
   }
 }
     
