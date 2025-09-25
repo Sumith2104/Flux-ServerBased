@@ -269,6 +269,13 @@ const handleCreateQuery = async (ast: Create, projectId: string) => {
     const result = await createTableAction(formData);
 
     if (!result.success) {
+        // Handle the specific error for duplicate table names gracefully.
+        if (result.error?.includes('already exists')) {
+             return { 
+                rows: [{ success: false, message: `Skipped: ${result.error}` }],
+                columns: ['success', 'message']
+            };
+        }
         throw new Error(result.error || 'Failed to create table via server action.');
     }
 
@@ -290,9 +297,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required body parameters: projectId and query' }, { status: 400 });
     }
     
-    // The parser doesn't understand "UUID", so we replace it with a standard type it does know.
-    // We'll handle the special meaning in our own logic.
-    const sanitizedQuery = query.replace(/\bUUID\b/gi, 'CHAR');
+    // Sanitize query for types not understood by the parser
+    const sanitizedQuery = query
+        .replace(/\bUUID\b/gi, 'VARCHAR')
+        .replace(/\bTEXT\b/gi, 'VARCHAR')
+        .replace(/\bTIMESTAMPTZ\b/gi, 'TIMESTAMP');
 
     let astArray: AST[] | AST;
     try {

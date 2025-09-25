@@ -49,7 +49,7 @@ export async function createTableAction(formData: FormData) {
     // Check for duplicate table name
     const existingTables = await getTablesForProject(projectId);
     if (existingTables.some(t => t.table_name.toLowerCase() === tableName.toLowerCase())) {
-        return { error: `A table with the name '${tableName}' already exists in this project.` };
+        return { success: false, error: `A table with the name '${tableName}' already exists in this project.` };
     }
 
     const tableId = uuidv4();
