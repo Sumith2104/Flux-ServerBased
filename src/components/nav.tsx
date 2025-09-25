@@ -24,7 +24,7 @@ const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/editor", label: "Table Editor", icon: Table },
     { href: "/database", label: "Database", icon: Database },
-    { href: "/query", label: "AI SQL Translator", icon: BrainCircuit },
+    { href: "/query", label: "SQL Editor", icon: BrainCircuit },
     { href: "/api", label: "API Generation", icon: Code },
     { href: "/storage", label: "Storage", icon: Folder },
     { href: "/settings", label: "Settings", icon: SettingsIcon },
