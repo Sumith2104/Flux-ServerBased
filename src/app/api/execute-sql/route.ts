@@ -2,77 +2,95 @@
 import { NextResponse } from 'next/server';
 import { getTableData } from '@/lib/data';
 import { getCurrentUserId } from '@/lib/auth';
+import { Parser } from 'node-sql-parser';
 
 export const maxDuration = 60; // 1 minute
 
-// Extremely simple SQL parser. Handles "SELECT ... FROM ... WHERE ... LIMIT ..."
-function parseSql(query: string) {
-    query = query.replace(/\s+/g, ' ').trim();
-    
-    // SELECT clause
-    const selectMatch = query.match(/^SELECT\s+(.*?)\s+FROM/i);
-    if (!selectMatch) throw new Error("Invalid SQL: Missing SELECT or FROM clause.");
-    const columns = selectMatch[1].split(',').map(c => c.trim());
+const sqlParser = new Parser();
 
-    // FROM clause
-    const fromMatch = query.match(/\s+FROM\s+([a-zA-Z0-9_]+)/i);
-    if (!fromMatch) throw new Error("Invalid SQL: Missing FROM clause.");
-    const tableName = fromMatch[1];
-    
-    let whereClause = null;
-    const whereMatch = query.match(/\s+WHERE\s+(.*?)(\s+LIMIT|\s*$)/i);
-    if(whereMatch) {
-        whereClause = whereMatch[1].trim();
+// Helper to compare values, handling numbers and strings
+const compare = (left: any, operator: string, right: any) => {
+    const leftNum = parseFloat(left);
+    const rightNum = parseFloat(right);
+
+    // If both can be numbers, compare as numbers
+    if (!isNaN(leftNum) && !isNaN(rightNum)) {
+        left = leftNum;
+        right = rightNum;
     }
-    
-    let limit = 100; // Default limit
-    const limitMatch = query.match(/\s+LIMIT\s+([0-9]+)/i);
-    if(limitMatch) {
-        limit = parseInt(limitMatch[1], 10);
+
+    switch (operator) {
+        case '=': return left == right;
+        case '!=': return left != right;
+        case '>': return left > right;
+        case '<': return left < right;
+        case '>=': return left >= right;
+        case '<=': return left <= right;
+        case 'IN': return right.includes(left);
+        case 'NOT IN': return !right.includes(left);
+        default: throw new Error(`Unsupported operator: ${operator}`);
     }
+};
+
+// Evaluates a WHERE clause AST node against a row
+const evaluateWhereClause = (whereNode: any, row: Record<string, any>): boolean => {
+    if (!whereNode) return true;
     
-    return { columns, tableName, whereClause, limit };
-}
+    const { type, operator, left, right } = whereNode;
 
-// Simple WHERE clause evaluator
-function evaluateWhereClause(row: Record<string, any>, where: string): boolean {
-    // This is a very basic evaluator and can be expanded.
-    // It handles simple conditions like `column = 'value'` or `column > 10`.
-    const operators = ['=', '!=', '>', '<', '>=', '<='];
-    
-    for (const op of operators) {
-        if (where.includes(op)) {
-            const [column, valueStr] = where.split(op).map(s => s.trim());
-            
-            const rawValue = valueStr.replace(/['"]/g, ''); // Strip quotes
-            
-            const rowValue = row[column];
-            
-            if (rowValue === undefined) return false;
+    if (type === 'binary_expr') {
+        const leftValue = evaluateWhereClause(left, row);
+        
+        // Handle short-circuiting for AND/OR
+        if (operator.toUpperCase() === 'AND' && !leftValue) return false;
+        if (operator.toUpperCase() === 'OR' && leftValue) return true;
+        
+        const rightValue = evaluateWhereClause(right, row);
 
-            const rowValueNum = parseFloat(rowValue);
-            const rawValueNum = parseFloat(rawValue);
-
-            switch (op) {
-                case '=': return (isNaN(rowValueNum) || isNaN(rawValueNum)) ? rowValue == rawValue : rowValueNum == rawValueNum;
-                case '!=': return (isNaN(rowValueNum) || isNaN(rawValueNum)) ? rowValue != rawValue : rowValueNum != rawValueNum;
-                case '>': return !isNaN(rowValueNum) && !isNaN(rawValueNum) && rowValueNum > rawValueNum;
-                case '<': return !isNaN(rowValueNum) && !isNaN(rawValueNum) && rowValueNum < rawValueNum;
-                case '>=': return !isNaN(rowValueNum) && !isNaN(rawValueNum) && rowValueNum >= rawValueNum;
-                case '<=': return !isNaN(rowValueNum) && !isNaN(rawValueNum) && rowValueNum <= rawValueNum;
-            }
+        if (operator.toUpperCase() === 'AND') {
+            return leftValue && rightValue;
         }
-    }
-    // Very basic "IN" clause support: `column IN ('val1', 'val2')`
-    const inMatch = where.match(/(\w+)\s+IN\s+\((.*?)\)/i);
-    if(inMatch) {
-        const column = inMatch[1];
-        const values = inMatch[2].split(',').map(v => v.trim().replace(/['"]/g, ''));
-        return values.includes(row[column]);
-    }
+        if (operator.toUpperCase() === 'OR') {
+            return leftValue || rightValue;
+        }
 
-    throw new Error(`Unsupported WHERE clause format: "${where}"`);
-}
+        // It's a comparison
+        const colName = left.column;
+        let rVal;
+        if (right.type === 'column_ref') {
+            rVal = row[right.column];
+        } else if (right.type === 'value_list') {
+            rVal = right.value.map((v: any) => v.value);
+        } else {
+            rVal = right.value;
+        }
+
+        return compare(row[colName], operator, rVal);
+    }
+    
+    // For single column (e.g. `WHERE my_col`) or other expressions
+    if (type === 'column_ref') {
+         return !!row[left.column];
+    }
+    
+    throw new Error(`Unsupported WHERE clause node type: ${type}`);
+};
+
+const applyOrderBy = (rows: any[], orderBy: any[]) => {
+    if (!orderBy || orderBy.length === 0) return rows;
+
+    return [...rows].sort((a, b) => {
+        for (const order of orderBy) {
+            const { expr, type } = order;
+            const col = expr.column;
+            const dir = type === 'DESC' ? -1 : 1;
+
+            if (a[col] < b[col]) return -1 * dir;
+            if (a[col] > b[col]) return 1 * dir;
+        }
+        return 0;
+    });
+};
 
 
 export async function POST(request: Request) {
@@ -88,44 +106,53 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required body parameters: projectId and query' }, { status: 400 });
     }
     
-    const { columns, tableName, whereClause, limit } = parseSql(query);
+    let ast;
+    try {
+        ast = sqlParser.astify(query);
+    } catch (e: any) {
+        return NextResponse.json({ error: `SQL Parse Error: ${e.message}` }, { status: 400 });
+    }
 
-    // Fetch all data first, then filter. Inefficient but necessary for file-based system.
-    const { rows: allRows } = await getTableData(projectId, tableName, 1, 1000000); 
-
-    let filteredRows = allRows;
-    if(whereClause) {
-        filteredRows = allRows.filter(row => evaluateWhereClause(row, whereClause));
+    if (Array.isArray(ast) || ast.type?.toUpperCase() !== 'SELECT') {
+        throw new Error("Only SELECT queries are supported at this time.");
     }
     
-    let resultRows = filteredRows.slice(0, limit);
-    let resultColumns = columns;
-    
-    // Handle SELECT *
-    if (columns.length === 1 && columns[0] === '*') {
-        if(resultRows.length > 0) {
-            resultColumns = Object.keys(resultRows[0]);
-        } else if (allRows.length > 0) {
-            resultColumns = Object.keys(allRows[0]);
-        } else {
-            // Need a better way to get columns if table is empty
-            resultColumns = [];
-        }
+    // --- Data Fetching ---
+    const from = ast.from;
+    if (!from || from.length === 0) throw new Error("FROM clause is required.");
+    const mainTable = from[0].table;
+    const { rows: mainTableData } = await getTableData(projectId, mainTable, 1, 1000000); // Fetch all for now
+
+    // --- Filtering (WHERE) ---
+    const filteredRows = mainTableData.filter(row => evaluateWhereClause(ast.where, row));
+
+    // --- Sorting (ORDER BY) ---
+    const sortedRows = applyOrderBy(filteredRows, ast.orderby);
+
+    // --- Pagination (LIMIT) ---
+    const limit = ast.limit ? ast.limit.value[0].value : 100; // default 100
+    let finalRows = sortedRows.slice(0, limit);
+
+    // --- Column Projection (SELECT) ---
+    let resultColumns: string[];
+    if (ast.columns.length === 1 && ast.columns[0].expr.column === '*') {
+        resultColumns = mainTableData.length > 0 ? Object.keys(mainTableData[0]) : [];
     } else {
-        // Project only the selected columns
-        resultRows = resultRows.map(row => {
+        resultColumns = ast.columns.map((c: any) => c.as || c.expr.column);
+        finalRows = finalRows.map(row => {
             const projectedRow: Record<string, any> = {};
-            for(const col of columns) {
-                projectedRow[col] = row[col];
-            }
+            ast.columns.forEach((c: any) => {
+                const colName = c.expr.column;
+                projectedRow[c.as || colName] = row[colName];
+            });
             return projectedRow;
         });
     }
 
-    return NextResponse.json({ rows: resultRows, columns: resultColumns });
+    return NextResponse.json({ rows: finalRows, columns: resultColumns });
 
   } catch (error: any) {
     console.error('Failed to execute SQL:', error);
-    return NextResponse.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Query Execution Error: ${error.message}` }, { status: 500 });
   }
 }
