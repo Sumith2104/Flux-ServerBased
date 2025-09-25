@@ -1,1 +1,10 @@
 column_id,table_id,column_name,data_type
+c9aaab76-e61a-4aa0-82d7-8b9b6aafab3a,ead32c01-2773-469a-83c6-57ad6cd9d068,id,number
+1e41cc85-bfd7-4330-8caf-3d660cc0adb4,ead32c01-2773-469a-83c6-57ad6cd9d068,first_name,text
+27cc150f-7f18-41d0-916b-2a12ea969a1d,ead32c01-2773-469a-83c6-57ad6cd9d068,last_name,text
+79abc37c-8522-4009-b43f-e5a2592f1a23,ead32c01-2773-469a-83c6-57ad6cd9d068,department,text
+00d1a7c2-8cd2-4f57-a759-cadd61d843f7,ead32c01-2773-469a-83c6-57ad6cd9d068,role,text
+89ed8555-74c2-4720-a369-18386439c9b7,ead32c01-2773-469a-83c6-57ad6cd9d068,salary,number
+52261f13-55d5-4647-bc69-133dd8ca6ac2,ead32c01-2773-469a-83c6-57ad6cd9d068,hire_date,date
+b3ed51d7-4973-4572-a509-0e904ab5393a,ead32c01-2773-469a-83c6-57ad6cd9d068,is_active,text
+85b9f08e-2278-42b6-b71b-4bd76e63a0dc,ead32c01-2773-469a-83c6-57ad6cd9d068,UUID,gen_random_uuid()

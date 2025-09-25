@@ -125,7 +125,13 @@ export async function addRowAction(formData: FormData) {
     const now = new Date();
 
     for (const col of columns) {
-        let value = formData.get(col.column_name) as string | null;
+        let value: string | null = null;
+        // FormData can have multiple entries for the same name, so we use getAll
+        const formValues = formData.getAll(col.column_name);
+        if (formValues.length > 0) {
+            value = formValues[formValues.length - 1] as string; // Use the last value if multiple exist
+        }
+
         if (col.data_type === 'gen_random_uuid()' && !value) {
             value = uuidv4();
         } else if (col.data_type === 'now_date()') {
@@ -136,7 +142,7 @@ export async function addRowAction(formData: FormData) {
         newRowObject[col.column_name] = value || '';
     }
     
-    // Add id if it doesn't exist
+    // Add id if it doesn't exist from the form data
     if (!newRowObject['id']) {
         newRowObject['id'] = uuidv4();
     }
@@ -634,3 +640,5 @@ export async function deleteTableAction(projectId: string, tableId: string, tabl
         return { error: `An unexpected error occurred: ${(error as Error).message}` };
     }
 }
+
+    

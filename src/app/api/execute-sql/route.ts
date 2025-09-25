@@ -2,8 +2,9 @@
 import { NextResponse } from 'next/server';
 import { getTableData, getTablesForProject, getColumnsForTable } from '@/lib/data';
 import { createTableAction } from '@/app/(app)/dashboard/tables/create/actions';
+import { addRowAction } from '@/app/(app)/editor/actions';
 import { getCurrentUserId } from '@/lib/auth';
-import { Parser, AST, Create } from 'node-sql-parser';
+import { Parser, AST, Create, Insert } from 'node-sql-parser';
 
 export const maxDuration = 60; // 1 minute
 
@@ -285,6 +286,48 @@ const handleCreateQuery = async (ast: Create, projectId: string) => {
     };
 };
 
+const handleInsertQuery = async (ast: Insert, projectId: string) => {
+    const tableName = ast.table?.[0].table;
+    if (!tableName) throw new Error("INSERT statement must have a table name.");
+
+    const allTables = await getTablesForProject(projectId);
+    const table = allTables.find(t => t.table_name === tableName);
+    if (!table) throw new Error(`Table '${tableName}' not found.`);
+
+    const columns = ast.columns;
+    const valuesNode = ast.values[0];
+
+    if (!columns || !valuesNode || valuesNode.type !== 'value_list') {
+        throw new Error("Invalid INSERT format. Specify columns and values.");
+    }
+    
+    const values = valuesNode.value.map(v => v.value);
+
+    if (columns.length !== values.length) {
+        throw new Error("Number of columns does not match number of values.");
+    }
+
+    const formData = new FormData();
+    formData.append('projectId', projectId);
+    formData.append('tableId', table.table_id);
+    formData.append('tableName', tableName);
+
+    columns.forEach((col, index) => {
+        formData.append(col, String(values[index]));
+    });
+
+    const result = await addRowAction(formData);
+
+    if (!result.success) {
+        throw new Error(result.error || 'Failed to insert row via server action.');
+    }
+
+    return { 
+        rows: [{ success: true, message: `1 row inserted into '${tableName}' successfully.` }],
+        columns: ['success', 'message']
+    };
+};
+
 export async function POST(request: Request) {
   try {
     const userId = await getCurrentUserId();
@@ -324,8 +367,12 @@ export async function POST(request: Request) {
             const createResults = await handleCreateQuery(ast as Create, projectId);
             return NextResponse.json(createResults);
 
+        case 'INSERT':
+            const insertResults = await handleInsertQuery(ast as Insert, projectId);
+            return NextResponse.json(insertResults);
+
         default:
-            throw new Error(`Unsupported SQL command: ${ast.type}. Only SELECT and CREATE TABLE are currently supported.`);
+            throw new Error(`Unsupported SQL command: ${ast.type}. Only SELECT, CREATE TABLE, and INSERT are currently supported.`);
     }
 
   } catch (error: any) {
@@ -333,4 +380,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
   }
 }
+    
+
     
