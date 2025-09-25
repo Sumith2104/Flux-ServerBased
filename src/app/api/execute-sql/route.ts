@@ -1,15 +1,21 @@
 
 import { NextResponse } from 'next/server';
-import { getTableData } from '@/lib/data';
+import { getTableData, getTablesForProject, getColumnsForTable } from '@/lib/data';
 import { getCurrentUserId } from '@/lib/auth';
-import { Parser } from 'node-sql-parser';
+import { Parser, AST } from 'node-sql-parser';
 
 export const maxDuration = 60; // 1 minute
 
 const sqlParser = new Parser();
 
 // Helper to compare values, handling numbers and strings
-const compare = (left: any, operator: string, right: any) => {
+const compare = (left: any, operator: string, right: any): boolean => {
+    // Handle nulls
+    if (operator === 'IS' && right === null) return left === null || left === undefined || left === '';
+    if (operator === 'IS NOT' && right === null) return left !== null && left !== undefined && left !== '';
+    if (left === null || right === null || left === undefined || right === undefined) return false;
+
+
     const leftNum = parseFloat(left);
     const rightNum = parseFloat(right);
 
@@ -17,17 +23,28 @@ const compare = (left: any, operator: string, right: any) => {
     if (!isNaN(leftNum) && !isNaN(rightNum)) {
         left = leftNum;
         right = rightNum;
+    } else { // Compare as strings, case-insensitive
+        left = String(left).toLowerCase();
+        right = Array.isArray(right) 
+            ? right.map(r => String(r).toLowerCase()) 
+            : String(right).toLowerCase();
     }
-
-    switch (operator) {
+    
+    switch (operator.toUpperCase()) {
         case '=': return left == right;
-        case '!=': return left != right;
+        case '!=':
+        case '<>': return left != right;
         case '>': return left > right;
         case '<': return left < right;
         case '>=': return left >= right;
         case '<=': return left <= right;
-        case 'IN': return right.includes(left);
-        case 'NOT IN': return !right.includes(left);
+        case 'IN': return Array.isArray(right) && right.includes(left);
+        case 'NOT IN': return Array.isArray(right) && !right.includes(left);
+        case 'LIKE': 
+            if (typeof right !== 'string') return false;
+            // Basic LIKE support: % matches any sequence of characters
+            const regex = new RegExp("^" + right.replace(/%/g, '.*') + "$");
+            return regex.test(left);
         default: throw new Error(`Unsupported operator: ${operator}`);
     }
 };
@@ -39,28 +56,30 @@ const evaluateWhereClause = (whereNode: any, row: Record<string, any>): boolean 
     const { type, operator, left, right } = whereNode;
 
     if (type === 'binary_expr') {
-        const leftValue = evaluateWhereClause(left, row);
-        
-        // Handle short-circuiting for AND/OR
-        if (operator.toUpperCase() === 'AND' && !leftValue) return false;
-        if (operator.toUpperCase() === 'OR' && leftValue) return true;
-        
-        const rightValue = evaluateWhereClause(right, row);
+        // Logical operators (AND, OR)
+        if (['AND', 'OR'].includes(operator.toUpperCase())) {
+            const leftValue = evaluateWhereClause(left, row);
+            
+            if (operator.toUpperCase() === 'AND' && !leftValue) return false;
+            if (operator.toUpperCase() === 'OR' && leftValue) return true;
+            
+            const rightValue = evaluateWhereClause(right, row);
 
-        if (operator.toUpperCase() === 'AND') {
-            return leftValue && rightValue;
-        }
-        if (operator.toUpperCase() === 'OR') {
-            return leftValue || rightValue;
+            if (operator.toUpperCase() === 'AND') return leftValue && rightValue;
+            if (operator.toUpperCase() === 'OR') return leftValue || rightValue;
         }
 
-        // It's a comparison
+        // Comparison operators (=, !=, >, <, etc.)
         const colName = left.column;
+        if (row[colName] === undefined) return false; // Column doesn't exist in row
+
         let rVal;
         if (right.type === 'column_ref') {
             rVal = row[right.column];
         } else if (right.type === 'value_list') {
             rVal = right.value.map((v: any) => v.value);
+        } else if (right.type === 'null') {
+            rVal = null;
         } else {
             rVal = right.value;
         }
@@ -68,8 +87,8 @@ const evaluateWhereClause = (whereNode: any, row: Record<string, any>): boolean 
         return compare(row[colName], operator, rVal);
     }
     
-    // For single column (e.g. `WHERE my_col`) or other expressions
     if (type === 'column_ref') {
+         // e.g. `WHERE is_active` is treated as `is_active = true`
          return !!row[left.column];
     }
     
@@ -85,11 +104,63 @@ const applyOrderBy = (rows: any[], orderBy: any[]) => {
             const col = expr.column;
             const dir = type === 'DESC' ? -1 : 1;
 
-            if (a[col] < b[col]) return -1 * dir;
-            if (a[col] > b[col]) return 1 * dir;
+            const valA = a[col];
+            const valB = b[col];
+
+            const valANum = parseFloat(valA);
+            const valBNum = parseFloat(valB);
+
+            if (!isNaN(valANum) && !isNaN(valBNum)) {
+                if (valANum < valBNum) return -1 * dir;
+                if (valANum > valBNum) return 1 * dir;
+            } else {
+                 if (String(valA).localeCompare(String(valB)) < 0) return -1 * dir;
+                 if (String(valA).localeCompare(String(valB)) > 0) return 1 * dir;
+            }
         }
         return 0;
     });
+};
+
+const performJoin = (
+    leftTable: any[], 
+    rightTable: any[], 
+    joinCondition: any,
+    joinType: 'INNER JOIN' | 'LEFT JOIN'
+) => {
+    const joinedRows: any[] = [];
+    const { left, right, operator } = joinCondition;
+
+    const leftCol = left.column;
+    const rightCol = right.column;
+
+    const rightTableMap = new Map();
+    for (const row of rightTable) {
+        if (!rightTableMap.has(row[rightCol])) {
+            rightTableMap.set(row[rightCol], []);
+        }
+        rightTableMap.get(row[rightCol]).push(row);
+    }
+
+    for (const leftRow of leftTable) {
+        const joinValue = leftRow[leftCol];
+        const matchingRightRows = rightTableMap.get(joinValue) || [];
+
+        if (matchingRightRows.length > 0) {
+            for (const rightRow of matchingRightRows) {
+                joinedRows.push({ ...leftRow, ...rightRow });
+            }
+        } else if (joinType === 'LEFT JOIN') {
+            const nullPaddedRightRow: Record<string, null> = {};
+            if(rightTable.length > 0) {
+                Object.keys(rightTable[0]).forEach(key => {
+                    nullPaddedRightRow[key] = null;
+                });
+            }
+            joinedRows.push({ ...leftRow, ...nullPaddedRightRow });
+        }
+    }
+    return joinedRows;
 };
 
 
@@ -101,47 +172,61 @@ export async function POST(request: Request) {
     }
 
     const { projectId, query } = await request.json();
-
     if (!projectId || !query) {
       return NextResponse.json({ error: 'Missing required body parameters: projectId and query' }, { status: 400 });
     }
     
-    let ast;
+    let ast: AST | AST[];
     try {
         ast = sqlParser.astify(query);
     } catch (e: any) {
         return NextResponse.json({ error: `SQL Parse Error: ${e.message}` }, { status: 400 });
     }
-
-    if (Array.isArray(ast) || ast.type?.toUpperCase() !== 'SELECT') {
+    
+    const selectAst = Array.isArray(ast) ? ast[0] : ast;
+    if (selectAst.type?.toUpperCase() !== 'SELECT') {
         throw new Error("Only SELECT queries are supported at this time.");
     }
     
     // --- Data Fetching ---
-    const from = ast.from;
+    const from = selectAst.from;
     if (!from || from.length === 0) throw new Error("FROM clause is required.");
-    const mainTable = from[0].table;
-    const { rows: mainTableData } = await getTableData(projectId, mainTable, 1, 1000000); // Fetch all for now
+    
+    const mainTableDef = from[0];
+    const { rows: mainTableData } = await getTableData(projectId, mainTableDef.table, 1, 1000000); // Fetch all for now
+
+    let processedRows = mainTableData;
+    
+    // --- Join Processing ---
+    if (from.length > 1) {
+        let currentLeftTable = mainTableData;
+        for (let i = 1; i < from.length; i++) {
+            const joinDef = from[i];
+            const { rows: rightTableData } = await getTableData(projectId, joinDef.table, 1, 1000000);
+            currentLeftTable = performJoin(currentLeftTable, rightTableData, joinDef.on, joinDef.join);
+        }
+        processedRows = currentLeftTable;
+    }
 
     // --- Filtering (WHERE) ---
-    const filteredRows = mainTableData.filter(row => evaluateWhereClause(ast.where, row));
+    const filteredRows = processedRows.filter(row => evaluateWhereClause(selectAst.where, row));
 
     // --- Sorting (ORDER BY) ---
-    const sortedRows = applyOrderBy(filteredRows, ast.orderby);
+    const sortedRows = applyOrderBy(filteredRows, selectAst.orderby);
 
     // --- Pagination (LIMIT) ---
-    const limit = ast.limit ? ast.limit.value[0].value : 100; // default 100
+    const limit = selectAst.limit ? selectAst.limit.value[0].value : 100; // default 100
     let finalRows = sortedRows.slice(0, limit);
 
     // --- Column Projection (SELECT) ---
     let resultColumns: string[];
-    if (ast.columns.length === 1 && ast.columns[0].expr.column === '*') {
-        resultColumns = mainTableData.length > 0 ? Object.keys(mainTableData[0]) : [];
+    if (selectAst.columns.length === 1 && selectAst.columns[0].expr.column === '*') {
+        resultColumns = finalRows.length > 0 ? Object.keys(finalRows[0]) : [];
     } else {
-        resultColumns = ast.columns.map((c: any) => c.as || c.expr.column);
+        resultColumns = selectAst.columns.map((c: any) => c.as || c.expr.column);
         finalRows = finalRows.map(row => {
             const projectedRow: Record<string, any> = {};
-            ast.columns.forEach((c: any) => {
+            selectAst.columns.forEach((c: any) => {
                 const colName = c.expr.column;
                 projectedRow[c.as || colName] = row[colName];
             });
