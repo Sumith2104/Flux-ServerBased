@@ -221,7 +221,7 @@ const handleCreateQuery = async (ast: Create, projectId: string) => {
         
         let dataType = def.definition.dataType.toLowerCase();
         // Translate special types to our internal format
-        if (dataType === 'uuid') {
+        if (dataType === 'uuid' || dataType === 'varchar') { // The sanitized type
            dataType = 'gen_random_uuid()';
         } else if (dataType === 'timestamptz' || dataType === 'timestamp') {
            dataType = 'now_date()'; // Or map to a generic 'datetime' if needed
@@ -264,9 +264,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required body parameters: projectId and query' }, { status: 400 });
     }
     
-    // The parser doesn't understand "UUID", so we replace it with a standard type it does know.
-    // We'll handle the special "UUID" meaning in our own logic.
-    const sanitizedQuery = query.replace(/\bUUID\b/gi, 'TEXT');
+    // The parser doesn't understand "UUID", "TEXT", or "TIMESTAMPTZ", so we replace them with a standard type it does know.
+    // We'll handle the special meaning in our own logic.
+    const sanitizedQuery = query
+        .replace(/\bUUID\b/gi, 'VARCHAR')
+        .replace(/\bTEXT\b/gi, 'VARCHAR')
+        .replace(/\bTIMESTAMPTZ\b/gi, 'TIMESTAMP');
 
     let astArray: AST[] | AST;
     try {
