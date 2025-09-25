@@ -5,6 +5,7 @@ import {v4 as uuidv4} from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
 import {getCurrentUserId} from '@/lib/auth';
+import { getTablesForProject } from '@/lib/data';
 
 async function fileExists(filePath: string): Promise<boolean> {
     try {
@@ -45,6 +46,12 @@ export async function createTableAction(formData: FormData) {
   }
 
   try {
+    // Check for duplicate table name
+    const existingTables = await getTablesForProject(projectId);
+    if (existingTables.some(t => t.table_name.toLowerCase() === tableName.toLowerCase())) {
+        return { error: `A table with the name '${tableName}' already exists in this project.` };
+    }
+
     const tableId = uuidv4();
     const createdAt = new Date().toISOString();
     const projectPath = path.join(

@@ -1,8 +1,11 @@
 column_id,table_id,column_name,data_type
-b0f1bbd6-7b68-4d56-9811-f53567e6e355,0c226eae-66d6-45c9-bcce-853f5e8def82,id,gen_random_uuid()
-af8b945c-57a9-43a1-a91f-638d603fed7c,0c226eae-66d6-45c9-bcce-853f5e8def82,username,text
-41e50780-5ce5-4c4e-8bb4-9b7442e3c08d,0c226eae-66d6-45c9-bcce-853f5e8def82,email,text
 1786be8a-6a89-4c08-b157-36c0845cdfe0,9bc99bf8-3541-44e5-967d-b061c262a7eb,id,gen_random_uuid()
 83a0e9f6-53aa-4896-a0a8-041e1c7df523,9bc99bf8-3541-44e5-967d-b061c262a7eb,title,text
 6030b1e1-16c8-447f-b56c-bd5fb0d0c43b,9bc99bf8-3541-44e5-967d-b061c262a7eb,content,text
 1b5bd03b-f162-434c-ac50-776ab0a784df,9bc99bf8-3541-44e5-967d-b061c262a7eb,user_id,text
+d539dbf9-f273-45c7-b19e-b1a7aa793f61,f6f81ff8-c248-475d-a0f7-43b49a9e9930,id,text
+d3c38dda-42c8-49e7-b4d0-11637060362f,f6f81ff8-c248-475d-a0f7-43b49a9e9930,name,text
+f2f5f206-ba4a-4869-ba4c-a15607b41f4d,f6f81ff8-c248-475d-a0f7-43b49a9e9930,email,text
+9baea547-29cc-422a-b2dd-c72484a6eb1f,f6f81ff8-c248-475d-a0f7-43b49a9e9930,phone,text
+21224395-58fd-4e21-937e-954646c85141,f6f81ff8-c248-475d-a0f7-43b49a9e9930,created_at,date
+13875e17-f3de-4435-94fd-50c6b24634b3,f6f81ff8-c248-475d-a0f7-43b49a9e9930,is_active,text
