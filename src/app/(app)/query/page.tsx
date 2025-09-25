@@ -20,7 +20,7 @@ export default function QueryPage() {
   const [query, setQuery] = useState('SELECT * FROM your_table_name LIMIT 100;');
   const [results, setResults] = useState<{ rows: any[], columns: string[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
   const [tables, setTables] = useState<DbTable[]>([]);
   const [columns, setColumns] = useState<DbColumn[]>([]);
 
@@ -42,8 +42,8 @@ export default function QueryPage() {
   }, [project]);
 
   const handleRunQuery = useCallback(async () => {
-    const trimmedQuery = query.trim();
-    if (!trimmedQuery) {
+    const queryToExecute = query.trim();
+    if (!queryToExecute) {
       toast({ variant: 'destructive', title: 'Error', description: 'Query cannot be empty.' });
       return;
     }
@@ -52,36 +52,11 @@ export default function QueryPage() {
       return;
     }
     
-    setIsGenerating(true);
+    setIsExecuting(true);
     setResults(null);
     setError(null);
     
-    let queryToExecute = trimmedQuery;
-
-    // Basic check if it's natural language (doesn't start with SELECT, INSERT, etc.)
-    const isNaturalLanguage = !/^(select|insert|update|delete|create|alter|drop|with)\s/i.test(trimmedQuery);
-
     try {
-        if (isNaturalLanguage) {
-            toast({ title: 'AI Generating SQL...', description: 'Please wait while we convert your question to SQL.' });
-            
-            const tableSchema = tables.map(table => {
-                const tableColumns = columns
-                    .filter(c => c.table_id === table.table_id)
-                    .map(c => `${c.column_name} ${c.data_type}`)
-                    .join(', ');
-                return `Table ${table.table_name} (${tableColumns})`;
-            }).join('\n');
-
-            const input: GenerateSQLInput = {
-                userInput: trimmedQuery,
-                tableSchema: tableSchema
-            };
-            const result = await generateSQL(input);
-            queryToExecute = result.sqlQuery;
-            setQuery(queryToExecute); // Update editor with generated SQL
-        }
-
         const response = await fetch('/api/execute-sql', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -98,9 +73,9 @@ export default function QueryPage() {
         setError(errorMessage);
         toast({ variant: 'destructive', title: 'Execution Error', description: errorMessage });
     } finally {
-        setIsGenerating(false);
+        setIsExecuting(false);
     }
-  }, [query, project, toast, tables, columns]);
+  }, [query, project, toast]);
 
   return (
     <div className="h-[calc(100vh-57px)] flex flex-col">
@@ -144,7 +119,7 @@ export default function QueryPage() {
                   onRun={handleRunQuery}
                   query={query}
                   setQuery={setQuery}
-                  isGenerating={isGenerating}
+                  isGenerating={isExecuting}
                   results={results}
                 />
             </div>
@@ -154,7 +129,7 @@ export default function QueryPage() {
                 <QueryResults
                   results={results}
                   error={error}
-                  isGenerating={isGenerating}
+                  isGenerating={isExecuting}
                 />
             </div>
         </div>

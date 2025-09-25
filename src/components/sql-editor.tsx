@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Play, Save, History, Download, Loader2 } from 'lucide-react';
@@ -78,7 +79,7 @@ export function SqlEditor({ query, setQuery, onRun, isGenerating, results }: Sql
             </CardHeader>
             <CardContent className="p-0 flex-grow">
                 <Textarea
-                    placeholder="-- Write a SQL query or ask a question in plain English..."
+                    placeholder="-- Write a SQL query..."
                     className="h-full w-full border-none resize-none focus-visible:ring-0 focus-visible:ring-offset-0 font-mono text-base"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
