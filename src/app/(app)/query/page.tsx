@@ -13,7 +13,6 @@ import { ProjectContext } from '@/contexts/project-context';
 import { useToast } from '@/hooks/use-toast';
 import { getTablesForProject, getColumnsForTable, Table as DbTable, Column as DbColumn } from '@/lib/data';
 import { generateSQL, GenerateSQLInput } from '@/ai/flows/generate-sql';
-import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function QueryPage() {
