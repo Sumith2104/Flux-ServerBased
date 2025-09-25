@@ -294,23 +294,29 @@ const handleInsertQuery = async (ast: Insert, projectId: string) => {
     const table = allTables.find(t => t.table_name === tableName);
     if (!table) throw new Error(`Table '${tableName}' not found.`);
 
-    // The parser returns `ast.values` as an array for multi-row inserts,
-    // and a single object for single-row inserts. Normalize it to an array.
-    const valuesList = Array.isArray(ast.values) ? ast.values : [ast.values];
-    const valuesNode = valuesList.find(v => v.type === 'value_list');
-    
-    if (!valuesNode) {
-        throw new Error("Invalid INSERT format. VALUES clause is missing or invalid.");
+    // --- DEBUG: log AST ---
+    console.log('INSERT AST:', JSON.stringify(ast, null, 2));
+
+    // Normalize values to always be an array of value_list objects
+    let valuesList: any[] = [];
+    if (Array.isArray(ast.values)) {
+        valuesList = ast.values;
+    } else if (ast.values?.type === 'value_list') {
+        valuesList = [ast.values];
+    } else if (Array.isArray(ast.value)) { 
+        // Some parser versions store the row values here
+        valuesList = [{ type: 'value_list', value: ast.value }];
     }
 
-    let columnsToInsert: string[];
-    if (ast.columns) {
-        columnsToInsert = ast.columns;
-    } else {
-        const schemaColumns = await getColumnsForTable(projectId, table.table_id);
-        columnsToInsert = schemaColumns.map(c => c.column_name);
+    if (valuesList.length === 0) {
+        throw new Error("Invalid INSERT format. No values found.");
     }
-    
+
+    const valuesNode = valuesList[0]; // Only handling first row for now
+    const columnsToInsert = ast.columns 
+        ? ast.columns 
+        : (await getColumnsForTable(projectId, table.table_id)).map(c => c.column_name);
+
     const values = valuesNode.value.map((v: any) => v.value);
 
     if (columnsToInsert.length !== values.length) {
@@ -350,7 +356,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required body parameters: projectId and query' }, { status: 400 });
     }
     
-    // Sanitize query for types not understood by the parser
     const sanitizedQuery = query
         .replace(/\bUUID\b/gi, 'VARCHAR')
         .replace(/\bTEXT\b/gi, 'VARCHAR')
@@ -358,14 +363,12 @@ export async function POST(request: Request) {
 
     let astArray: AST[] | AST;
     try {
-        // Remove comments before parsing
         const queryWithoutComments = sanitizedQuery.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
         astArray = sqlParser.astify(queryWithoutComments);
     } catch (e: any) {
-        // Provide the original parser error for better debugging
         return NextResponse.json({ error: `SQL Parse Error: ${e.message}` }, { status: 400 });
     }
-    
+
     const ast = Array.isArray(astArray) ? astArray[0] : astArray;
 
     switch (ast.type?.toUpperCase()) {
@@ -390,6 +393,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
   }
 }
-    
-
-    
