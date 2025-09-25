@@ -294,7 +294,11 @@ const handleInsertQuery = async (ast: Insert, projectId: string) => {
     const table = allTables.find(t => t.table_name === tableName);
     if (!table) throw new Error(`Table '${tableName}' not found.`);
 
-    const valuesNode = ast.values.find(v => v.type === 'value_list');
+    // The parser returns `ast.values` as an array for multi-row inserts,
+    // and a single object for single-row inserts. Normalize it to an array.
+    const valuesList = Array.isArray(ast.values) ? ast.values : [ast.values];
+    const valuesNode = valuesList.find(v => v.type === 'value_list');
+    
     if (!valuesNode) {
         throw new Error("Invalid INSERT format. VALUES clause is missing or invalid.");
     }
