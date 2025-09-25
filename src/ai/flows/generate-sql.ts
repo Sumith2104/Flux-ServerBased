@@ -32,6 +32,8 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateSQLOutputSchema},
   prompt: `You are an expert SQL query generator. Given a user question and a table schema, you will generate the SQL query that answers the question.
 
+Ignore any lines in the user input that are SQL comments (i.e., lines starting with '--').
+
 User Question: {{{userInput}}}
 Table Schema: {{{tableSchema}}}
 
