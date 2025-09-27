@@ -1,9 +1,8 @@
 column_id,table_id,column_name,data_type
-c9aaab76-e61a-4aa0-82d7-8b9b6aafab3a,ead32c01-2773-469a-83c6-57ad6cd9d068,id,number
-1e41cc85-bfd7-4330-8caf-3d660cc0adb4,ead32c01-2773-469a-83c6-57ad6cd9d068,first_name,text
-27cc150f-7f18-41d0-916b-2a12ea969a1d,ead32c01-2773-469a-83c6-57ad6cd9d068,last_name,text
-79abc37c-8522-4009-b43f-e5a2592f1a23,ead32c01-2773-469a-83c6-57ad6cd9d068,department,text
-00d1a7c2-8cd2-4f57-a759-cadd61d843f7,ead32c01-2773-469a-83c6-57ad6cd9d068,role,text
-89ed8555-74c2-4720-a369-18386439c9b7,ead32c01-2773-469a-83c6-57ad6cd9d068,salary,number
-52261f13-55d5-4647-bc69-133dd8ca6ac2,ead32c01-2773-469a-83c6-57ad6cd9d068,hire_date,date
-b3ed51d7-4973-4572-a509-0e904ab5393a,ead32c01-2773-469a-83c6-57ad6cd9d068,is_active,text
+3ff5c847-fd0a-4d4b-9017-623aefdb3a8e,0dc3dcee-1301-4b82-aa1e-e4f25881cb5d,id,gen_random_uuid()
+91692681-8fa3-4b07-a2c4-455be388e7c7,0dc3dcee-1301-4b82-aa1e-e4f25881cb5d,member_id,text
+b9a87dc5-7021-4087-9526-a5445239ba65,0dc3dcee-1301-4b82-aa1e-e4f25881cb5d,name,text
+a0d0a81e-596e-4b67-98e2-b607375883ed,0dc3dcee-1301-4b82-aa1e-e4f25881cb5d,age,text
+a1065f1f-a4ab-44c5-90e1-fe653c49cb91,0dc3dcee-1301-4b82-aa1e-e4f25881cb5d,gender,text
+4c23ad73-dea4-4c34-ac18-308fa2f16cea,0dc3dcee-1301-4b82-aa1e-e4f25881cb5d,join_date,date
+ab378f0d-2e3d-4313-a565-9b4aede8b31b,0dc3dcee-1301-4b82-aa1e-e4f25881cb5d,goal,text

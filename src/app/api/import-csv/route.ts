@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         if (!line.trim()) continue;
 
         if (!headerChecked && firstChunk) {
-            const csvHeader = line.trim().split(',').map(h => h.replace(/^"|"$/g, ''));
+            const csvHeader = line.trim().split(',').map(h => h.replace(/^"|"$/g, '').trim());
             if (JSON.stringify(csvHeader) !== JSON.stringify(expectedHeader)) {
               const errorMessage = `CSV header does not match table structure. Expected: ${expectedHeader.join(',')}`;
               await fileWriteStream.close();
