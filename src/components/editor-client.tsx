@@ -108,6 +108,11 @@ export function EditorClient({
     const [isTableLoading, setIsTableLoading] = useState(false);
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 100 });
     const [foreignKeyData, setForeignKeyData] = useState<Record<string, any[]>>({});
+    const [constraints, setConstraints] = useState<DbConstraint[]>(initialConstraints);
+
+     useEffect(() => {
+        setConstraints(initialConstraints);
+    }, [initialConstraints]);
 
 
     const fetchTableData = useCallback(async (model: { page: number, pageSize: number }) => {
@@ -138,7 +143,7 @@ export function EditorClient({
             if (!initialColumns.length) return;
 
             const fkData: Record<string, any[]> = {};
-            const fkConstraints = initialConstraints.filter(c => c.type === 'FOREIGN KEY');
+            const fkConstraints = constraints.filter(c => c.type === 'FOREIGN KEY');
 
             for (const col of initialColumns) {
                 const constraint = fkConstraints.find(c => c.column_names === col.column_name);
@@ -157,7 +162,7 @@ export function EditorClient({
             setForeignKeyData(fkData);
         }
         fetchFkData();
-    }, [initialColumns, initialConstraints, allTables, projectId]);
+    }, [initialColumns, constraints, allTables, projectId]);
 
     const handlePaginationModelChange = (model: GridPaginationModel) => {
         setPaginationModel(model);
@@ -254,9 +259,9 @@ export function EditorClient({
 
 
     const pkColumns = useMemo(() => {
-        const pk = initialConstraints.find(c => c.type === 'PRIMARY KEY');
+        const pk = constraints.find(c => c.type === 'PRIMARY KEY');
         return pk ? new Set(pk.column_names.split(',')) : new Set();
-    }, [initialConstraints]);
+    }, [constraints]);
 
     const getReferencedTable = (constraint: DbConstraint) => {
         if (constraint.type !== 'FOREIGN KEY') return null;
@@ -277,12 +282,16 @@ export function EditorClient({
 
         if (result.success) {
             toast({ title: 'Success', description: 'Constraint deleted successfully.' });
+            setConstraints(prev => prev.filter(c => c.constraint_id !== constraintToDelete.constraint_id));
             setConstraintToDelete(null);
-            router.refresh();
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete constraint.' });
             setConstraintToDelete(null);
         }
+    };
+    
+    const handleConstraintAdded = (newConstraint: DbConstraint) => {
+        setConstraints(prev => [...prev, newConstraint]);
     };
 
 
@@ -369,7 +378,7 @@ export function EditorClient({
                                                 onRowAdded={refreshData}
                                                 foreignKeyData={foreignKeyData}
                                                 allTables={allTables}
-                                                constraints={initialConstraints}
+                                                constraints={constraints}
                                             />
                                             <ImportCsvDialog
                                                 projectId={projectId}
@@ -395,7 +404,7 @@ export function EditorClient({
                                             onRowUpdated={refreshData}
                                             foreignKeyData={foreignKeyData}
                                             allTables={allTables}
-                                            constraints={initialConstraints}
+                                            constraints={constraints}
                                         />
                                     )}
 
@@ -526,9 +535,9 @@ export function EditorClient({
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent>
-                                                 {initialConstraints.length > 0 ? (
+                                                 {constraints.length > 0 ? (
                                                     <div className="space-y-4">
-                                                        {initialConstraints.map(c => (
+                                                        {constraints.map(c => (
                                                             <div key={c.constraint_id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
                                                                 <div className="flex items-center gap-4">
                                                                     {c.type === 'PRIMARY KEY' ? <KeyRound className="h-5 w-5 text-yellow-500" /> : <Link2 className="h-5 w-5 text-blue-500" />}
@@ -579,6 +588,7 @@ export function EditorClient({
                                                     tableName={tableName}
                                                     allTables={allTables}
                                                     columns={initialColumns}
+                                                    onConstraintAdded={handleConstraintAdded}
                                                 />
                                             </CardFooter>
                                         </Card>
@@ -649,5 +659,3 @@ export function EditorClient({
         </>
     );
 }
-
-    

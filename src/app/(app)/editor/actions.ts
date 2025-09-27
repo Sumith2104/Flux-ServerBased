@@ -520,16 +520,25 @@ export async function addConstraintAction(formData: FormData) {
         const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
         const constraintsCsvPath = path.join(projectPath, 'constraints.csv');
 
-        const constraintId = uuidv4();
-        let newConstraintCsvRow = `\n${constraintId},${tableId},${type},"${columnNames}"`;
+        const newConstraint: Constraint = {
+            constraint_id: uuidv4(),
+            table_id: tableId,
+            type: type,
+            column_names: columnNames,
+        };
+
+        let newConstraintCsvRow = `\n${newConstraint.constraint_id},${newConstraint.table_id},${newConstraint.type},"${newConstraint.column_names}"`;
 
         if (type === 'FOREIGN KEY') {
             const refTableId = formData.get('referencedTableId') as string;
             const refColNames = formData.get('referencedColumnNames') as string;
-            const onDelete = formData.get('onDelete') as string;
+            const onDelete = formData.get('onDelete') as Constraint['on_delete'];
             if (!refTableId || !refColNames || !onDelete) {
                 return { error: 'Missing foreign key-specific fields.' };
             }
+            newConstraint.referenced_table_id = refTableId;
+            newConstraint.referenced_column_names = refColNames;
+            newConstraint.on_delete = onDelete;
             newConstraintCsvRow += `,"${refTableId}","${refColNames}","${onDelete}",`;
         } else {
             newConstraintCsvRow += ',,,,'; // Add empty values for FK fields
@@ -544,7 +553,7 @@ export async function addConstraintAction(formData: FormData) {
         }
 
         revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${formData.get('tableName')}`);
-        return { success: true };
+        return { success: true, constraint: newConstraint };
 
     } catch (error) {
         console.error('Failed to add constraint:', error);

@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 import { SubmitButton } from './submit-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Plus, KeyRound, Link2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { type Column, type Table, type Constraint } from '@/lib/data';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 
@@ -30,6 +29,7 @@ type AddConstraintDialogProps = {
   tableName: string;
   columns: Column[];
   allTables: Table[];
+  onConstraintAdded: (newConstraint: Constraint) => void;
 };
 
 const formSchema = z.object({
@@ -49,9 +49,8 @@ const formSchema = z.object({
 });
 
 
-export function AddConstraintDialog({ projectId, tableId, tableName, columns, allTables }: AddConstraintDialogProps) {
+export function AddConstraintDialog({ projectId, tableId, tableName, columns, allTables, onConstraintAdded }: AddConstraintDialogProps) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -80,14 +79,14 @@ export function AddConstraintDialog({ projectId, tableId, tableName, columns, al
     }
 
     const result = await addConstraintAction(formData);
-    if (result.success) {
+    if (result.success && result.constraint) {
       toast({
         title: 'Success',
         description: 'Constraint added successfully.',
       });
       setIsOpen(false);
       form.reset();
-      router.refresh();
+      onConstraintAdded(result.constraint);
     } else {
       toast({
         variant: 'destructive',
