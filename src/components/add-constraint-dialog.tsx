@@ -69,7 +69,7 @@ export function AddConstraintDialog({ projectId, tableId, tableName, columns, al
   const referencedTablePKs = useMemo(() => {
     if (!watchReferencedTableId) return [];
     const pkConstraint = allProjectConstraints.find(c => c.table_id === watchReferencedTableId && c.type === 'PRIMARY KEY');
-    return pkConstraint ? pkConstraint.column_names.split(',') : [];
+    return pkConstraint ? pkConstraint.column_names.split(',') : ['id'];
   }, [watchReferencedTableId, allProjectConstraints]);
 
   const handleAction = async (values: z.infer<typeof formSchema>) => {
@@ -202,7 +202,7 @@ export function AddConstraintDialog({ projectId, tableId, tableName, columns, al
                                            {referencedTablePKs.length > 0 ? (
                                              referencedTablePKs.map(pk => <SelectItem key={pk} value={pk}>{pk}</SelectItem>)
                                            ) : (
-                                            <SelectItem value="id" disabled>No primary key found</SelectItem>
+                                            <SelectItem value="id" disabled>No primary key found on referenced table</SelectItem>
                                            )}
                                         </SelectContent>
                                     </Select>
