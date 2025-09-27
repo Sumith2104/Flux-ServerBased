@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -10,10 +10,15 @@ import ReactFlow, {
   type Edge,
   Handle,
   Position,
+  useNodesState,
+  useEdgesState,
+  applyNodeChanges,
+  type NodeChange,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { type Table, type Column, type Constraint } from '@/lib/data';
 import { KeyRound, Link2 } from 'lucide-react';
+import dagre from 'dagre';
 
 interface ErdViewProps {
   tables: Table[];
@@ -70,14 +75,43 @@ const nodeTypes = {
   custom: CustomNode,
 };
 
+const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  dagreGraph.setGraph({ rankdir: 'LR' }); // Left to Right layout
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: node.style?.width || nodeWidth, height: node.style?.height || 200 });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  nodes.forEach((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    node.position = {
+      x: nodeWithPosition.x - (node.style?.width as number || nodeWidth) / 2,
+      y: nodeWithPosition.y - (node.style?.height as number || 200) / 2,
+    };
+    return node;
+  });
+
+  return { nodes, edges };
+};
+
 export function ErdView({ tables, columns, constraints }: ErdViewProps) {
-  const { nodes, edges } = useMemo(() => {
+  const [nodes, setNodes] = useNodesState([]);
+  const [edges, setEdges] = useEdgesState([]);
+
+  useEffect(() => {
     const tableNodes: Node[] = [];
     const tableEdges: Edge[] = [];
     const pkConstraints = new Map<string, Set<string>>();
     const fkConstraints = new Map<string, Set<string>>();
 
-    // First, map out all primary and foreign keys for quick lookup
     constraints.forEach(c => {
         const keyMap = c.type === 'PRIMARY KEY' ? pkConstraints : fkConstraints;
         if (!keyMap.has(c.table_id)) {
@@ -88,8 +122,7 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
         });
     });
 
-    // Create a node for each table
-    tables.forEach((table, index) => {
+    tables.forEach((table) => {
       const tableColumns = columns.filter((c) => c.table_id === table.table_id);
       const pks = pkConstraints.get(table.table_id) || new Set<string>();
       const fks = fkConstraints.get(table.table_id) || new Set<string>();
@@ -100,12 +133,11 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
         id: table.table_id,
         type: 'custom',
         data: { name: table.table_name, columns: tableColumns, pks, fks },
-        position: { x: (index % 4) * (nodeWidth + 100), y: Math.floor(index / 4) * 400 },
+        position: { x: 0, y: 0 }, // Position will be set by Dagre
         style: { width: nodeWidth, height: nodeHeight },
       });
     });
 
-    // Create an edge for each foreign key constraint
     constraints
       .filter((c) => c.type === 'FOREIGN KEY' && c.referenced_table_id && c.referenced_column_names)
       .forEach((c) => {
@@ -122,14 +154,17 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
         });
       });
 
-    return { nodes: tableNodes, edges: tableEdges };
-  }, [tables, columns, constraints]);
-
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(tableNodes, tableEdges);
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+  }, [tables, columns, constraints, setNodes, setEdges]);
+  
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        onNodesChange={(changes: NodeChange[]) => setNodes(applyNodeChanges(changes, nodes))}
         nodeTypes={nodeTypes}
         fitView
         className="bg-background"
