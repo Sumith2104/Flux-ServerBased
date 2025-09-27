@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useEffect, useCallback } from 'react';
@@ -120,7 +121,7 @@ function getSavedPositions(): Record<string, {x: number; y: number}> {
 function getSavedViewport(): Viewport | undefined {
     if (typeof window === 'undefined') return undefined;
     const saved = window.localStorage.getItem(VIEWPORT_KEY);
-    return saved ? JSON.parse(saved) : undefined;
+    return saved ? JSON.parse(saved) : { x: 0, y: 0, zoom: 0.5 };
 }
 
 const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
@@ -135,8 +136,10 @@ const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
   }, []);
 
   const onMoveEnd = useCallback(() => {
-    const viewport = getViewport();
-    localStorage.setItem(VIEWPORT_KEY, JSON.stringify(viewport));
+    if (typeof window !== 'undefined') {
+        const viewport = getViewport();
+        localStorage.setItem(VIEWPORT_KEY, JSON.stringify(viewport));
+    }
   }, [getViewport]);
 
   useEffect(() => {
