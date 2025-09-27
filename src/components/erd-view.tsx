@@ -129,12 +129,11 @@ const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
   const { getViewport } = useReactFlow();
 
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
-      onNodesChange(changes);
-      
+      const currentPositions = getSavedPositions();
       const newPositions: Record<string, {x: number; y: number}> = {};
       let shouldSave = false;
-
-      changes.forEach(change => {
+      const nextNodes = changes.reduce((acc, change) => {
+          onNodesChange([change]);
           if (change.type === 'position' && change.dragging === false) {
               const node = nodes.find(n => n.id === change.id);
               if (node && node.position) {
@@ -142,10 +141,10 @@ const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
                 shouldSave = true;
               }
           }
-      });
+          return acc;
+      }, nodes);
 
       if (shouldSave) {
-          const currentPositions = getSavedPositions();
           const updatedPositions = { ...currentPositions, ...newPositions };
           window.localStorage.setItem(POSITIONS_KEY, JSON.stringify(updatedPositions));
       }
@@ -201,11 +200,11 @@ const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
             sourceHandle: `${c.table_id}-${c.column_names}`,
             targetHandle: `${c.referenced_table_id}-${c.referenced_column_names}`,
             type: 'bezier',
+            animated: true,
             markerEnd: { type: 'arrowclosed', color: 'hsl(var(--muted-foreground))' },
             style: { 
                 stroke: 'hsl(var(--muted-foreground))', 
                 strokeWidth: 1.5,
-                strokeDasharray: '4 4' 
             },
         });
       });
@@ -225,7 +224,7 @@ const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
     <ReactFlow
       nodes={nodes}
       edges={edges}
-      onNodesChange={handleNodesChange}
+      onNodesChange={onNodesChange}
       onMoveEnd={onMoveEnd}
       nodeTypes={nodeTypes}
       fitView
