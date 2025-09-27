@@ -1,0 +1,8 @@
+column_id,table_id,column_name,data_type
+00a5795b-47c5-435c-8ba6-629ceaa5ad8a,78cac036-4bc9-4ca9-a78c-bea4cfc56be4,id,gen_random_uuid()
+27895d37-a137-4801-b4c6-44e4d73f840e,78cac036-4bc9-4ca9-a78c-bea4cfc56be4,member_id,text
+d7b6dceb-70db-4319-a4d7-303dc2460a94,78cac036-4bc9-4ca9-a78c-bea4cfc56be4,name,text
+05fd7638-60c8-40d2-b5cf-c5cf7af7c994,78cac036-4bc9-4ca9-a78c-bea4cfc56be4,age,text
+b3f9d909-9df6-4c6a-ab99-c37e29aff219,78cac036-4bc9-4ca9-a78c-bea4cfc56be4,gender,text
+5ed88513-ed28-4644-97ba-9447b5f8aae8,78cac036-4bc9-4ca9-a78c-bea4cfc56be4,join_date,date
+474d9cd7-8bc7-4dc8-ac08-2b584be7b5e4,78cac036-4bc9-4ca9-a78c-bea4cfc56be4,goal,text

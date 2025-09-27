@@ -5,6 +5,7 @@ import path from 'path';
 import { getCurrentUserId } from '@/lib/auth';
 import { getColumnsForTable } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
+import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -45,13 +46,36 @@ export async function POST(request: Request) {
 
     // Validate header from the cleaned content
     const headerLine = cleanedLines[0];
-    const csvHeader = headerLine.split(',').map(h => h.replace(/^"|"$/g, '').trim());
+    const csvHeader = headerLine.split(',').map(h => h.trim().replace(/^"|"$/g, ''));
     
-    if (JSON.stringify(csvHeader) !== JSON.stringify(expectedHeader)) {
-        const errorMessage = `CSV header does not match table structure. Expected: ${expectedHeader.join(',')} | Received: ${csvHeader.join(',')}`;
-        return NextResponse.json({ error: errorMessage }, { status: 400 });
+    // Check for mismatches, but allow the CSV to omit the 'id' column
+    const idColumnExistsInSchema = expectedHeader.includes('id');
+    const idColumnExistsInCsv = csvHeader.includes('id');
+
+    let finalCsvHeader = [...csvHeader];
+    let headersMatch = true;
+    
+    if (idColumnExistsInSchema && !idColumnExistsInCsv) {
+      // If schema expects 'id' but CSV doesn't have it, that's OK.
+      // We will add `id` to the csvHeader for processing, but compare the rest.
+      const expectedWithoutId = expectedHeader.filter(h => h !== 'id');
+      if (JSON.stringify(csvHeader) !== JSON.stringify(expectedWithoutId)) {
+        headersMatch = false;
+      }
+      // For processing, we assume the 'id' is the first column
+      finalCsvHeader.unshift('id'); 
+    } else {
+      // Standard comparison if 'id' logic doesn't apply
+      if (JSON.stringify(csvHeader) !== JSON.stringify(expectedHeader)) {
+        headersMatch = false;
+      }
     }
-    
+
+    if (!headersMatch) {
+       const errorMessage = `CSV header does not match table structure. Expected: ${expectedHeader.join(',')} | Received: ${csvHeader.join(',')}`;
+       return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+
     // Get the data rows (all lines except the header)
     const dataLines = cleanedLines.slice(1);
     let importedCount = 0;
@@ -62,17 +86,21 @@ export async function POST(request: Request) {
     // Prepare the content to be appended, ensuring each row is properly formed.
     const contentToAppend = dataLines.map(line => {
         const values = line.split(',').map(v => v.trim());
-        if (values.length !== expectedHeader.length) {
-            // This is a basic check. A more robust CSV parser would be needed for complex cases.
-            throw new Error(`Row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}. Row content: ${line.substring(0, 100)}...`);
+        
+        if (idColumnExistsInSchema && !idColumnExistsInCsv) {
+            // Add a generated UUID for the missing 'id' column
+            values.unshift(uuidv4());
+        }
+
+        if (values.length !== finalCsvHeader.length) {
+            throw new Error(`Row has an incorrect number of columns. Expected ${finalCsvHeader.length}, got ${values.length}. Row content: ${line.substring(0, 100)}...`);
         }
         importedCount++;
-        // Re-join the cleaned cells.
         return values.join(',');
     }).join('\n');
 
+
     if (contentToAppend) {
-        // Append a newline to the file in case the last line is not terminated, then append the new content.
         await fs.appendFile(dataFilePath, '\n' + contentToAppend, 'utf8');
     }
 
@@ -84,5 +112,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
   }
 }
-
-    

@@ -1,3 +1,0 @@
-constraint_id,table_id,type,column_names,referenced_table_id,referenced_column_names,on_delete,on_update
-1360aab8-a3d0-4289-b16c-cd877cf50436,6c2bb51f-8686-4e8c-b48a-da1806cec6a6,PRIMARY KEY,member_id
-757616e5-eee2-47b6-a6e9-364d81b03b5c,60fbbb65-1a33-440a-97bc-21f33d15e981,FOREIGN KEY,"member_id","6c2bb51f-8686-4e8c-b48a-da1806cec6a6","id","CASCADE",
