@@ -61,14 +61,14 @@ export async function POST(request: Request) {
 
     // Prepare the content to be appended, ensuring each row is properly formed.
     const contentToAppend = dataLines.map(line => {
-        const values = line.split(',');
+        const values = line.split(',').map(v => v.trim());
         if (values.length !== expectedHeader.length) {
             // This is a basic check. A more robust CSV parser would be needed for complex cases.
             throw new Error(`Row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}. Row content: ${line.substring(0, 100)}...`);
         }
         importedCount++;
-        // Re-join the cleaned cells. This doesn't re-quote, but assumes basic CSV.
-        return values.map(v => v.trim()).join(',');
+        // Re-join the cleaned cells.
+        return values.join(',');
     }).join('\n');
 
     if (contentToAppend) {
@@ -84,3 +84,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
   }
 }
+
+    

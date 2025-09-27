@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useRef, ChangeEvent, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Label } from './ui/label';
 import { Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type Column } from '@/lib/data';
@@ -136,8 +134,6 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns, onImpo
                       <ul className="list-disc pl-5 space-y-1 text-xs text-muted-foreground">
                           <li>The first line must be a header row with column names.</li>
                           <li>The header must exactly match the table columns: <code className="font-mono bg-muted text-foreground p-1 rounded-sm">{expectedHeader}</code></li>
-                          <li>All fields should be wrapped in double quotes (").</li>
-                          <li>Fields should not contain newline characters.</li>
                           <li>The file should be UTF-8 encoded.</li>
                       </ul>
                   </AlertDescription>
@@ -173,3 +169,5 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns, onImpo
     </Dialog>
   );
 }
+
+    

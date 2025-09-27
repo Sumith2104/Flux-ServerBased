@@ -367,14 +367,18 @@ export default function CreateTablePage() {
                         </Tabs>
                         )}
                     </CardContent>
-                    <CardFooter>
-                         <SubmitButton type="submit" className="w-full" disabled={isSubmitting}>
-                            {isSubmitting ? 'Creating...' : 'Create Table'}
-                        </SubmitButton>
-                    </CardFooter>
+                    {!isSubmitting && (
+                        <CardFooter>
+                            <SubmitButton type="submit" className="w-full" disabled={isSubmitting}>
+                                {isSubmitting ? 'Creating...' : 'Create Table'}
+                            </SubmitButton>
+                        </CardFooter>
+                    )}
                 </Card>
             </form>
         </div>
     </div>
   );
 }
+
+    
