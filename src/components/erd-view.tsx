@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useMemo, useEffect, useState, useCallback } from 'react';
+import React, { useMemo, useEffect, useCallback } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -29,6 +28,7 @@ interface ErdViewProps {
 const nodeWidth = 250;
 const nodeHeaderHeight = 40;
 const rowHeight = 28;
+const LOCALSTORAGE_KEY = 'fluxbase-erd-positions';
 
 const CustomNode = ({ data }: { data: { name: string; columns: Column[], pks: Set<string>, fks: Set<string> } }) => {
   return (
@@ -75,7 +75,7 @@ const nodeTypes = {
   custom: CustomNode,
 };
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+const getLayoutedElements = (nodes: Node[], edges: Edge[], savedPositions: Record<string, {x: number; y: number}>) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   dagreGraph.setGraph({ rankdir: 'LR' }); // Left to Right layout
@@ -91,22 +91,63 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   dagre.layout(dagreGraph);
 
   nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    node.position = {
-      x: nodeWithPosition.x - (node.style?.width as number || nodeWidth) / 2,
-      y: nodeWithPosition.y - (node.style?.height as number || 200) / 2,
-    };
+    // If a position is saved in localStorage, use it. Otherwise, use Dagre's calculated position.
+    const savedPosition = savedPositions[node.id];
+    if (savedPosition) {
+        node.position = savedPosition;
+    } else {
+        const nodeWithPosition = dagreGraph.node(node.id);
+        node.position = {
+            x: nodeWithPosition.x - (node.style?.width as number || nodeWidth) / 2,
+            y: nodeWithPosition.y - (node.style?.height as number || 200) / 2,
+        };
+    }
     return node;
   });
 
   return { nodes, edges };
 };
 
+function getSavedPositions() {
+    if (typeof window === 'undefined') return {};
+    const saved = window.localStorage.getItem(LOCALSTORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+}
+
+
 export function ErdView({ tables, columns, constraints }: ErdViewProps) {
-  const [nodes, setNodes] = useNodesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
+  
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
+      onNodesChange(changes);
+      
+      const newPositions: Record<string, {x: number; y: number}> = {};
+      let shouldSave = false;
+
+      // When a node finishes dragging, its `position` is updated.
+      // We capture this change to save it to localStorage.
+      changes.forEach(change => {
+          if (change.type === 'position' && change.dragging === false) {
+              const node = nodes.find(n => n.id === change.id);
+              if (node && node.position) {
+                newPositions[node.id] = node.position;
+                shouldSave = true;
+              }
+          }
+      });
+
+      if (shouldSave) {
+          const currentPositions = getSavedPositions();
+          const updatedPositions = { ...currentPositions, ...newPositions };
+          window.localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(updatedPositions));
+      }
+
+  }, [onNodesChange, nodes]);
 
   useEffect(() => {
+    const savedPositions = getSavedPositions();
+
     const tableNodes: Node[] = [];
     const tableEdges: Edge[] = [];
     const pkConstraints = new Map<string, Set<string>>();
@@ -133,7 +174,7 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
         id: table.table_id,
         type: 'custom',
         data: { name: table.table_name, columns: tableColumns, pks, fks },
-        position: { x: 0, y: 0 }, // Position will be set by Dagre
+        position: { x: 0, y: 0 }, // Position will be set by getLayoutedElements
         style: { width: nodeWidth, height: nodeHeight },
       });
     });
@@ -154,7 +195,7 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
         });
       });
 
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(tableNodes, tableEdges);
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(tableNodes, tableEdges, savedPositions);
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
   }, [tables, columns, constraints, setNodes, setEdges]);
@@ -168,7 +209,7 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={(changes: NodeChange[]) => setNodes(applyNodeChanges(changes, nodes))}
+        onNodesChange={handleNodesChange}
         nodeTypes={nodeTypes}
         fitView
         className="bg-background"
