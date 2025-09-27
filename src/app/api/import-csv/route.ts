@@ -5,7 +5,6 @@ import path from 'path';
 import { getCurrentUserId } from '@/lib/auth';
 import { getColumnsForTable } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
-import { Readable } from 'stream';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -27,73 +26,55 @@ export async function POST(request: Request) {
     }
 
     const tableColumns = await getColumnsForTable(projectId, tableId);
+    if (tableColumns.length === 0) {
+        return NextResponse.json({ error: 'Table columns could not be determined. Cannot import.' }, { status: 400 });
+    }
     const expectedHeader = tableColumns.map(c => c.column_name);
 
-    // Stream processing
-    const readableStream = csvFile.stream();
+    // Read the entire file and clean it first
+    const fileContent = await csvFile.text();
+    const cleanedLines = fileContent
+        .trim()
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line);
+    
+    if (cleanedLines.length === 0) {
+        return NextResponse.json({ error: 'CSV file is empty or contains only whitespace.' }, { status: 400 });
+    }
+
+    // Validate header from the cleaned content
+    const headerLine = cleanedLines[0];
+    const csvHeader = headerLine.split(',').map(h => h.replace(/^"|"$/g, '').trim());
+    
+    if (JSON.stringify(csvHeader) !== JSON.stringify(expectedHeader)) {
+        const errorMessage = `CSV header does not match table structure. Expected: ${expectedHeader.join(',')} | Received: ${csvHeader.join(',')}`;
+        return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+    
+    // Get the data rows (all lines except the header)
+    const dataLines = cleanedLines.slice(1);
+    let importedCount = 0;
+
     const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
     const dataFilePath = path.join(projectPath, `${tableName}.csv`);
-    
-    // Open the file in append mode
-    const fileHandle = await fs.open(dataFilePath, 'a');
-    const fileWriteStream = fileHandle.createWriteStream();
 
-    let headerChecked = false;
-    let importedCount = 0;
-    let buffer = '';
-    let firstChunk = true;
-
-    // Append a newline to the file in case the last line is not terminated
-    await fileHandle.appendFile('\n');
-
-    for await (const chunk of readableStream) {
-      buffer += new TextDecoder().decode(chunk);
-      let lines = buffer.split('\n');
-      
-      // Keep the last partial line in the buffer
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.trim()) continue;
-
-        if (!headerChecked && firstChunk) {
-            const csvHeader = line.trim().split(',').map(h => h.replace(/^"|"$/g, '').trim());
-            if (JSON.stringify(csvHeader) !== JSON.stringify(expectedHeader)) {
-              const errorMessage = `CSV header does not match table structure. Expected: ${expectedHeader.join(',')}`;
-              await fileWriteStream.close();
-              return NextResponse.json({ error: errorMessage }, { status: 400 });
-            }
-            headerChecked = true;
-            // Skip writing the header row
-            continue; 
-        }
-
+    // Prepare the content to be appended, ensuring each row is properly formed.
+    const contentToAppend = dataLines.map(line => {
         const values = line.split(',');
         if (values.length !== expectedHeader.length) {
-            const errorMessage = `Row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}. Row content: ${line.substring(0, 100)}...`;
-            await fileWriteStream.close();
-            return NextResponse.json({ error: errorMessage }, { status: 400 });
+            // This is a basic check. A more robust CSV parser would be needed for complex cases.
+            throw new Error(`Row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}. Row content: ${line.substring(0, 100)}...`);
         }
-        
-        fileWriteStream.write(line + '\n');
         importedCount++;
-      }
-      firstChunk = false;
-    }
+        // Re-join the cleaned cells. This doesn't re-quote, but assumes basic CSV.
+        return values.map(v => v.trim()).join(',');
+    }).join('\n');
 
-    // Process any remaining data in the buffer (the very last line of the file)
-    if (buffer.trim()) {
-      const values = buffer.split(',');
-      if (values.length !== expectedHeader.length) {
-        const errorMessage = `Final row has an incorrect number of columns. Expected ${expectedHeader.length}, got ${values.length}.`;
-        await fileWriteStream.close();
-        return NextResponse.json({ error: errorMessage }, { status: 400 });
-      }
-      fileWriteStream.write(buffer + '\n');
-      importedCount++;
+    if (contentToAppend) {
+        // Append a newline to the file in case the last line is not terminated, then append the new content.
+        await fs.appendFile(dataFilePath, '\n' + contentToAppend, 'utf8');
     }
-
-    await fileWriteStream.close();
 
     revalidatePath(`/editor?projectId=${projectId}&tableId=${tableId}&tableName=${tableName}`);
     return NextResponse.json({ success: true, importedCount });
