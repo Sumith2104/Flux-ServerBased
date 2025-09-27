@@ -159,6 +159,10 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
     setEdges(layoutedEdges);
   }, [tables, columns, constraints, setNodes, setEdges]);
   
+  const nodeColor = (node: Node) => {
+    return 'hsl(var(--primary) / 0.5)';
+  };
+
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
@@ -170,7 +174,7 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
         className="bg-background"
       >
         <Controls />
-        <MiniMap nodeStrokeWidth={3} zoomable pannable />
+        <MiniMap nodeStrokeWidth={3} zoomable pannable nodeColor={nodeColor} />
         <Background gap={16} color="hsl(var(--border))" />
       </ReactFlow>
     </div>
