@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useEffect, useCallback } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -11,9 +11,9 @@ import ReactFlow, {
   Position,
   useNodesState,
   useEdgesState,
-  type NodeChange,
-  useReactFlow,
   ReactFlowProvider,
+  useReactFlow,
+  type NodeDragHandler,
   type Viewport,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -111,13 +111,13 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], savedPositions: Recor
   return { nodes, edges };
 };
 
-function getSavedPositions() {
+function getSavedPositions(): Record<string, {x: number; y: number}> {
     if (typeof window === 'undefined') return {};
     const saved = window.localStorage.getItem(POSITIONS_KEY);
     return saved ? JSON.parse(saved) : {};
 }
 
-function getSavedViewport() {
+function getSavedViewport(): Viewport | undefined {
     if (typeof window === 'undefined') return undefined;
     const saved = window.localStorage.getItem(VIEWPORT_KEY);
     return saved ? JSON.parse(saved) : undefined;
@@ -125,31 +125,14 @@ function getSavedViewport() {
 
 const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges] = useEdgesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { getViewport } = useReactFlow();
 
-  const handleNodesChange = useCallback((changes: NodeChange[]) => {
-      const currentPositions = getSavedPositions();
-      const newPositions: Record<string, {x: number; y: number}> = {};
-      let shouldSave = false;
-      const nextNodes = changes.reduce((acc, change) => {
-          onNodesChange([change]);
-          if (change.type === 'position' && change.dragging === false) {
-              const node = nodes.find(n => n.id === change.id);
-              if (node && node.position) {
-                newPositions[node.id] = node.position;
-                shouldSave = true;
-              }
-          }
-          return acc;
-      }, nodes);
-
-      if (shouldSave) {
-          const updatedPositions = { ...currentPositions, ...newPositions };
-          window.localStorage.setItem(POSITIONS_KEY, JSON.stringify(updatedPositions));
-      }
-
-  }, [onNodesChange, nodes]);
+  const onNodeDragStop: NodeDragHandler = useCallback((_event, node) => {
+    const currentPositions = getSavedPositions();
+    const newPositions = { ...currentPositions, [node.id]: node.position };
+    window.localStorage.setItem(POSITIONS_KEY, JSON.stringify(newPositions));
+  }, []);
 
   const onMoveEnd = useCallback(() => {
     const viewport = getViewport();
@@ -225,6 +208,8 @@ const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
       nodes={nodes}
       edges={edges}
       onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onNodeDragStop={onNodeDragStop}
       onMoveEnd={onMoveEnd}
       nodeTypes={nodeTypes}
       fitView
