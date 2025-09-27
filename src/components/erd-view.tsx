@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useEffect, useCallback } from 'react';
+import React, { useMemo, useEffect, useCallback, useRef } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -11,8 +11,10 @@ import ReactFlow, {
   Position,
   useNodesState,
   useEdgesState,
-  applyNodeChanges,
   type NodeChange,
+  useReactFlow,
+  ReactFlowProvider,
+  type Viewport,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { type Table, type Column, type Constraint } from '@/lib/data';
@@ -28,7 +30,9 @@ interface ErdViewProps {
 const nodeWidth = 250;
 const nodeHeaderHeight = 40;
 const rowHeight = 28;
-const LOCALSTORAGE_KEY = 'fluxbase-erd-positions';
+const POSITIONS_KEY = 'fluxbase-erd-positions';
+const VIEWPORT_KEY = 'fluxbase-erd-viewport';
+
 
 const CustomNode = ({ data }: { data: { name: string; columns: Column[], pks: Set<string>, fks: Set<string> } }) => {
   return (
@@ -91,7 +95,6 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], savedPositions: Recor
   dagre.layout(dagreGraph);
 
   nodes.forEach((node) => {
-    // If a position is saved in localStorage, use it. Otherwise, use Dagre's calculated position.
     const savedPosition = savedPositions[node.id];
     if (savedPosition) {
         node.position = savedPosition;
@@ -110,23 +113,27 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], savedPositions: Recor
 
 function getSavedPositions() {
     if (typeof window === 'undefined') return {};
-    const saved = window.localStorage.getItem(LOCALSTORAGE_KEY);
+    const saved = window.localStorage.getItem(POSITIONS_KEY);
     return saved ? JSON.parse(saved) : {};
 }
 
+function getSavedViewport() {
+    if (typeof window === 'undefined') return undefined;
+    const saved = window.localStorage.getItem(VIEWPORT_KEY);
+    return saved ? JSON.parse(saved) : undefined;
+}
 
-export function ErdView({ tables, columns, constraints }: ErdViewProps) {
+const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
-  
+  const { getViewport } = useReactFlow();
+
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
       onNodesChange(changes);
       
       const newPositions: Record<string, {x: number; y: number}> = {};
       let shouldSave = false;
 
-      // When a node finishes dragging, its `position` is updated.
-      // We capture this change to save it to localStorage.
       changes.forEach(change => {
           if (change.type === 'position' && change.dragging === false) {
               const node = nodes.find(n => n.id === change.id);
@@ -140,10 +147,15 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
       if (shouldSave) {
           const currentPositions = getSavedPositions();
           const updatedPositions = { ...currentPositions, ...newPositions };
-          window.localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(updatedPositions));
+          window.localStorage.setItem(POSITIONS_KEY, JSON.stringify(updatedPositions));
       }
 
   }, [onNodesChange, nodes]);
+
+  const onMoveEnd = useCallback(() => {
+    const viewport = getViewport();
+    localStorage.setItem(VIEWPORT_KEY, JSON.stringify(viewport));
+  }, [getViewport]);
 
   useEffect(() => {
     const savedPositions = getSavedPositions();
@@ -174,7 +186,7 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
         id: table.table_id,
         type: 'custom',
         data: { name: table.table_name, columns: tableColumns, pks, fks },
-        position: { x: 0, y: 0 }, // Position will be set by getLayoutedElements
+        position: { x: 0, y: 0 }, 
         style: { width: nodeWidth, height: nodeHeight },
       });
     });
@@ -204,20 +216,33 @@ export function ErdView({ tables, columns, constraints }: ErdViewProps) {
     return 'hsl(var(--primary) / 0.5)';
   };
 
+  const defaultViewport = getSavedViewport();
+
   return (
-    <div style={{ width: '100%', height: '100%' }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={handleNodesChange}
-        nodeTypes={nodeTypes}
-        fitView
-        className="bg-background"
-      >
-        <Controls />
-        <MiniMap nodeStrokeWidth={3} zoomable pannable nodeColor={nodeColor} />
-        <Background gap={16} color="hsl(var(--border))" />
-      </ReactFlow>
-    </div>
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={handleNodesChange}
+      onMoveEnd={onMoveEnd}
+      nodeTypes={nodeTypes}
+      fitView
+      className="bg-background"
+      defaultViewport={defaultViewport}
+    >
+      <Controls />
+      <MiniMap nodeStrokeWidth={3} zoomable pannable nodeColor={nodeColor} />
+      <Background gap={16} color="hsl(var(--border))" />
+    </ReactFlow>
   );
+}
+
+
+export function ErdView({ tables, columns, constraints }: ErdViewProps) {
+    return (
+        <div style={{ width: '100%', height: '100%' }}>
+            <ReactFlowProvider>
+                <Flow tables={tables} columns={columns} constraints={constraints} />
+            </ReactFlowProvider>
+        </div>
+    );
 }
