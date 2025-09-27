@@ -200,10 +200,13 @@ const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
             target: c.referenced_table_id!,
             sourceHandle: `${c.table_id}-${c.column_names}`,
             targetHandle: `${c.referenced_table_id}-${c.referenced_column_names}`,
-            type: 'smoothstep',
-            animated: true,
-            markerEnd: { type: 'arrowclosed', color: '#60a5fa' },
-            style: { stroke: '#60a5fa', strokeWidth: 1.5 },
+            type: 'bezier',
+            markerEnd: { type: 'arrowclosed', color: 'hsl(var(--muted-foreground))' },
+            style: { 
+                stroke: 'hsl(var(--muted-foreground))', 
+                strokeWidth: 1.5,
+                strokeDasharray: '4 4' 
+            },
         });
       });
 
