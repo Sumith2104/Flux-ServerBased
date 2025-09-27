@@ -1,0 +1,2 @@
+constraint_id,table_id,type,column_names,referenced_table_id,referenced_column_names,on_delete,on_update
+ed7a1f8f-14e0-4510-8bbb-575763456985,acea3793-bc6d-4afe-9904-0be49bc5a7c7,PRIMARY KEY,"member_id",,,,

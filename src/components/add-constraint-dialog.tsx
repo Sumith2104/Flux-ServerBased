@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -29,6 +29,7 @@ type AddConstraintDialogProps = {
   tableName: string;
   columns: Column[];
   allTables: Table[];
+  allProjectConstraints: Constraint[];
   onConstraintAdded: (newConstraint: Constraint) => void;
 };
 
@@ -49,7 +50,7 @@ const formSchema = z.object({
 });
 
 
-export function AddConstraintDialog({ projectId, tableId, tableName, columns, allTables, onConstraintAdded }: AddConstraintDialogProps) {
+export function AddConstraintDialog({ projectId, tableId, tableName, columns, allTables, onConstraintAdded, allProjectConstraints }: AddConstraintDialogProps) {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   
@@ -63,6 +64,13 @@ export function AddConstraintDialog({ projectId, tableId, tableName, columns, al
   });
 
   const watchType = form.watch('type');
+  const watchReferencedTableId = form.watch('referencedTableId');
+
+  const referencedTablePKs = useMemo(() => {
+    if (!watchReferencedTableId) return [];
+    const pkConstraint = allProjectConstraints.find(c => c.table_id === watchReferencedTableId && c.type === 'PRIMARY KEY');
+    return pkConstraint ? pkConstraint.column_names.split(',') : [];
+  }, [watchReferencedTableId, allProjectConstraints]);
 
   const handleAction = async (values: z.infer<typeof formSchema>) => {
     const formData = new FormData();
@@ -85,7 +93,11 @@ export function AddConstraintDialog({ projectId, tableId, tableName, columns, al
         description: 'Constraint added successfully.',
       });
       setIsOpen(false);
-      form.reset();
+      form.reset({
+          type: 'PRIMARY KEY',
+          columnNames: '',
+          onDelete: 'RESTRICT',
+      });
       onConstraintAdded(result.constraint);
     } else {
       toast({
@@ -184,10 +196,14 @@ export function AddConstraintDialog({ projectId, tableId, tableName, columns, al
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Referenced Column(s)</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a column" /></SelectTrigger></FormControl>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!watchReferencedTableId}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a referenced column" /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                           <SelectItem value="id">id</SelectItem>
+                                           {referencedTablePKs.length > 0 ? (
+                                             referencedTablePKs.map(pk => <SelectItem key={pk} value={pk}>{pk}</SelectItem>)
+                                           ) : (
+                                            <SelectItem value="id" disabled>No primary key found</SelectItem>
+                                           )}
                                         </SelectContent>
                                     </Select>
                                      <FormMessage />

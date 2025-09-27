@@ -589,6 +589,7 @@ export function EditorClient({
                                                     allTables={allTables}
                                                     columns={initialColumns}
                                                     onConstraintAdded={handleConstraintAdded}
+                                                    allProjectConstraints={allProjectConstraints}
                                                 />
                                             </CardFooter>
                                         </Card>
