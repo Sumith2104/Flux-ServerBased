@@ -133,7 +133,7 @@ export function ImportCsvDialog({ projectId, tableId, tableName, columns, onImpo
                       <p className="mb-2">For a successful import, please ensure your CSV file follows these rules:</p>
                       <ul className="list-disc pl-5 space-y-1 text-xs text-muted-foreground">
                           <li>The first line must be a header row with column names.</li>
-                          <li>The header must exactly match the table columns: <code className="font-mono bg-muted text-foreground p-1 rounded-sm">{expectedHeader}</code></li>
+                          <li>The header must exactly match the table columns: <code className="font-mono bg-muted text-foreground p-1 rounded-sm whitespace-normal break-words">{expectedHeader}</code></li>
                           <li>The file should be UTF-8 encoded.</li>
                       </ul>
                   </AlertDescription>
