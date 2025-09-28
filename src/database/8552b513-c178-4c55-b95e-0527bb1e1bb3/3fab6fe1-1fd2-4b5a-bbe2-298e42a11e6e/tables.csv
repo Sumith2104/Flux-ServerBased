@@ -1,4 +1,0 @@
-table_id,project_id,table_name,description,created_at,updated_at
-9ba17734-fc1b-44b8-9c62-a7c840506cb1,3fab6fe1-1fd2-4b5a-bbe2-298e42a11e6e,"users","",2025-09-10T16:48:36.088Z,2025-09-10T16:48:36.088Z
-0d526dfc-0981-436c-9dc0-5427c0df2e1f,3fab6fe1-1fd2-4b5a-bbe2-298e42a11e6e,"posts","",2025-09-10T16:49:52.560Z,2025-09-10T16:49:52.560Z
-ab4eeb97-5f2f-49fc-bfef-441c299c21fd,3fab6fe1-1fd2-4b5a-bbe2-298e42a11e6e,"followers","",2025-09-10T17:59:30.652Z,2025-09-10T17:59:30.652Z

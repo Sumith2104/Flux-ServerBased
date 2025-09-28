@@ -1,7 +1,9 @@
 # ⚡ Fluxbase
 
-
-Fluxbase is your modern, self-hosted project and data management tool. It gives you a smooth, spreadsheet-like interface to manage projects, organize data, and keep everything in one place — with performance and simplicity in mind.
+Fluxbase is a modern, self-hosted data management platform featuring a spreadsheet-like interface for intuitive project and data handling.
+Built with Next.js, React, and Tailwind CSS, it delivers a fast, responsive UI for creating and managing complex data tables.
+Key features include an AI-powered SQL editor, a draggable ERD visualizer for database schema, and automated API generation.
+Designed for performance and control, Fluxbase empowers developers to manage their data with simplicity and power on their own infrastructure.
 
 > ⚠ **Note:** Fluxbase is built to run **only on a dedicated server or your own computer**.  
 > It will not work properly on platforms like Vercel, Render, Railway, or inside Docker containers, because those environments don't provide reliable local file storage.
