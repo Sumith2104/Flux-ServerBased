@@ -1,5 +1,0 @@
-constraint_id,table_id,type,column_names,referenced_table_id,referenced_column_names,on_delete,on_update
-7f873c7b-6e02-421a-8809-b6d2ba4317b7,acea3793-bc6d-4afe-9904-0be49bc5a7c7,PRIMARY KEY,member_id
-c6dc2122-e106-41da-a177-8a12680ed65d,4e519cb5-331b-4f45-918f-164cc0240fc2,FOREIGN KEY,member_id,acea3793-bc6d-4afe-9904-0be49bc5a7c7,member_id,CASCADE
-50e6f0ea-1bfc-44e1-9388-c073bdf81ca0,03ddd31d-9d1f-43f1-bf23-00169f5f84ea,FOREIGN KEY,member_id,acea3793-bc6d-4afe-9904-0be49bc5a7c7,member_id,CASCADE
-8e37389c-d6ad-4b5c-977f-f0b2047ed5ea,d5aac2e4-4402-466d-885f-8bb8a3b36172,FOREIGN KEY,member_id,acea3793-bc6d-4afe-9904-0be49bc5a7c7,member_id,CASCADE
