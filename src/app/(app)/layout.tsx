@@ -180,19 +180,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     </Button>
                 )}
             </header>
-            <div className="flex flex-1 overflow-hidden">
-                <main className={cn("flex-1 overflow-auto", {
+            <div className="flex flex-1 overflow-hidden relative">
+                <main className={cn("flex-1 overflow-auto pb-24", {
                     "p-0": isEditorOrDbPage,
                     "p-4 md:p-8": !isEditorOrDbPage,
                 })}>
                     {children}
+                     {shouldShowDock && (
+                        <div className="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+                            <Dock items={dockItems} />
+                        </div>
+                    )}
                 </main>
             </div>
-             {shouldShowDock && (
-                <div className="fixed bottom-4 left-0 right-0 flex justify-center z-50">
-                    <Dock items={dockItems} />
-                </div>
-            )}
         </div>
     );
 }
