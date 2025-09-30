@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Database } from 'lucide-react';
 import Link from 'next/link';
+import { GridBackground } from '@/components/background';
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
+    <GridBackground>
       <div className="text-center space-y-6 max-w-2xl mx-auto px-4">
         <div className="inline-block p-4 bg-primary/10 rounded-xl">
           <Database className="h-10 w-10 text-primary" />
@@ -24,6 +25,6 @@ export default function Home() {
           </Button>
         </div>
       </div>
-    </div>
+    </GridBackground>
   );
 }
