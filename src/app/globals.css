@@ -85,8 +85,8 @@ body {
 
 @layer components {
   .card {
-    background-color: hsla(0, 0%, 100%, 0.05);
+    background-color: hsla(0, 0%, 50%, 0.1);
     backdrop-filter: blur(16px);
-    border: 1px solid hsla(0, 0%, 100%, 0.1);
+    border: none;
   }
 }
