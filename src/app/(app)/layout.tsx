@@ -2,7 +2,6 @@
 'use client';
 
 import { usePathname, useRouter } from "next/navigation";
-import { Nav } from "@/components/nav";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,27 @@ import { cn } from "@/lib/utils";
 import { logoutAction } from "./actions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectProvider, ProjectContext } from "@/contexts/project-context";
+import Dock from "@/components/dock";
+import { 
+    LayoutDashboard, 
+    BrainCircuit, 
+    Code, 
+    Folder, 
+    Settings as SettingsIcon,
+    Table,
+    Database
+} from "lucide-react";
+
+
+const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard /> },
+    { href: "/editor", label: "Table Editor", icon: <Table /> },
+    { href: "/database", label: "Database", icon: <Database /> },
+    { href: "/query", label: "SQL Editor", icon: <BrainCircuit /> },
+    { href: "/api", label: "API Generation", icon: <Code /> },
+    { href: "/storage", label: "Storage", icon: <Folder /> },
+    { href: "/settings", label: "Settings", icon: <SettingsIcon /> },
+];
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -80,6 +100,26 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const isEditorOrDbPage = pathname.startsWith('/editor') || pathname.startsWith('/database');
     const isLoading = userLoading || projectContextLoading;
 
+    const dockItems = navItems.map(item => {
+        const isProjectSpecific = ["/editor", "/api", "/storage", "/settings", "/query", "/database"].includes(item.href);
+        const isDisabled = isProjectSpecific && !selectedProject?.project_id;
+        let finalHref = item.href;
+
+        if (isProjectSpecific && selectedProject?.project_id) {
+            finalHref = `${item.href}?projectId=${selectedProject.project_id}`;
+        }
+        
+        return {
+            ...item,
+            onClick: () => {
+                if (!isDisabled) {
+                    router.push(finalHref);
+                }
+            },
+        };
+    });
+
+
     if (isLoading) {
         return (
             <div className="flex min-h-screen w-full flex-col bg-background">
@@ -90,13 +130,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                    <Skeleton className="h-8 w-20" />
                 </header>
                  <div className="flex flex-1 overflow-hidden">
-                    <aside className="hidden w-14 flex-col border-r bg-background sm:flex">
-                        <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-                            <Skeleton className="h-8 w-8 rounded-lg" />
-                            <Skeleton className="h-8 w-8 rounded-lg" />
-                            <Skeleton className="h-8 w-8 rounded-lg" />
-                        </nav>
-                    </aside>
                     <main className="flex-1 overflow-auto p-4 md:p-8">
                          <div className="flex items-center justify-center h-full">
                             <p>Loading...</p>
@@ -107,7 +140,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         );
     }
     
-    // This check is mostly for safety; the useEffect above should handle the redirect.
     if (!isLoading && !userId && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
         return <div className="flex items-center justify-center h-screen">Redirecting to login...</div>;
     }
@@ -118,9 +150,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         ? `${orgName} / ${selectedProject.display_name}`
         : orgName;
 
+    const shouldShowDock = userId && (selectedProject || pathname.startsWith('/dashboard/projects'));
+
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
-            <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
+            <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6 z-40">
                 <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                         <AvatarFallback>{avatarFallback}</AvatarFallback>
@@ -147,11 +181,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
             </header>
             <div className="flex flex-1 overflow-hidden">
-                <aside className="hidden w-14 flex-col border-r bg-background sm:flex">
-                    <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-                       <Nav projectId={selectedProject?.project_id} />
-                    </nav>
-                </aside>
                 <main className={cn("flex-1 overflow-auto", {
                     "p-0": isEditorOrDbPage,
                     "p-4 md:p-8": !isEditorOrDbPage,
@@ -159,6 +188,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     {children}
                 </main>
             </div>
+             {shouldShowDock && (
+                <div className="fixed bottom-4 left-0 right-0 flex justify-center z-50">
+                    <Dock items={dockItems} />
+                </div>
+            )}
         </div>
     );
 }
