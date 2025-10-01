@@ -54,6 +54,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 };
 
 export function StorageChart({ data }: StorageChartProps) {
+    if (!data) return null;
     return (
         <Card>
             <CardHeader>

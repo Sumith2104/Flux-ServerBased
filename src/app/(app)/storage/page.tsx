@@ -1,10 +1,9 @@
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Folder, FileText, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getCurrentUserId } from "@/lib/auth"
-import fs from "fs/promises"
-import path from "path"
 import { cookies } from "next/headers"
 import { BackButton } from "@/components/back-button"
 
@@ -15,55 +14,12 @@ type FileInfo = {
     modified: string;
 };
 
-function formatSize(bytes: number): string {
-    const kb = bytes / 1024;
-    if (kb > 1000) {
-        const mb = kb / 1024;
-        return `${mb.toFixed(2)} MB`;
-    }
-    return `${kb.toFixed(2)} KB`;
-}
-
-
 async function getProjectFiles(projectId: string): Promise<FileInfo[]> {
     const userId = await getCurrentUserId();
     if (!userId) {
         return [];
     }
-
-    const projectPath = path.join(process.cwd(), 'src', 'database', userId, projectId);
-
-    try {
-        await fs.access(projectPath); // Check if directory exists
-    } catch {
-        return []; // Project folder doesn't exist yet
-    }
-
-    try {
-        const dirents = await fs.readdir(projectPath, { withFileTypes: true });
-        const files = await Promise.all(
-            dirents.map(async (dirent) => {
-                const fullPath = path.join(projectPath, dirent.name);
-                const stats = await fs.stat(fullPath);
-                
-                // Exclude system files
-                if (dirent.name === 'tables.csv' || dirent.name === 'columns.csv' || dirent.name.endsWith('.csv')) {
-                    return null;
-                }
-
-                return {
-                    name: dirent.name,
-                    type: dirent.isDirectory() ? 'folder' : 'file',
-                    size: formatSize(stats.size),
-                    modified: stats.mtime.toLocaleDateString(),
-                } as FileInfo;
-            })
-        );
-        return files.filter(Boolean) as FileInfo[];
-    } catch (error) {
-        console.error(`Failed to read directory for project ${projectId}:`, error);
-        return [];
-    }
+    return [];
 }
 
 

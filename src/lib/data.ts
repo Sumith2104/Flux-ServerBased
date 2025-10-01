@@ -2,45 +2,9 @@
 
 'use server';
 
-import fs from 'fs/promises';
-import path from 'path';
 import { getCurrentUserId } from '@/lib/auth';
 
-const DB_PATH = path.join(process.cwd(), 'src', 'database');
-
-// Helper to parse CSV data
-function parseCsv(data: string): Record<string, string>[] {
-    if (!data) return [];
-    const lines = data.trim().split('\n');
-    if (lines.length < 2) return [];
-
-    const header = lines[0].split(',').map(h => h.trim());
-    const rows = lines.slice(1);
-
-    return rows.map(line => {
-        // This regex handles comma-separated values, including quoted strings that contain commas
-        const values = (line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || []).map(v => v.trim().replace(/^"|"$/g, ''));
-        const entry: Record<string, string> = {};
-        header.forEach((key, index) => {
-            entry[key] = values[index];
-        });
-        return entry;
-    });
-}
-
-
-// Helper to read a small CSV file
-async function readCsvFile(filePath: string) {
-    try {
-        const data = await fs.readFile(filePath, 'utf8');
-        return parseCsv(data);
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return []; // File not found, return empty array
-        }
-        throw error;
-    }
-}
+const DB_PATH = '';
 
 // --- Project Data ---
 
@@ -56,9 +20,8 @@ export async function getProjectsForCurrentUser(): Promise<Project[]> {
     if (!userId) {
         return [];
     }
-    const projectsCsvPath = path.join(DB_PATH, userId, 'projects.csv');
-    const projects = await readCsvFile(projectsCsvPath);
-    return projects as unknown as Project[];
+    const projectsCsvPath = '';
+    return [];
 }
 
 export async function getProjectById(projectId: string): Promise<Project | null> {
@@ -106,8 +69,8 @@ export interface Constraint {
 export async function getConstraintsForProject(projectId: string): Promise<Constraint[]> {
     const userId = await getCurrentUserId();
     if (!userId) throw new Error("User not authenticated");
-    const constraintsCsvPath = path.join(DB_PATH, userId, projectId, 'constraints.csv');
-    return await readCsvFile(constraintsCsvPath) as unknown as Constraint[];
+    const constraintsCsvPath = '';
+    return [];
 }
 
 export async function getConstraintsForTable(projectId: string, tableId: string): Promise<Constraint[]> {
@@ -121,8 +84,8 @@ export async function getTablesForProject(projectId: string): Promise<Table[]> {
     if (!userId) {
         throw new Error("User not authenticated");
     }
-    const tablesCsvPath = path.join(DB_PATH, userId, projectId, 'tables.csv');
-    return await readCsvFile(tablesCsvPath) as unknown as Table[];
+    const tablesCsvPath = '';
+    return [];
 }
 
 export async function getColumnsForTable(projectId:string, tableId: string): Promise<Column[]> {
@@ -130,9 +93,9 @@ export async function getColumnsForTable(projectId:string, tableId: string): Pro
     if (!userId) {
         throw new Error("User not authenticated");
     }
-    const columnsCsvPath = path.join(DB_PATH, userId, projectId, 'columns.csv');
-    const allColumns = await readCsvFile(columnsCsvPath);
-    return allColumns.filter(col => col.table_id === tableId) as unknown as Column[];
+    const columnsCsvPath = '';
+    const allColumns:any = [];
+    return allColumns.filter((col:any) => col.table_id === tableId) as unknown as Column[];
 }
 
 
@@ -151,19 +114,11 @@ export async function getTableData(
     if (!userId) {
         throw new Error("User not authenticated");
     }
-    const tableDataPath = path.join(DB_PATH, userId, projectId, `${tableName}.csv`);
+    const tableDataPath = '';
 
     try {
-        const fileContent = await fs.readFile(tableDataPath, 'utf8');
-        const allRows = parseCsv(fileContent);
 
-        const totalRows = allRows.length;
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-
-        const paginatedRows = allRows.slice(startIndex, endIndex);
-
-        return { rows: paginatedRows, totalRows: totalRows };
+        return { rows: [], totalRows: 0 };
 
     } catch (error: any) {
         if (error.code === 'ENOENT') {
@@ -188,9 +143,7 @@ export interface ProjectAnalytics {
 
 async function getCsvLineCount(filePath: string): Promise<number> {
     try {
-        const fileContent = await fs.readFile(filePath, 'utf-8');
-        const lines = fileContent.split('\n').filter(line => line.trim() !== '');
-        return Math.max(0, lines.length > 1 ? lines.length - 1 : 0);
+        return 0;
     } catch (error: any) {
         if (error.code === 'ENOENT') return 0;
         throw error;
@@ -203,7 +156,7 @@ export async function getProjectAnalytics(projectId: string): Promise<ProjectAna
         throw new Error("User not authenticated");
     }
 
-    const projectPath = path.join(DB_PATH, userId, projectId);
+    const projectPath = '';
     const tables = await getTablesForProject(projectId);
 
     let totalSize = 0;
@@ -211,20 +164,17 @@ export async function getProjectAnalytics(projectId: string): Promise<ProjectAna
     const tableAnalytics = [];
 
     for (const table of tables) {
-        const tableDataPath = path.join(projectPath, `${table.table_name}.csv`);
+        const tableDataPath = '';
         try {
-            const stats = await fs.stat(tableDataPath);
-            const rowCount = await getCsvLineCount(tableDataPath);
 
-            const sizeInKb = parseFloat((stats.size / 1024).toFixed(2));
+            const sizeInKb = 0;
 
             totalSize += sizeInKb;
-            totalRows += rowCount;
             
             tableAnalytics.push({
                 name: table.table_name,
                 size: sizeInKb,
-                rows: rowCount,
+                rows: 0,
             });
 
         } catch (error) {

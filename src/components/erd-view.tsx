@@ -228,6 +228,7 @@ const Flow = ({ tables, columns, constraints }: ErdViewProps) => {
 
 
 export function ErdView({ tables, columns, constraints }: ErdViewProps) {
+    if (!tables || !columns || !constraints) return null;
     return (
         <div style={{ width: '100%', height: '100%' }}>
             <ReactFlowProvider>

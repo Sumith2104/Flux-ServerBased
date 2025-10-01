@@ -12,10 +12,8 @@ interface DatabasePageProps {
 
 async function Database({ projectId }: { projectId: string }) {
     const allTables = await getTablesForProject(projectId);
-    const allColumns = await Promise.all(
-        allTables.map(table => getColumnsForTable(projectId, table.table_id))
-    ).then(cols => cols.flat());
-    const allConstraints = await getConstraintsForProject(projectId);
+    const allColumns: Column[] = [];
+    const allConstraints: Constraint[] = [];
 
     return (
         <div className="h-full w-full">
