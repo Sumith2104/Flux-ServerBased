@@ -14,19 +14,22 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
-    const tableName = searchParams.get('tableName');
+    const tableId = searchParams.get('tableId');
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '100', 10);
 
-    if (!projectId || !tableName) {
-      return NextResponse.json({ error: 'Missing required query parameters: projectId and tableName' }, { status: 400 });
+    if (!projectId || !tableId) {
+      return NextResponse.json({ error: 'Missing required query parameters: projectId and tableId' }, { status: 400 });
     }
 
     if (isNaN(page) || page < 1 || isNaN(pageSize) || pageSize < 1) {
         return NextResponse.json({ error: 'Invalid pagination parameters.' }, { status: 400 });
     }
 
-    const data = await getTableData(projectId, tableName, page, pageSize);
+    // You might want to add a check here to ensure the user owns the project
+    // before fetching data.
+
+    const data = await getTableData(tableId, page, pageSize);
 
     return NextResponse.json(data);
 
@@ -35,5 +38,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
   }
 }
-
-    

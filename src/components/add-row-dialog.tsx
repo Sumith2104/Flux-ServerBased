@@ -7,7 +7,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
@@ -63,17 +62,17 @@ export function AddRowDialog({
     }
   };
 
-  const fkConstraints = constraints.filter(c => c.type === 'FOREIGN KEY');
+  const fkConstraints = constraints.filter(c => c.type === 'FOREIGN_KEY');
 
   const renderInput = (col: Column) => {
-    const fkConstraint = fkConstraints.find(c => c.column_names === col.column_name);
-    if (fkConstraint && foreignKeyData[col.column_name]) {
-        const refTable = allTables.find(t => t.table_id === fkConstraint.referenced_table_id);
-        const refColumn = fkConstraint.referenced_column_names || 'id';
+    const fkConstraint = fkConstraints.find(c => c.columnNames === col.name);
+    if (fkConstraint && foreignKeyData[col.name]) {
+        const refTable = allTables.find(t => t.id === fkConstraint.referencedTableId);
+        const refColumn = fkConstraint.referencedColumnNames || 'id';
 
         let displayColumn = 'name'; // default
         // A simple heuristic to find a good display column
-        const firstRow = foreignKeyData[col.column_name][0];
+        const firstRow = foreignKeyData[col.name][0];
         if (firstRow) {
             if ('name' in firstRow) displayColumn = 'name';
             else if ('title' in firstRow) displayColumn = 'title';
@@ -83,8 +82,8 @@ export function AddRowDialog({
 
         return (
             <ForeignKeySelect
-                name={col.column_name}
-                data={foreignKeyData[col.column_name]}
+                name={col.name}
+                data={foreignKeyData[col.name]}
                 refTable={refTable}
                 valueColumn={refColumn}
                 displayColumn={displayColumn}
@@ -93,15 +92,15 @@ export function AddRowDialog({
     }
     return (
         <Input
-            id={col.column_name}
-            name={col.column_name}
+            id={col.name}
+            name={col.name}
             className="col-span-3"
-            type={col.data_type === 'number' ? 'number' : col.data_type === 'date' ? 'date' : 'text'}
+            type={col.dataType === 'number' ? 'number' : col.dataType === 'date' ? 'date' : 'text'}
         />
     )
   }
 
-  const visibleColumns = columns.filter(col => col.column_name !== 'id' && col.data_type !== 'gen_random_uuid()' && col.data_type !== 'now_date()' && col.data_type !== 'now_time()');
+  const visibleColumns = columns.filter(col => col.name !== 'id');
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -125,9 +124,9 @@ export function AddRowDialog({
 
           <div className="grid gap-4 py-4">
             {visibleColumns.map((col) => (
-              <div key={col.column_id} className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor={col.column_name} className="text-right">
-                  {col.column_name}
+              <div key={col.id} className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor={col.name} className="text-right">
+                  {col.name}
                 </Label>
                 {renderInput(col)}
               </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -33,14 +34,14 @@ type AddConstraintDialogProps = {
 };
 
 const formSchema = z.object({
-  type: z.enum(['PRIMARY KEY', 'FOREIGN KEY']),
+  type: z.enum(['PRIMARY_KEY', 'FOREIGN_KEY']),
   columnNames: z.string().min(1, 'You must select at least one column.'),
   referencedTableId: z.string().optional(),
   referencedColumnNames: z.string().optional(),
   onDelete: z.string().optional(),
 }).refine(
   (data) => {
-    if (data.type === 'FOREIGN KEY') {
+    if (data.type === 'FOREIGN_KEY') {
       return !!data.referencedTableId && !!data.referencedColumnNames && !!data.onDelete;
     }
     return true;
@@ -66,7 +67,7 @@ export function AddConstraintDialog({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: 'PRIMARY KEY',
+      type: 'PRIMARY_KEY',
       columnNames: '',
       onDelete: 'RESTRICT',
     },
@@ -78,9 +79,9 @@ export function AddConstraintDialog({
   const referencedTablePKs = useMemo(() => {
     if (!watchReferencedTableId) return [];
     const pkConstraint = allProjectConstraints.find(
-      (c) => c.table_id === watchReferencedTableId && c.type === 'PRIMARY KEY'
+      (c) => c.tableId === watchReferencedTableId && c.type === 'PRIMARY_KEY'
     );
-    return pkConstraint ? pkConstraint.column_names.split(',') : ['id'];
+    return pkConstraint ? pkConstraint.columnNames.split(',') : ['id'];
   }, [watchReferencedTableId, allProjectConstraints]);
 
   const handleAction = async (values: z.infer<typeof formSchema>) => {
@@ -91,7 +92,7 @@ export function AddConstraintDialog({
     formData.append('type', values.type);
     formData.append('columnNames', values.columnNames);
 
-    if (values.type === 'FOREIGN KEY') {
+    if (values.type === 'FOREIGN_KEY') {
       formData.append('referencedTableId', values.referencedTableId || '');
       formData.append('referencedColumnNames', values.referencedColumnNames || '');
       formData.append('onDelete', values.onDelete || '');
@@ -108,7 +109,7 @@ export function AddConstraintDialog({
       onConstraintAdded(result.constraint);
 
       form.reset({
-        type: 'PRIMARY KEY',
+        type: 'PRIMARY_KEY',
         columnNames: '',
         onDelete: 'RESTRICT',
       });
@@ -152,12 +153,12 @@ export function AddConstraintDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="PRIMARY KEY">
+                      <SelectItem value="PRIMARY_KEY">
                         <div className="flex items-center gap-2">
                           <KeyRound className="h-4 w-4 text-yellow-500" /> Primary Key
                         </div>
                       </SelectItem>
-                      <SelectItem value="FOREIGN KEY">
+                      <SelectItem value="FOREIGN_KEY">
                         <div className="flex items-center gap-2">
                           <Link2 className="h-4 w-4 text-blue-500" /> Foreign Key
                         </div>
@@ -183,8 +184,8 @@ export function AddConstraintDialog({
                     </FormControl>
                     <SelectContent>
                       {columns.map((col) => (
-                        <SelectItem key={col.column_id} value={col.column_name}>
-                          {col.column_name}
+                        <SelectItem key={col.id} value={col.name}>
+                          {col.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -194,7 +195,7 @@ export function AddConstraintDialog({
               )}
             />
 
-            {watchType === 'FOREIGN KEY' && (
+            {watchType === 'FOREIGN_KEY' && (
               <>
                 <FormField
                   control={form.control}
@@ -210,10 +211,10 @@ export function AddConstraintDialog({
                         </FormControl>
                         <SelectContent>
                           {allTables
-                            .filter((t) => t.table_id !== tableId)
+                            .filter((t) => t.id !== tableId)
                             .map((t) => (
-                              <SelectItem key={t.table_id} value={t.table_id}>
-                                {t.table_name}
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.name}
                               </SelectItem>
                             ))}
                         </SelectContent>
@@ -271,7 +272,7 @@ export function AddConstraintDialog({
                         <SelectContent>
                           <SelectItem value="RESTRICT">RESTRICT</SelectItem>
                           <SelectItem value="CASCADE">CASCADE</SelectItem>
-                          <SelectItem value="SET NULL">SET NULL</SelectItem>
+                          <SelectItem value="SET_NULL">SET NULL</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

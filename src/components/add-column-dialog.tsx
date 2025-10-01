@@ -8,7 +8,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
@@ -104,9 +103,7 @@ export function AddColumnDialog({ projectId, tableId, tableName }: AddColumnDial
                   <SelectItem value="text">Text</SelectItem>
                   <SelectItem value="number">Number</SelectItem>
                   <SelectItem value="date">Date</SelectItem>
-                  <SelectItem value="gen_random_uuid()">UUID</SelectItem>
-                  <SelectItem value="now_date()">Creation Date</SelectItem>
-                  <SelectItem value="now_time()">Creation Time</SelectItem>
+                  <SelectItem value="boolean">Boolean</SelectItem>
                 </SelectContent>
               </Select>
             </div>

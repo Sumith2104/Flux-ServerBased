@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 async function Editor({ projectId, tableId, tableName }: { projectId: string; tableId?: string; tableName?: string; }) {
     const allTables = await getTablesForProject(projectId);
-    const currentTable = tableId ? allTables.find(t => t.table_id === tableId) : null;
+    const currentTable = tableId ? allTables.find(t => t.id === tableId) : null;
 
     let columns: any[] = [];
     let constraints: any[] = [];
@@ -17,8 +17,8 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
 
 
     if (currentTable && tableId) {
-        columns = await getColumnsForTable(projectId, tableId);
-        constraints = await getConstraintsForTable(projectId, tableId);
+        columns = await getColumnsForTable(tableId);
+        constraints = await getConstraintsForTable(tableId);
         allProjectConstraints = await getConstraintsForProject(projectId);
     }
 
@@ -33,7 +33,6 @@ async function Editor({ projectId, tableId, tableName }: { projectId: string; ta
             initialColumns={columns}
             initialConstraints={constraints}
             allProjectConstraints={allProjectConstraints}
-            initialRows={[]} // Pass empty initial rows
         />
     );
 }
@@ -69,7 +68,7 @@ export default function EditorPage({
 }) {
     const selectedProjectCookie = cookies().get('selectedProject');
     const selectedProject = selectedProjectCookie ? JSON.parse(selectedProjectCookie.value) : null;
-    const projectId = searchParams?.projectId as string || selectedProject?.project_id;
+    const projectId = searchParams?.projectId as string || selectedProject?.id;
     
     if (!projectId) {
         redirect('/dashboard');

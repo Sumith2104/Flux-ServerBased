@@ -59,13 +59,13 @@ export function ForeignKeySelect({
                 >
                 {value
                     ? options.find((option) => option.value === value)?.label
-                    : `Select from ${refTable?.table_name}...`}
+                    : `Select from ${refTable?.name}...`}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                 <Command>
-                    <CommandInput placeholder={`Search ${refTable?.table_name}...`} />
+                    <CommandInput placeholder={`Search ${refTable?.name}...`} />
                     <CommandEmpty>No matching record found.</CommandEmpty>
                      <ScrollArea className="h-64">
                         <CommandGroup>

@@ -38,7 +38,7 @@ export function EditColumnDialog({
 }: EditColumnDialogProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [newColumnName, setNewColumnName] = useState(column.column_name);
+  const [newColumnName, setNewColumnName] = useState(column.name);
 
   const handleAction = async (formData: FormData) => {
     const result = await editColumnAction(formData);
@@ -71,8 +71,8 @@ export function EditColumnDialog({
           <input type="hidden" name="projectId" value={projectId} />
           <input type="hidden" name="tableId" value={tableId} />
           <input type="hidden" name="tableName" value={tableName} />
-          <input type="hidden" name="columnId" value={column.column_id} />
-          <input type="hidden" name="oldColumnName" value={column.column_name} />
+          <input type="hidden" name="columnId" value={column.id} />
+          <input type="hidden" name="oldColumnName" value={column.name} />
 
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -93,7 +93,7 @@ export function EditColumnDialog({
                     Type
                 </Label>
                  <Input
-                    value={column.data_type}
+                    value={column.dataType}
                     className="col-span-3 font-mono"
                     disabled
                 />

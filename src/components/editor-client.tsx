@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteRowAction, deleteTableAction, deleteColumnAction, deleteConstraintAction } from '@/app/(app)/editor/actions';
-import { getTableData } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import {
@@ -63,6 +62,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { DeleteProgress } from './delete-progress';
 import { Badge } from './ui/badge';
+import { getTableData } from '@/lib/data';
 
 const DataTable = dynamic(() => import('@/components/data-table').then(mod => mod.DataTable), {
     ssr: false,
@@ -119,7 +119,7 @@ export function EditorClient({
         if (!tableId || !tableName) return;
         setIsTableLoading(true);
         try {
-            const response = await fetch(`/api/table-data?projectId=${projectId}&tableName=${tableName}&page=${model.page + 1}&pageSize=${model.pageSize}`);
+            const response = await fetch(`/api/table-data?projectId=${projectId}&tableId=${tableId}&page=${model.page + 1}&pageSize=${model.pageSize}`);
             if (!response.ok) throw new Error('Failed to fetch table data');
             const data = await response.json();
             setRows(data.rows);
@@ -140,21 +140,21 @@ export function EditorClient({
 
      useEffect(() => {
         async function fetchFkData() {
-            if (!initialColumns.length) return;
+            if (!initialColumns.length || !tableId) return;
 
             const fkData: Record<string, any[]> = {};
-            const fkConstraints = constraints.filter(c => c.type === 'FOREIGN KEY');
+            const fkConstraints = constraints.filter(c => c.type === 'FOREIGN_KEY');
 
             for (const col of initialColumns) {
-                const constraint = fkConstraints.find(c => c.column_names === col.column_name);
-                if (constraint && constraint.referenced_table_id) {
-                    const refTable = allTables.find(t => t.table_id === constraint.referenced_table_id);
+                const constraint = fkConstraints.find(c => c.columnNames === col.name);
+                if (constraint && constraint.referencedTableId) {
+                    const refTable = allTables.find(t => t.id === constraint.referencedTableId);
                     if (refTable) {
                         try {
-                            const { rows } = await getTableData(projectId, refTable.table_name, 1, 1000); // Fetch up to 1000 rows for dropdown
-                            fkData[col.column_name] = rows;
+                            const { rows } = await getTableData(refTable.id, 1, 1000); // Fetch up to 1000 rows for dropdown
+                            fkData[col.name] = rows;
                         } catch (error) {
-                            console.error(`Failed to fetch data for FK column ${col.column_name}`, error);
+                            console.error(`Failed to fetch data for FK column ${col.name}`, error);
                         }
                     }
                 }
@@ -162,7 +162,7 @@ export function EditorClient({
             setForeignKeyData(fkData);
         }
         fetchFkData();
-    }, [initialColumns, constraints, allTables, projectId]);
+    }, [initialColumns, constraints, allTables, projectId, tableId]);
 
     const handlePaginationModelChange = (model: GridPaginationModel) => {
         setPaginationModel(model);
@@ -190,8 +190,8 @@ export function EditorClient({
     
     const columns: GridColDef[] = useMemo(() => {
         return initialColumns.map(col => ({
-            field: col.column_name,
-            headerName: col.column_name,
+            field: col.name,
+            headerName: col.name,
             minWidth: 150,
             flex: 1,
             sortable: false, 
@@ -207,10 +207,10 @@ export function EditorClient({
     const handleDeleteTable = async () => {
         if (!tableToDelete || !projectId) return;
 
-        const result = await deleteTableAction(projectId, tableToDelete.table_id, tableToDelete.table_name);
+        const result = await deleteTableAction(projectId, tableToDelete.id, tableToDelete.name);
         if (result.success) {
-            toast({ title: 'Success', description: `Table '${tableToDelete.table_name}' deleted successfully.` });
-            if (tableToDelete.table_id === tableId) {
+            toast({ title: 'Success', description: `Table '${tableToDelete.name}' deleted successfully.` });
+            if (tableToDelete.id === tableId) {
                 router.push(`/editor?projectId=${projectId}`);
             } else {
                 router.refresh();
@@ -243,13 +243,13 @@ export function EditorClient({
         formData.append('projectId', projectId);
         formData.append('tableId', tableId);
         formData.append('tableName', tableName);
-        formData.append('columnId', columnToDelete.column_id);
-        formData.append('columnName', columnToDelete.column_name);
+        formData.append('columnId', columnToDelete.id);
+        formData.append('columnName', columnToDelete.name);
 
         const result = await deleteColumnAction(formData);
 
         if (result.success) {
-            toast({ title: 'Success', description: `Column '${columnToDelete.column_name}' deleted successfully.` });
+            toast({ title: 'Success', description: `Column '${columnToDelete.name}' deleted successfully.` });
             router.refresh();
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error, duration: 8000 });
@@ -257,15 +257,14 @@ export function EditorClient({
         setColumnToDelete(null);
     };
 
-
     const pkColumns = useMemo(() => {
-        const pk = constraints.find(c => c.type === 'PRIMARY KEY');
-        return pk ? new Set(pk.column_names.split(',')) : new Set();
+        const pk = constraints.find(c => c.type === 'PRIMARY_KEY');
+        return pk ? new Set(pk.columnNames.split(',')) : new Set();
     }, [constraints]);
 
     const getReferencedTable = (constraint: DbConstraint) => {
-        if (constraint.type !== 'FOREIGN KEY') return null;
-        const table = allTables.find(t => t.table_id === constraint.referenced_table_id);
+        if (constraint.type !== 'FOREIGN_KEY') return null;
+        const table = allTables.find(t => t.id === constraint.referencedTableId);
         return table || null;
     }
 
@@ -276,13 +275,13 @@ export function EditorClient({
         formData.append('projectId', projectId);
         formData.append('tableId', tableId);
         formData.append('tableName', tableName);
-        formData.append('constraintId', constraintToDelete.constraint_id);
+        formData.append('constraintId', constraintToDelete.id);
 
         const result = await deleteConstraintAction(formData);
 
         if (result.success) {
             toast({ title: 'Success', description: 'Constraint deleted successfully.' });
-            setConstraints(prev => prev.filter(c => c.constraint_id !== constraintToDelete.constraint_id));
+            setConstraints(prev => prev.filter(c => c.id !== constraintToDelete.id));
             setConstraintToDelete(null);
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to delete constraint.' });
@@ -316,15 +315,15 @@ export function EditorClient({
                     <nav className="flex-1 overflow-y-auto px-2 space-y-1 py-2">
                         {allTables.map((table) => (
                             <div 
-                                key={table.table_id} 
-                                className={`group flex items-center justify-between rounded-md text-sm font-medium hover:bg-accent ${table.table_id === tableId ? 'bg-accent' : ''}`}
+                                key={table.id} 
+                                className={`group flex items-center justify-between rounded-md text-sm font-medium hover:bg-accent ${table.id === tableId ? 'bg-accent' : ''}`}
                             >
                                 <Link 
-                                    href={`/editor?projectId=${projectId}&tableId=${table.table_id}&tableName=${table.table_name}`}
+                                    href={`/editor?projectId=${projectId}&tableId=${table.id}&tableName=${table.name}`}
                                     className="flex items-center gap-2 px-3 py-2 flex-grow"
                                 >
                                     <Table className="h-4 w-4" />
-                                    <span className="truncate">{table.table_name}</span>
+                                    <span className="truncate">{table.name}</span>
                                 </Link>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -364,7 +363,7 @@ export function EditorClient({
                             <header className="flex h-14 items-center gap-4 border-b bg-background px-6 flex-shrink-0">
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <Table className="h-4 w-4" />
-                                    <span className="font-semibold text-foreground">{currentTable.table_name}</span>
+                                    <span className="font-semibold text-foreground">{currentTable.name}</span>
                                 </div>
                                 <Separator orientation="vertical" className="h-6" />
                                  <div className="flex items-center gap-2">
@@ -472,7 +471,7 @@ export function EditorClient({
                                             <CardHeader>
                                                 <CardTitle>Table Structure</CardTitle>
                                                 <CardDescription>
-                                                    {currentTable.description || `This is the schema for the '${currentTable.table_name}' table.`}
+                                                    {currentTable.description || `This is the schema for the '${currentTable.name}' table.`}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent>
@@ -488,16 +487,16 @@ export function EditorClient({
                                                         </TableHeader>
                                                         <TableBody>
                                                             {initialColumns.map(col => (
-                                                                <TableRow key={col.column_id}>
-                                                                    <TableCell className="font-mono">{col.column_name}</TableCell>
-                                                                    <TableCell className="font-mono">{col.data_type}</TableCell>
+                                                                <TableRow key={col.id}>
+                                                                    <TableCell className="font-mono">{col.name}</TableCell>
+                                                                    <TableCell className="font-mono">{col.dataType}</TableCell>
                                                                     <TableCell>
-                                                                        {pkColumns.has(col.column_name) && <Badge variant="secondary" className="mr-2">PK</Badge>}
+                                                                        {pkColumns.has(col.name) && <Badge variant="secondary" className="mr-2">PK</Badge>}
                                                                     </TableCell>
                                                                     <TableCell className="text-right">
                                                                         <DropdownMenu>
                                                                             <DropdownMenuTrigger asChild>
-                                                                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={col.column_name === 'id'}>
+                                                                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={col.name === 'id'}>
                                                                                     <MoreHorizontal className="h-4 w-4" />
                                                                                     <span className="sr-only">Column options</span>
                                                                                 </Button>
@@ -538,19 +537,19 @@ export function EditorClient({
                                                  {constraints.length > 0 ? (
                                                     <div className="space-y-4">
                                                         {constraints.map(c => (
-                                                            <div key={c.constraint_id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
+                                                            <div key={c.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
                                                                 <div className="flex items-center gap-4">
-                                                                    {c.type === 'PRIMARY KEY' ? <KeyRound className="h-5 w-5 text-yellow-500" /> : <Link2 className="h-5 w-5 text-blue-500" />}
+                                                                    {c.type === 'PRIMARY_KEY' ? <KeyRound className="h-5 w-5 text-yellow-500" /> : <Link2 className="h-5 w-5 text-blue-500" />}
                                                                     <div className="flex flex-col">
-                                                                        <span className="font-semibold font-mono">{c.column_names}</span>
+                                                                        <span className="font-semibold font-mono">{c.columnNames}</span>
                                                                         <span className="text-sm text-muted-foreground">
-                                                                            {c.type === 'PRIMARY KEY' ? 'Primary Key' : 
-                                                                             `→ ${getReferencedTable(c)?.table_name}.${c.referenced_column_names}`
+                                                                            {c.type === 'PRIMARY_KEY' ? 'Primary Key' : 
+                                                                             `→ ${getReferencedTable(c)?.name}.${c.referencedColumnNames}`
                                                                             }
                                                                         </span>
                                                                     </div>
                                                                 </div>
-                                                                 <AlertDialog open={constraintToDelete?.constraint_id === c.constraint_id} onOpenChange={(open) => !open && setConstraintToDelete(null)}>
+                                                                 <AlertDialog open={constraintToDelete?.id === c.id} onOpenChange={(open) => !open && setConstraintToDelete(null)}>
                                                                     <AlertDialogTrigger asChild>
                                                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setConstraintToDelete(c)}>
                                                                             <Trash2 className="h-4 w-4" />
@@ -560,7 +559,7 @@ export function EditorClient({
                                                                         <AlertDialogHeader>
                                                                             <AlertDialogTitle>Are you sure you want to delete this constraint?</AlertDialogTitle>
                                                                             <AlertDialogDescription>
-                                                                                This action cannot be undone. This will permanently delete the constraint on <strong>{c.column_names}</strong>.
+                                                                                This action cannot be undone. This will permanently delete the constraint on <strong>{c.columnNames}</strong>.
                                                                             </AlertDialogDescription>
                                                                         </AlertDialogHeader>
                                                                         <AlertDialogFooter>
@@ -630,7 +629,7 @@ export function EditorClient({
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete the 
-                            <strong> {columnToDelete?.column_name}</strong> column and all of its data.
+                            <strong> {columnToDelete?.name}</strong> column and all of its data.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -648,7 +647,7 @@ export function EditorClient({
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete the 
-                            <strong> {tableToDelete?.table_name}</strong> table and all of its data.
+                            <strong> {tableToDelete?.name}</strong> table and all of its data.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

@@ -1,136 +1,138 @@
 
-
 'use server';
 
+import prisma from '@/lib/prisma';
 import { getCurrentUserId } from '@/lib/auth';
+import type { Project, Table, Column, Constraint } from '@prisma/client';
 
-const DB_PATH = '';
-
-// --- Project Data ---
-
-export interface Project {
-    project_id: string;
-    user_id: string;
-    display_name: string;
-    created_at: string;
-}
+export type { Project, Table, Column, Constraint };
 
 export async function getProjectsForCurrentUser(): Promise<Project[]> {
     const userId = await getCurrentUserId();
     if (!userId) {
         return [];
     }
-    const projectsCsvPath = '';
-    return [];
+    try {
+        const projects = await prisma.project.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+        });
+        return projects;
+    } catch (error) {
+        console.error("Failed to fetch projects:", error);
+        return [];
+    }
 }
 
 export async function getProjectById(projectId: string): Promise<Project | null> {
     const userId = await getCurrentUserId();
     if (!userId) return null;
     
-    const projects = await getProjectsForCurrentUser();
-    return projects.find(p => p.project_id === projectId) || null;
+    try {
+        const project = await prisma.project.findFirst({
+            where: { id: projectId, userId },
+        });
+        return project;
+    } catch (error) {
+        console.error(`Failed to fetch project ${projectId}:`, error);
+        return null;
+    }
 }
-
-// --- Table Data ---
-
-export interface Table {
-    table_id: string;
-    project_id: string;
-    table_name: string;
-    description: string;
-    created_at: string;
-    updated_at: string;
-}
-
-export interface Column {
-    column_id: string;
-    table_id: string;
-    column_name: string;
-    data_type: string;
-}
-
-// --- Constraint Data ---
-export type ConstraintType = 'PRIMARY KEY' | 'FOREIGN KEY';
-export type ReferentialAction = 'CASCADE' | 'SET NULL' | 'RESTRICT';
-
-export interface Constraint {
-    constraint_id: string;
-    table_id: string;
-    type: ConstraintType;
-    column_names: string; // Comma-separated for composite keys
-    // Foreign Key specific fields
-    referenced_table_id?: string;
-    referenced_column_names?: string; // Comma-separated for composite keys
-    on_delete?: ReferentialAction;
-    on_update?: ReferentialAction;
-}
-
-export async function getConstraintsForProject(projectId: string): Promise<Constraint[]> {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error("User not authenticated");
-    const constraintsCsvPath = '';
-    return [];
-}
-
-export async function getConstraintsForTable(projectId: string, tableId: string): Promise<Constraint[]> {
-    const allConstraints = await getConstraintsForProject(projectId);
-    return allConstraints.filter(c => c.table_id === tableId);
-}
-
 
 export async function getTablesForProject(projectId: string): Promise<Table[]> {
     const userId = await getCurrentUserId();
-    if (!userId) {
-        throw new Error("User not authenticated");
+    if (!userId) throw new Error("User not authenticated");
+    
+    try {
+        return await prisma.table.findMany({
+            where: { projectId },
+            orderBy: { name: 'asc' },
+        });
+    } catch (error) {
+        console.error(`Failed to fetch tables for project ${projectId}:`, error);
+        return [];
     }
-    const tablesCsvPath = '';
-    return [];
 }
 
-export async function getColumnsForTable(projectId:string, tableId: string): Promise<Column[]> {
-    const userId = await getCurrentUserId();
-    if (!userId) {
-        throw new Error("User not authenticated");
+export async function getColumnsForTable(tableId: string): Promise<Column[]> {
+    try {
+        return await prisma.column.findMany({
+            where: { tableId },
+            orderBy: { name: 'asc' },
+        });
+    } catch (error) {
+        console.error(`Failed to fetch columns for table ${tableId}:`, error);
+        return [];
     }
-    const columnsCsvPath = '';
-    const allColumns:any = [];
-    return allColumns.filter((col:any) => col.table_id === tableId) as unknown as Column[];
 }
 
+export async function getConstraintsForProject(projectId: string): Promise<Constraint[]> {
+    try {
+        return await prisma.constraint.findMany({
+            where: {
+                table: {
+                    projectId: projectId,
+                },
+            },
+        });
+    } catch (error) {
+        console.error(`Failed to fetch constraints for project ${projectId}:`, error);
+        return [];
+    }
+}
+
+export async function getConstraintsForTable(tableId: string): Promise<Constraint[]> {
+     try {
+        return await prisma.constraint.findMany({
+            where: { tableId },
+        });
+    } catch (error) {
+        console.error(`Failed to fetch constraints for table ${tableId}:`, error);
+        return [];
+    }
+}
 
 interface PaginatedTableData {
-    rows: Record<string, string>[];
+    rows: Record<string, any>[];
     totalRows: number;
 }
 
 export async function getTableData(
-    projectId: string, 
-    tableName: string,
+    tableId: string,
     page: number = 1,
     pageSize: number = 100
 ): Promise<PaginatedTableData> {
     const userId = await getCurrentUserId();
-    if (!userId) {
-        throw new Error("User not authenticated");
-    }
-    const tableDataPath = '';
-
+    if (!userId) throw new Error("User not authenticated");
+    
     try {
+        const skip = (page - 1) * pageSize;
+        
+        const [rows, totalRows] = await prisma.$transaction([
+            prisma.row.findMany({
+                where: { tableId },
+                skip,
+                take: pageSize,
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.row.count({ where: { tableId } }),
+        ]);
 
-        return { rows: [], totalRows: 0 };
+        // The 'data' field in the Row model is a JSONB field.
+        // We spread it into the main object for easier access in the UI.
+        const processedRows = rows.map(row => ({
+            id: row.id,
+            ...row.data as object,
+        }));
+        
+        return { rows: processedRows, totalRows };
 
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return { rows: [], totalRows: 0 };
-        }
-        console.error("Failed to read paginated table data:", error);
+    } catch (error) {
+        console.error(`Failed to read paginated table data for table ${tableId}:`, error);
         throw error;
     }
 }
 
-
-// --- Analytics Data ---
 export interface ProjectAnalytics {
     totalSize: number; // in KB
     totalRows: number;
@@ -141,49 +143,28 @@ export interface ProjectAnalytics {
     }[];
 }
 
-async function getCsvLineCount(filePath: string): Promise<number> {
-    try {
-        return 0;
-    } catch (error: any) {
-        if (error.code === 'ENOENT') return 0;
-        throw error;
-    }
-}
-
+// This function needs database-specific queries to get table size, which can be complex.
+// For now, we'll mock this or use row counts as a proxy.
 export async function getProjectAnalytics(projectId: string): Promise<ProjectAnalytics> {
     const userId = await getCurrentUserId();
-    if (!userId) {
-        throw new Error("User not authenticated");
-    }
+    if (!userId) throw new Error("User not authenticated");
 
-    const projectPath = '';
     const tables = await getTablesForProject(projectId);
-
-    let totalSize = 0;
     let totalRows = 0;
     const tableAnalytics = [];
 
     for (const table of tables) {
-        const tableDataPath = '';
-        try {
-
-            const sizeInKb = 0;
-
-            totalSize += sizeInKb;
-            
-            tableAnalytics.push({
-                name: table.table_name,
-                size: sizeInKb,
-                rows: 0,
-            });
-
-        } catch (error) {
-            console.warn(`Could not get analytics for table ${table.table_name}:`, error);
-        }
+        const rowCount = await prisma.row.count({ where: { tableId: table.id } });
+        totalRows += rowCount;
+        tableAnalytics.push({
+            name: table.name,
+            rows: rowCount,
+            size: rowCount * 1, // Mock size calculation: 1KB per row as an estimate
+        });
     }
 
     return {
-        totalSize: parseFloat(totalSize.toFixed(2)),
+        totalSize: tableAnalytics.reduce((acc, t) => acc + t.size, 0),
         totalRows,
         tables: tableAnalytics,
     };

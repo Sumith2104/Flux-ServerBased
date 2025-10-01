@@ -1,146 +1,84 @@
 
 'use server';
 
-import {v4 as uuidv4} from 'uuid';
-import fs from 'fs/promises';
-import path from 'path';
-import {getCurrentUserId} from '@/lib/auth';
-import { getTablesForProject } from '@/lib/data';
-
-async function fileExists(filePath: string): Promise<boolean> {
-    try {
-        await fs.access(filePath);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-async function getFileContent(filePath: string): Promise<string> {
-    try {
-        return await fs.readFile(filePath, 'utf8');
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return ''; // File doesn't exist, return empty string
-        }
-        throw error;
-    }
-}
+import prisma from '@/lib/prisma';
+import { getCurrentUserId } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
 
 export async function createTableAction(formData: FormData) {
   const tableName = formData.get('tableName') as string;
   const description = formData.get('description') as string;
   const projectId = formData.get('projectId') as string;
   const columnsStr = formData.get('columns') as string;
-  // This is no longer passed from the client for performance reasons.
-  // The client will now upload the file to a separate streaming API endpoint.
-  // const csvContent = formData.get('csvContent') as string | null; 
   const userId = await getCurrentUserId();
 
   if (!tableName || !projectId || !userId || !columnsStr) {
-    return {error: 'Missing required fields.'};
+    return { success: false, error: 'Missing required fields.' };
   }
 
   if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
-    return { error: 'Table name can only contain letters, numbers, and underscores.' };
+    return { success: false, error: 'Table name can only contain letters, numbers, and underscores.' };
   }
 
   try {
+    // Verify user owns the project
+    const project = await prisma.project.findFirst({
+        where: { id: projectId, userId }
+    });
+    if (!project) {
+        return { success: false, error: "Project not found or you don't have access." };
+    }
+
     // Check for duplicate table name
-    const existingTables = await getTablesForProject(projectId);
-    if (existingTables.some(t => t.table_name.toLowerCase() === tableName.toLowerCase())) {
-        return { success: false, error: `A table with the name '${tableName}' already exists in this project.` };
+    const existingTable = await prisma.table.findFirst({
+      where: {
+        projectId,
+        name: {
+          equals: tableName,
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (existingTable) {
+      return { success: false, error: `A table with the name '${tableName}' already exists in this project.` };
     }
-
-    const tableId = uuidv4();
-    const createdAt = new Date().toISOString();
-    const projectPath = path.join(
-      process.cwd(),
-      'src',
-      'database',
-      userId,
-      projectId
-    );
-    await fs.mkdir(projectPath, {recursive: true});
-
-    // 1. Update tables.csv
-    const tablesCsvPath = path.join(projectPath, 'tables.csv');
-    const newTableCsvRow = `\n${tableId},${projectId},"${tableName}","${description || ''}",${createdAt},${createdAt}`;
     
-    const tablesCsvContent = await getFileContent(tablesCsvPath);
-    if (!tablesCsvContent.trim()) {
-        const header = 'table_id,project_id,table_name,description,created_at,updated_at';
-        await fs.writeFile(tablesCsvPath, header + newTableCsvRow, 'utf8');
-    } else {
-        await fs.appendFile(tablesCsvPath, newTableCsvRow, 'utf8');
-    }
-
-    const validTypes = [
-        'text', 'number', 'date', 'boolean',
-        'gen_random_uuid()', 'now_date()', 'now_time()',
-        'UUID', 'char', 'varchar', 'timestamp', 'integer'
-    ];
-
     const columns = columnsStr.split(',').map(c => {
-      const [name, type] = c.split(':');
-      if (!name || !type || !validTypes.includes(type.trim().toLowerCase())) {
-          throw new Error(`Invalid column definition: ${c}`);
-      }
-      // Normalize UUID type for consistency in the backend file.
-      let normalizedType = type.trim().toLowerCase();
-      if (normalizedType === 'uuid' || normalizedType === 'char' || normalizedType === 'varchar') {
-        normalizedType = 'text';
-      }
-       if (normalizedType === 'timestamp' || normalizedType === 'integer') {
-        normalizedType = 'text';
-      }
-
-
-      return {id: uuidv4(), name: name.trim(), type: normalizedType};
+        const [name, type] = c.split(':');
+        if (!name || !type) throw new Error(`Invalid column definition: ${c}`);
+        return { name: name.trim(), type: type.trim() };
     });
 
     if (columns.length === 0) {
-        return { error: 'You must define at least one column.' };
-    }
-     if (!columns.some(c => c.name === 'id' && c.type === 'gen_random_uuid()')) {
-         // This check is now tricky because the SQL editor might not define 'id' exactly this way.
-         // We might need to make it more flexible or enforce it differently.
-         // For now, let's assume UI-driven creation requires it.
-         // return { error: "A primary key 'id' column of type 'UUID' is required." };
-     }
-
-    // 2. Update columns.csv
-    const columnsCsvPath = path.join(projectPath, 'columns.csv');
-    let newColumnsCsvRows = '';
-    for (const col of columns) {
-      newColumnsCsvRows += `\n${col.id},${tableId},${col.name},${col.type}`;
-    }
-
-    const columnsCsvContent = await getFileContent(columnsCsvPath);
-    if (!columnsCsvContent.trim()) {
-        const header = 'column_id,table_id,column_name,data_type';
-        await fs.writeFile(columnsCsvPath, header + newColumnsCsvRows, 'utf8');
-    } else {
-        await fs.appendFile(columnsCsvPath, newColumnsCsvRows, 'utf8');
+        return { success: false, error: 'You must define at least one column.' };
     }
     
+    // Create the table and its columns in a single transaction
+    const newTable = await prisma.table.create({
+        data: {
+            name: tableName,
+            description: description,
+            projectId: projectId,
+            columns: {
+                create: columns.map(col => ({
+                    name: col.name,
+                    dataType: col.type,
+                })),
+            },
+        },
+    });
 
-    // 3. Create the data file (e.g., users.csv)
-    const dataFilePath = path.join(projectPath, `${tableName}.csv`);
-    if (await fileExists(dataFilePath)) {
-        // If file exists from a failed prior attempt, let's just overwrite it
-        // to ensure a clean slate.
-    }
+    revalidatePath(`/dashboard?projectId=${projectId}`);
     
-    // Always create an empty file with just the header.
-    // The actual data will be streamed to the import API.
-    const dataFileHeader = columns.map(c => c.name).join(',');
-    await fs.writeFile(dataFilePath, dataFileHeader, 'utf8');
-    
+    return { success: true, tableId: newTable.id };
 
-    return {success: true, tableId};
-  } catch (error) {
+  } catch (error: any) {
     console.error('Table creation failed:', error);
-    return {error: `An unexpected error occurred: ${(error as Error).message}`};
+    // Prisma unique constraint violation
+    if (error.code === 'P2002') {
+        return { success: false, error: `A table with the name '${tableName}' already exists in this project.` };
+    }
+    return { success: false, error: `An unexpected error occurred: ${error.message}` };
   }
 }
