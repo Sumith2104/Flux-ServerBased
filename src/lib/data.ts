@@ -1,11 +1,17 @@
 
+
 'use server';
 
 import prisma from '@/lib/prisma';
 import { getCurrentUserId } from '@/lib/auth';
-import type { Project, Table, Column, Constraint } from '@prisma/client';
+import type { Project as PrismaProject, Table as PrismaTable, Column as PrismaColumn, Constraint as PrismaConstraint } from '@prisma/client';
 
-export type { Project, Table, Column, Constraint };
+// Re-exporting with friendlier names for the UI if needed
+export type Project = PrismaProject;
+export type Table = PrismaTable;
+export type Column = PrismaColumn;
+export type Constraint = PrismaConstraint;
+
 
 export async function getProjectsForCurrentUser(): Promise<Project[]> {
     const userId = await getCurrentUserId();
@@ -17,7 +23,13 @@ export async function getProjectsForCurrentUser(): Promise<Project[]> {
             where: { userId },
             orderBy: { createdAt: 'desc' },
         });
-        return projects;
+        // Map to what the frontend expects
+        return projects.map(p => ({
+            ...p,
+            project_id: p.id,
+            display_name: p.name,
+            created_at: p.createdAt.toISOString(),
+        }));
     } catch (error) {
         console.error("Failed to fetch projects:", error);
         return [];
@@ -44,10 +56,16 @@ export async function getTablesForProject(projectId: string): Promise<Table[]> {
     if (!userId) throw new Error("User not authenticated");
     
     try {
-        return await prisma.table.findMany({
+         const tables = await prisma.table.findMany({
             where: { projectId },
             orderBy: { name: 'asc' },
         });
+        return tables.map(t => ({
+            ...t,
+            table_id: t.id,
+            table_name: t.name,
+            created_at: t.createdAt.toISOString()
+        }))
     } catch (error) {
         console.error(`Failed to fetch tables for project ${projectId}:`, error);
         return [];
@@ -56,10 +74,17 @@ export async function getTablesForProject(projectId: string): Promise<Table[]> {
 
 export async function getColumnsForTable(tableId: string): Promise<Column[]> {
     try {
-        return await prisma.column.findMany({
+        const columns = await prisma.column.findMany({
             where: { tableId },
             orderBy: { name: 'asc' },
         });
+        return columns.map(c => ({
+            ...c,
+            column_id: c.id,
+            column_name: c.name,
+            data_type: c.dataType,
+            table_id: c.tableId
+        }));
     } catch (error) {
         console.error(`Failed to fetch columns for table ${tableId}:`, error);
         return [];
@@ -68,13 +93,21 @@ export async function getColumnsForTable(tableId: string): Promise<Column[]> {
 
 export async function getConstraintsForProject(projectId: string): Promise<Constraint[]> {
     try {
-        return await prisma.constraint.findMany({
+        const constraints = await prisma.constraint.findMany({
             where: {
                 table: {
                     projectId: projectId,
                 },
             },
         });
+        return constraints.map(c => ({
+            ...c,
+            constraint_id: c.id,
+            table_id: c.tableId,
+            column_names: c.columnNames,
+            referenced_table_id: c.referencedTableId,
+            referenced_column_names: c.referencedColumnNames,
+        }));
     } catch (error) {
         console.error(`Failed to fetch constraints for project ${projectId}:`, error);
         return [];
@@ -83,9 +116,17 @@ export async function getConstraintsForProject(projectId: string): Promise<Const
 
 export async function getConstraintsForTable(tableId: string): Promise<Constraint[]> {
      try {
-        return await prisma.constraint.findMany({
+        const constraints = await prisma.constraint.findMany({
             where: { tableId },
         });
+         return constraints.map(c => ({
+            ...c,
+            constraint_id: c.id,
+            table_id: c.tableId,
+            column_names: c.columnNames,
+            referenced_table_id: c.referencedTableId,
+            referenced_column_names: c.referencedColumnNames,
+        }));
     } catch (error) {
         console.error(`Failed to fetch constraints for table ${tableId}:`, error);
         return [];
@@ -104,6 +145,16 @@ export async function getTableData(
 ): Promise<PaginatedTableData> {
     const userId = await getCurrentUserId();
     if (!userId) throw new Error("User not authenticated");
+    
+    // Authorization: Check if the user has access to the project this table belongs to
+    const table = await prisma.table.findUnique({
+        where: { id: tableId },
+        select: { project: { select: { userId: true } } }
+    });
+
+    if (!table || table.project.userId !== userId) {
+        throw new Error("Unauthorized access to table data.");
+    }
     
     try {
         const skip = (page - 1) * pageSize;
@@ -144,7 +195,7 @@ export interface ProjectAnalytics {
 }
 
 // This function needs database-specific queries to get table size, which can be complex.
-// For now, we'll mock this or use row counts as a proxy.
+// For now, we'll use row counts as a proxy.
 export async function getProjectAnalytics(projectId: string): Promise<ProjectAnalytics> {
     const userId = await getCurrentUserId();
     if (!userId) throw new Error("User not authenticated");
@@ -159,7 +210,9 @@ export async function getProjectAnalytics(projectId: string): Promise<ProjectAna
         tableAnalytics.push({
             name: table.name,
             rows: rowCount,
-            size: rowCount * 1, // Mock size calculation: 1KB per row as an estimate
+            // Mock size calculation: 1KB per row as an estimate. A real implementation
+            // would require a database query to get actual table size.
+            size: rowCount * 1, 
         });
     }
 

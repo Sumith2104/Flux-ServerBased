@@ -4,7 +4,7 @@
 import {v4 as uuidv4} from 'uuid';
 import {login} from '@/lib/auth';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import prisma from '@/lib/prisma';
 
 export async function loginAction(formData: FormData) {
   const email = formData.get('email') as string;
@@ -14,13 +14,20 @@ export async function loginAction(formData: FormData) {
     return { error: 'Email and password are required.' };
   }
   
-  // This is a mock login. In a real app, you would validate credentials.
-  const userId = '123e4567-e89b-12d3-a456-426614174000';
-  await login(userId);
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  // In a real app, you would use bcrypt.compare here
+  if (!user || user.password !== password) {
+    return { error: 'Invalid email or password.' };
+  }
+  
+  await login(user.id);
   
   cookies().delete('selectedProject');
 
-  return { success: true, userId: userId };
+  return { success: true, userId: user.id };
 }
 
 export async function signupAction(formData: FormData) {
@@ -32,10 +39,24 @@ export async function signupAction(formData: FormData) {
   }
 
   try {
-    // Mock signup
-    const userId = uuidv4();
-    await login(userId);
-    return {success: true, userId};
+     const existingUser = await prisma.user.findUnique({ where: { email } });
+     if (existingUser) {
+        return { error: 'A user with this email already exists.' };
+     }
+
+    // In a real app, you should hash the password with bcrypt
+    const user = await prisma.user.create({
+      data: {
+        email: email,
+        password: password, // HASH THIS in a real app
+      },
+    });
+
+    await login(user.id);
+    cookies().delete('selectedProject');
+    
+    return {success: true, userId: user.id};
+
   } catch (error) {
     console.error('Signup failed:', error);
     return {error: 'An unexpected error occurred.'};
