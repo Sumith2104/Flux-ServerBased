@@ -17,11 +17,11 @@ export interface User {
  * Retrieves the current user's ID from the session cookie.
  */
 export async function getCurrentUserId(): Promise<string | null> {
-    const session = cookies().get('session');
-    if (session) {
-      return session.value;
+    const sessionCookie = await cookies().get('session');
+    if (sessionCookie) {
+      return sessionCookie.value;
     }
-    return null; 
+    return null;
 }
 
 /**
@@ -44,5 +44,3 @@ export async function login(userId: string) {
 export async function logout() {
     cookies().delete('session');
 }
-
-    
