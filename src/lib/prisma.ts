@@ -1,3 +1,4 @@
+
 import { PrismaClient } from '@prisma/client'
 
 // This file implements a robust singleton pattern for the Prisma Client.
