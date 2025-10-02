@@ -47,7 +47,6 @@ export async function signupAction(formData: FormData) {
     // In a real app, you should hash the password with bcrypt
     const user = await prisma.user.create({
       data: {
-        id: uuidv4(),
         email: email,
         password: password, // HASH THIS in a real app
       },
