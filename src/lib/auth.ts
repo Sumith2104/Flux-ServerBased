@@ -1,5 +1,7 @@
+
 'use server';
 import { cookies } from 'next/headers';
+import "server-only";
 
 // This is a mock authentication service.
 // In a real application, this would involve session management, database lookups, etc.
@@ -42,3 +44,5 @@ export async function login(userId: string) {
 export async function logout() {
     cookies().delete('session');
 }
+
+    
